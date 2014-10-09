@@ -59,6 +59,9 @@ write_wait(ID,Timeout) ->
       { written,{channel,ID} } ->
          ok;
 
+      { closed,{channel,ID} } ->
+         closed;
+
       _any ->
          write_wait(ID,Timeout)
 
@@ -90,6 +93,9 @@ read_wait(ID,Timeout) ->
    receive
       { read,{channel,ID},Word } ->
          { ok,Word };
+
+      { closed,{channel,ID} } ->
+         closed;
 
    _any ->
       read_wait(ID,Timeout)
@@ -137,8 +143,18 @@ loop(State) ->
 
    receive
       { close,PID } ->
-         PID ! { closed,{channel,ID} },
-         closed;
+         case State#state.state of 
+            idle ->
+               PID ! { closed,{channel,ID} };
+
+            { write_pending,{_Word,WRITER}} ->
+               WRITER ! { closed,{channel,ID} },
+               PID    ! { closed,{channel,ID} };
+
+            {read_pending,READER} ->
+               READER ! { closed,{channel,ID} },
+               PID    ! { closed,{channel,ID} }
+            end;
 
       { write,Word,WRITER } ->
          case State#state.state of 
@@ -184,31 +200,45 @@ close_test() ->
 write_then_read_test() ->
    Channel = create(666),
    M       = self(),
-   spawn(fun() ->                   M ! { write,write(Channel,123) } end),
-   spawn(fun() -> timer:sleep(500), M ! { read, read (Channel)     } end),
+   spawn(fun() ->                   M ! { a,write(Channel,123) } end),
+   spawn(fun() -> timer:sleep(250), M ! { b,read (Channel)     } end),
    ?assertEqual({ok,{ok,123}},wait(undefined,undefined)),
    ?assertEqual(closed,close(Channel)).
 
 read_then_write_test() ->
    Channel = create(666),
    M       = self(),
-   spawn(fun() ->                   M ! { read, read (Channel)     } end),
-   spawn(fun() -> timer:sleep(500), M ! { write,write(Channel,123) } end),
-   ?assertEqual({ok,{ok,123}},wait(undefined,undefined)),
+   spawn(fun() ->                   M ! { a,read (Channel)     } end),
+   spawn(fun() -> timer:sleep(250), M ! { b,write(Channel,123) } end),
+   ?assertEqual({{ok,123},ok},wait(undefined,undefined)),
    ?assertEqual(closed,close(Channel)).
- 
-wait({write,W},{read,R}) ->
-   {W,R};
- 
-wait(W,R) ->
-   receive 
-      { read,RV } ->
-         wait(W,{read,RV});
 
-      { write,WV } ->
-         wait({write,WV},R);
+write_then_close_test() ->
+   Channel = create(666),
+   M       = self(),
+   spawn(fun() ->                   M ! { a,write(Channel,123) } end),
+   spawn(fun() -> timer:sleep(250), M ! { b,close(Channel)     } end),
+   ?assertEqual({closed,closed},wait(undefined,undefined)).
+
+read_then_close_test() ->
+   Channel = create(666),
+   M       = self(),
+   spawn(fun() ->                   M ! { a,read (Channel) } end),
+   spawn(fun() -> timer:sleep(250), M ! { b,close(Channel) } end),
+   ?assertEqual({closed,closed},wait(undefined,undefined)).
+   
+wait({a,X},{b,Y}) ->
+   {X,Y};
+
+wait(X,Y) ->
+   receive 
+      { a,A } ->
+         wait({a,A},Y);
+
+      { b,B } ->
+         wait(X,{b,B});
 
       _any ->
-         wait(W,R)
+         wait(X,Y)
    end.
 
