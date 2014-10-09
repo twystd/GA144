@@ -19,8 +19,7 @@
                 }).
 
 -record(state,{ id,
-                state,
-                word
+                state
               }).
  
 % API
@@ -134,36 +133,41 @@ close_wait(ID,Timeout) ->
 % INTERNAL
 
 loop(State) ->
-   ID   = State#state.id,
-   Word = State#state.word,
+   ID = State#state.id,
 
    receive
       { close,PID } ->
          PID ! { closed,{channel,ID} },
          closed;
 
-      { write,Value,PID } ->
+      { write,Word,WRITER } ->
          case State#state.state of 
-            { read_wait,READER } ->
-               READER ! { read,   {channel,ID},Value },
-               PID    ! { written,{channel,ID}       },
-               loop(State#state{ state = idle,
-                                 word  = undefined });
-               
+            idle ->
+               loop(State#state{state = {write_pending,{Word,WRITER}} 
+                               });
+
+            {read_pending,READER} ->
+               READER ! { read,   {channel,ID},Word },
+               WRITER ! { written,{channel,ID}      },
+               loop(State#state{state = idle
+                               });
             _else ->
-               PID ! { written,{channel,ID} },
-               loop(State#state{ word=Value })
+               loop(State)
             end;
 
 
-      {read,PID } ->
-         case Word of
-            undefined -> 
-               loop(State#state{ state={read_wait,PID} 
+      {read,READER } ->
+         case State#state.state of 
+            idle ->
+               loop(State#state{state = {read_pending,READER} 
                                });
 
-            _else -> 
-               PID ! { read,{channel,ID},Word },
+            { write_pending,{Word,WRITER}} ->
+               WRITER ! { written,{channel,ID}      },
+               READER ! { read,   {channel,ID},Word },
+               loop(State#state{ state=idle });
+
+            _else ->
                loop(State)
             end;
 
@@ -179,16 +183,19 @@ close_test() ->
 
 write_then_read_test() ->
    Channel = create(666),
-   ?assertEqual(ok,write(Channel,123)),
-   ?assertEqual({ok,123},read (Channel)),
+   M       = self(),
+   spawn(fun() ->                   M ! { write,write(Channel,123) } end),
+   spawn(fun() -> timer:sleep(500), M ! { read, read (Channel)     } end),
+   ?assertEqual({ok,{ok,123}},wait(undefined,undefined)),
    ?assertEqual(closed,close(Channel)).
 
 read_then_write_test() ->
    Channel = create(666),
    M       = self(),
-   spawn(fun() -> M ! { read, read (Channel)     } end),
-   spawn(fun() -> M ! { write,write(Channel,123) } end),
-   ?assertEqual({ok,{ok,123}},wait(undefined,undefined)).
+   spawn(fun() ->                   M ! { read, read (Channel)     } end),
+   spawn(fun() -> timer:sleep(500), M ! { write,write(Channel,123) } end),
+   ?assertEqual({ok,{ok,123}},wait(undefined,undefined)),
+   ?assertEqual(closed,close(Channel)).
  
 wait({write,W},{read,R}) ->
    {W,R};
