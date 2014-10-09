@@ -134,18 +134,38 @@ close_wait(ID,Timeout) ->
 % INTERNAL
 
 loop(State) ->
+   ID   = State#state.id,
+   Word = State#state.word,
+
    receive
       { close,PID } ->
-         PID ! { closed,{channel,State#state.id} },
+         PID ! { closed,{channel,ID} },
          closed;
 
       { write,Value,PID } ->
-         PID ! { written,{channel,State#state.id} },
-         loop(State#state{ word=Value });
+         case State#state.state of 
+            { read_wait,READER } ->
+               READER ! { read,   {channel,ID},Value },
+               PID    ! { written,{channel,ID}       },
+               loop(State#state{ state = idle,
+                                 word  = undefined });
+               
+            _else ->
+               PID ! { written,{channel,ID} },
+               loop(State#state{ word=Value })
+            end;
+
 
       {read,PID } ->
-         PID ! { read,{channel,State#state.id},State#state.word },
-         loop(State);
+         case Word of
+            undefined -> 
+               loop(State#state{ state={read_wait,PID} 
+                               });
+
+            _else -> 
+               PID ! { read,{channel,ID},Word },
+               loop(State)
+            end;
 
       _any ->
          loop(State)
@@ -162,3 +182,26 @@ write_then_read_test() ->
    ?assertEqual(ok,write(Channel,123)),
    ?assertEqual({ok,123},read (Channel)),
    ?assertEqual(closed,close(Channel)).
+
+read_then_write_test() ->
+   Channel = create(666),
+   M       = self(),
+   spawn(fun() -> M ! { read, read (Channel)     } end),
+   spawn(fun() -> M ! { write,write(Channel,123) } end),
+   ?assertEqual({ok,{ok,123}},wait(undefined,undefined)).
+ 
+wait({write,W},{read,R}) ->
+   {W,R};
+ 
+wait(W,R) ->
+   receive 
+      { read,RV } ->
+         wait(W,{read,RV});
+
+      { write,WV } ->
+         wait({write,WV},R);
+
+      _any ->
+         wait(W,R)
+   end.
+
