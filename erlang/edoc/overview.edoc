@@ -1,0 +1,6 @@
+** overview.doc file for the application 'ga144' **
+
+@author   Tony Seebregts
+@version  0.0.0
+@title    GA144 Simulator 
+@doc      Erlang implementation of a software simulator for the GreenArrays GA144 multiprocessor chip.

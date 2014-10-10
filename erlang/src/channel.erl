@@ -3,10 +3,10 @@
 % EXPORTS
 
 -export([create/1]).
--export([write/2,write/3]).
--export([read/1,read/2]).
--export([close/1,close/2]).
--export([loop/1]).
+-export([write/2]).
+-export([read/1]).
+-export([close/1]).
+-export([run/1]).
 
 % INCLUDES
 
@@ -18,33 +18,25 @@
                   pid
                 }).
 
--record(state,{ id,
-                state
-              }).
- 
 % API
 
-%% @doc Spawns a channel process and returns a 'channel' record for
-%%      use with read, write and close.
+%% @spec create(ID::integer) -> {id,pid}
+%% @doc  Spawns a channel process and returns a 'channel' record for
+%%       use with read, write and close.
 create(ID) ->
-   PID = spawn(channel,loop,[#state{ id=ID,
-                                     state=idle
-                                   }]),
+   PID = spawn(channel,run,[ID]),
    #channel{ id  = ID,
              pid = PID
            }.
   
-%% @doc Writes the value to the channel and waits for the value to be 'read'.
+%% @spec write(Channel::channel,Word::integer) -> ok | closed
+%% @doc  Writes the value to the channel and waits for the value to be 'read'.
 %%
-write(Channel,Value) ->
-   write_with_timeout(Channel,Value,infinity).
+write(Channel,Word) ->
+   write_with_timeout(Channel,Word,infinity).
 
-%% @doc Writes the value to the channel and waits for the value to be 'read'.
-%%
-write(Channel,Value,Timeout) ->
-   write_with_timeout(Channel,Value,Timeout).
-
-%% @doc Sends a 'write' message to the channel process and waits for acknowledgement.
+%% @spec write_with_timeout(Channel::channel,Word::integer,Timeout::integer) -> ok | timeout | closed
+%% @doc  Sends a 'write' message to the channel process and waits for acknowledgement.
 %%
 write_with_timeout(Channel,Value,Timeout) ->
    ID  = Channel#channel.id,
@@ -73,11 +65,6 @@ write_wait(ID,Timeout) ->
 %%
 read(Channel) ->
    read_with_timeout(Channel,infinity).
-
-%% @doc Reads a value from the channel, waiting for a 'write' if necessary.
-%%
-read(Channel,Timeout) ->
-   read_with_timeout(Channel,Timeout).
 
 %% @doc Sends a 'read' message to the channel process and returns the value
 %%      received.
@@ -109,11 +96,6 @@ read_wait(ID,Timeout) ->
 close(Channel) ->
    close_with_timeout(Channel,infinity).
 
-%% @doc Closes the channel, returning once the channel has been closed.
-%%
-close(Channel,Timeout) ->
-   close_with_timeout(Channel,Timeout).
-
 %% @doc Sends a 'close' message to the channel process and waits for acknowledgment.
 %%
 close_with_timeout(Channel,Timeout) ->
@@ -138,57 +120,54 @@ close_wait(ID,Timeout) ->
 
 % INTERNAL
 
-loop(State) ->
-   ID = State#state.id,
+%% @doc Internal function used for spawning a channel process. 
+%%      (INTERNAL USE ONLY)
+run(ID) ->
+   loop(ID,idle).
 
+loop(ID,idle) ->
    receive
       { close,PID } ->
-         case State#state.state of 
-            idle ->
-               PID ! { closed,{channel,ID} };
-
-            { write_pending,{_Word,WRITER}} ->
-               WRITER ! { closed,{channel,ID} },
-               PID    ! { closed,{channel,ID} };
-
-            {read_pending,READER} ->
-               READER ! { closed,{channel,ID} },
-               PID    ! { closed,{channel,ID} }
-            end;
+         PID ! { closed,{channel,ID} };
 
       { write,Word,WRITER } ->
-         case State#state.state of 
-            idle ->
-               loop(State#state{state = {write_pending,{Word,WRITER}} 
-                               });
+         loop(ID,{ write_pending,Word,WRITER}); 
 
-            {read_pending,READER} ->
-               READER ! { read,   {channel,ID},Word },
-               WRITER ! { written,{channel,ID}      },
-               loop(State#state{state = idle
-                               });
-            _else ->
-               loop(State)
-            end;
-
-
-      {read,READER } ->
-         case State#state.state of 
-            idle ->
-               loop(State#state{state = {read_pending,READER} 
-                               });
-
-            { write_pending,{Word,WRITER}} ->
-               WRITER ! { written,{channel,ID}      },
-               READER ! { read,   {channel,ID},Word },
-               loop(State#state{ state=idle });
-
-            _else ->
-               loop(State)
-            end;
+      { read,READER } ->
+         loop(ID,{ read_pending,READER }); 
 
       _any ->
-         loop(State)
+         loop(ID,idle)
+   end;
+
+loop(ID,{write_pending,Word,WRITER}) ->
+   receive
+      { close,PID } ->
+         WRITER ! { closed,{channel,ID} },
+         PID    ! { closed,{channel,ID} };
+
+      { read,READER } ->
+         WRITER ! { written,{channel,ID}      },
+         READER ! { read,   {channel,ID},Word },
+         loop(ID,idle);
+
+      _any ->
+         loop(ID,{write_pending,Word,WRITER})
+   end;
+
+loop(ID,{read_pending,READER}) ->
+   receive
+      { close,PID } ->
+         READER ! { closed,{channel,ID} },
+         PID    ! { closed,{channel,ID} };
+
+      { write,Word,WRITER } ->
+         READER ! { read,   {channel,ID},Word },
+         WRITER ! { written,{channel,ID}      },
+         loop(ID,idle);
+
+      _any ->
+         loop(ID,{read_pending,READER})
    end.
 
 % EUNIT TESTS
@@ -227,6 +206,14 @@ read_then_close_test() ->
    spawn(fun() -> timer:sleep(250), M ! { b,close(Channel) } end),
    ?assertEqual({closed,closed},wait(undefined,undefined)).
    
+write_read_write_read_test() ->
+   Channel = create(666),
+   M       = self(),
+   spawn(fun() -> W1 = write(Channel,123), W2 = write(Channel,456), M ! { a,{W1,W2} } end),
+   spawn(fun() -> R1 = read (Channel),     R2 = read (Channel),     M ! { b,{R1,R2} } end),
+   ?assertEqual({{ok,ok},{{ok,123},{ok,456}}},wait(undefined,undefined)),
+   ?assertEqual(closed,close(Channel)).
+
 wait({a,X},{b,Y}) ->
    {X,Y};
 
