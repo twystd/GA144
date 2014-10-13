@@ -3,9 +3,24 @@ GA144
 
 Simulator for the GreenArrays GA144
 
-erlang
+Status
 ------
 
+Just starting out ...
+
+Raison d'être 
+-------------
+
+GreenArrays' GA144 is a wonderfully idiosyncratic microprocessor:
+
+- fully asynchronous logic
+- 32 orthogonal instructions
+- 64 words of RAM and ROM
+- 18 bit 'word'
+- 144 on-chip cores in a rectangular array
+
+all of which conspire to make a software simulation relatively straightforward. And fun :-). 
+ 
 Notes
 -----
 
@@ -13,7 +28,7 @@ The ColorForth IDE is something only a mother could love (although she *would* h
 gentle, forgiving and loving mother). The official documentation for the IDE on the other hand is ummm,
 cryptic in the extreme ? Of all the tutorials out there, the [HCC!Forth][hccforth] is the one that gets
 you up and running with the least loss of hair. Just in case it ever goes missing, there is a copy of 
-the webpage in the archive folder - hopefully nobody minds too much.
+the webpage in the archive folder (hopefully nobody HCC!Forth minds too much).
 
 References
 ----------
