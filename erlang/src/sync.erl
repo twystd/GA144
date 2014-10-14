@@ -6,14 +6,34 @@
 -include_lib("kernel/include/file.hrl").
 
 start()->
+   start(is_registered()).
+
+start(true) ->
+   ok;
+
+start(_) ->
    PID = spawn(sync,run,[]),
    register(sync,PID),
    ok.
 
 stop() ->
-   sync ! stop.
+   stop(is_registered()).
 
+stop(true) ->
+   sync ! stop,
+   ok;
 
+stop(_) ->
+   ok.
+
+is_registered() ->
+   lists:foldl(fun(X,A) ->
+                  case X of
+                     sync -> true;
+                    _else -> A
+                  end
+               end,false,registered()).
+                           
 run() ->
    make:all([load]),
    loop    (files()).

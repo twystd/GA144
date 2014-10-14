@@ -91,6 +91,7 @@ loop(CPU) ->
    receive
       reset ->
          log:info(?TAG,"RESET"),
+         trace:trace(f18A,{ CPU#cpu.id,reset}),     
          loop(CPU#cpu{pc=1});
 
       step ->
@@ -104,10 +105,12 @@ loop(CPU) ->
 
       stop ->
          log:info(?TAG,"STOP"),
+         trace:trace(f18A,{ CPU#cpu.id,stop}),     
          stopped;
 
       {stop,PID} ->
          log:info(?TAG,"STOP"),
+         trace:trace(f18A,{ CPU#cpu.id,stop}),     
          PID ! stopped,
          stopped;
 
@@ -127,22 +130,53 @@ exec(CPU) ->
 
 exec(CPU,nop) ->
    log:info(?TAG,"NOP"),     
-   trace:trace(CPU#cpu.id,"NOP"),     
+   trace:trace(f18A,CPU),     
    PC  = CPU#cpu.pc + 1,
    CPU#cpu{pc=PC};
 
 exec(CPU,{write,Word}) ->
    log:info(?TAG,"WRITE"),
-   trace:trace(CPU#cpu.id,"WRITE"),     
-   Ch  = CPU#cpu.channel,
-   channel:write(Ch,Word),
-   PC  = CPU#cpu.pc + 1,
-   CPU#cpu{pc=PC};
+   trace:trace(f18A,CPU),
+   M = self(),     
+   spawn(fun() ->
+            channel:write(CPU#cpu.channel,Word),
+            M ! written
+         end,[]),
+
+   case exec_wait(written) of
+      ok ->
+         log:debug(?TAG,"EXEC_WAIT/OK"),
+         PC  = CPU#cpu.pc + 1,
+         CPU#cpu{pc=PC};
+
+      stop ->
+         log:debug(?TAG,"EXEC_WAIT/STOP"),
+         stop;
+
+      {stop,PID} ->
+         log:debug(?TAG,"EXEC_WAIT/STOP:PID"),
+         {stop,PID}
+      end;    
    
 exec(CPU,OpCode) ->
    log:warn(?TAG,"UNIMPLEMENTED OPCODE: ~p~n",[OpCode]),
    PC  = CPU#cpu.pc + 1,
    CPU#cpu{pc=PC}.
+
+exec_wait(Event) ->
+   receive
+      Event ->
+         ok;
+
+      stop ->
+         stop;
+
+      {stop,PID} ->
+         {stop,PID};
+
+      _else ->
+         exec_wait(Event)
+      end.
 
 % EUNIT TESTS
 
@@ -166,12 +200,14 @@ write_testx() ->
    ?assertEqual({ok,{ok,678}},wait(undefined,undefined)).
 
 step_test() ->
+   trace:start(),
    Ch   = channel:create(1),
    Prog = [ {write,123} ],
    F18A = create(1,Ch,Prog),
    reset(F18A),
    step (F18A),
-   stop (F18A,wait).
+   stop (F18A,wait),
+   trace:stop().
 
 wait({a,X},{b,Y}) ->
    {X,Y};
