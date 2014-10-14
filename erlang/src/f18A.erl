@@ -207,6 +207,7 @@ step_test() ->
    reset(F18A),
    step (F18A),
    stop (F18A,wait),
+   ?debugFmt("--- TRACE: ~p",[trace:snapshot()]),
    trace:stop().
 
 wait({a,X},{b,Y}) ->

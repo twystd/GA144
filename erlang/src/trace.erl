@@ -3,7 +3,7 @@
 % EXPORTS
 %
 -export([start/0,stop/0]).
--export([trace/2]).
+-export([trace/2,snapshot/0]).
 -export([run/0]).
 
 % INCLUDES
@@ -44,6 +44,16 @@ trace(true,Event,Data) ->
 trace(_,_,_) ->
    ignored.
 
+snapshot() ->
+   snapshot(is_registered()).
+
+snapshot(true) ->
+   trace ! {snapshot,self()},
+   wait(snapshot);
+
+snapshot(_) ->
+   [].
+
 % INTERNAL
 
 is_registered() ->
@@ -54,10 +64,19 @@ is_registered() ->
                      end
                end,false,registered()).  
 
-run() ->
-   loop().
+wait(Event) ->
+   receive 
+      {snapshot,Snapshot} ->
+         Snapshot;
 
-loop() ->
+      _any ->
+         wait(Event)
+   end.
+
+run() ->
+   loop([]).
+
+loop(Trace) ->
    receive
       stop ->
          unregister(trace),
@@ -65,8 +84,12 @@ loop() ->
 
       {trace,Event} ->
          ?debugFmt("TRACE  ~p",[Event]),
-         loop();
+         loop([Event | Trace]);
+
+      {snapshot,PID} ->
+         PID ! {snapshot,Trace},
+         loop(Trace);
 
        _any ->
-         loop()
+         loop(Trace)
    end.
