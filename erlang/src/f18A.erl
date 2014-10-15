@@ -99,7 +99,7 @@ loop(CPU) ->
          loop(exec(CPU));
 
       {step,PID} ->
-         log:info(?TAG,"STEP"),
+         log:info(?TAG,"STEP/W"),
          PID ! stepped,
          loop(exec(CPU));
 
@@ -109,7 +109,7 @@ loop(CPU) ->
          stopped;
 
       {stop,PID} ->
-         log:info(?TAG,"STOP"),
+         log:info(?TAG,"STOP/W"),
          trace:trace(f18A,{ CPU#cpu.id,stop}),     
          PID ! stopped,
          stopped;
@@ -119,7 +119,7 @@ loop(CPU) ->
          loop(CPU);
 
       _any ->
-         ?debugFmt("F18A: ~p",[_any]),
+         ?debugFmt("??? F18A: ~p",[_any]),
          loop(CPU)
       end.
 
@@ -134,72 +134,72 @@ exec(CPU,nop) ->
    PC  = CPU#cpu.pc + 1,
    CPU#cpu{pc=PC};
 
-exec(CPU,{write,Word}) ->
+exec(CPU,{write,_Word}) ->
    log:info(?TAG,"WRITE"),
-   trace:trace(f18A,CPU),
-   M = self(),     
-   spawn(fun() ->
-            channel:write(CPU#cpu.channel,Word),
-            M ! written
-         end,[]),
-
-   case exec_wait(written) of
-      ok ->
-         log:debug(?TAG,"EXEC_WAIT/OK"),
-         PC  = CPU#cpu.pc + 1,
-         CPU#cpu{pc=PC};
-
-      stop ->
-         log:debug(?TAG,"EXEC_WAIT/STOP"),
-         stop;
-
-      {stop,PID} ->
-         log:debug(?TAG,"EXEC_WAIT/STOP:PID"),
-         {stop,PID}
-      end;    
+%    trace:trace(f18A,CPU),
+% %   M = self(),     
+%    PID = spawn(f18A,write,[CPU,Word]),
+% %   case exec_wait(written) of
+% %      ok ->
+% %         log:debug(?TAG,"EXEC_WAIT/OK"),
+% %         PC  = CPU#cpu.pc + 1,
+% %         CPU#cpu{pc=PC};
+% %
+% %      stop ->
+% %         log:debug(?TAG,"EXEC_WAIT/STOP"),
+% %         stop;
+% %
+% %      {stop,PID} ->
+% %         log:debug(?TAG,"EXEC_WAIT/STOP:PID"),
+% %         {stop,PID}
+% %      end;
+   CPU;    
    
 exec(CPU,OpCode) ->
    log:warn(?TAG,"UNIMPLEMENTED OPCODE: ~p~n",[OpCode]),
    PC  = CPU#cpu.pc + 1,
    CPU#cpu{pc=PC}.
 
-exec_wait(Event) ->
-   receive
-      Event ->
-         ok;
+%exec_wait(Event) ->
+%   receive
+%      Event ->
+%         ok;
+%
+%      stop ->
+%         stop;
+%
+%      {stop,PID} ->
+%         {stop,PID};
+%
+%      _else ->
+%         exec_wait(Event)
+%      end.
 
-      stop ->
-         stop;
-
-      {stop,PID} ->
-         {stop,PID};
-
-      _else ->
-         exec_wait(Event)
-      end.
+% write(CPU,Word) ->
+%    channel:write(CPU#cpu.channel,Word).
 
 % EUNIT TESTS
 
-write_testx() ->
-   M    = self(),
-   Ch   = channel:create(1),
-   Prog = [ {write,678} ],
-   F18A = create(1,Ch,Prog),
+% write_testx() ->
+%    M    = self(),
+%    Ch   = channel:create(1),
+%    Prog = [ {write,678} ],
+%    F18A = create(1,Ch,Prog),
+% 
+%    spawn(fun() -> 
+%             reset(F18A),
+%             step (F18A),
+%             stop (F18A),
+%             M ! { a,ok } 
+%          end),
+% 
+%    spawn(fun() -> 
+%             M ! { b,channel:read (Ch) } 
+%          end),
+% 
+%    ?assertEqual({ok,{ok,678}},wait(undefined,undefined)).
 
-   spawn(fun() -> 
-            reset(F18A),
-            step (F18A),
-            stop (F18A),
-            M ! { a,ok } 
-         end),
-
-   spawn(fun() -> 
-            M ! { b,channel:read (Ch) } 
-         end),
-
-   ?assertEqual({ok,{ok,678}},wait(undefined,undefined)).
-
-step_test() ->
+write_step_test() ->
    trace:start(),
    Ch   = channel:create(1),
    Prog = [ {write,123} ],
@@ -207,21 +207,23 @@ step_test() ->
    reset(F18A),
    step (F18A),
    stop (F18A,wait),
-   ?debugFmt("--- TRACE: ~p",[trace:snapshot()]),
-   trace:stop().
+   channel:close (Ch),
+   ?assertEqual(ok,verify:compare([{f18A,{1,reset}},{f18A,{1,stop}}],
+                                  trace:stop())),
+   ok.
 
-wait({a,X},{b,Y}) ->
-   {X,Y};
-
-wait(X,Y) ->
-   receive 
-      { a,A } ->
-         wait({a,A},Y);
-
-      { b,B } ->
-         wait(X,{b,B});
-
-      _any ->
-         wait(X,Y)
-   end.
+% wait({a,X},{b,Y}) ->
+%    {X,Y};
+% 
+% wait(X,Y) ->
+%    receive 
+%       { a,A } ->
+%          wait({a,A},Y);
+% 
+%       { b,B } ->
+%          wait(X,{b,B});
+% 
+%       _any ->
+%          wait(X,Y)
+%    end.
 

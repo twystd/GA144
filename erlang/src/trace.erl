@@ -29,10 +29,11 @@ stop() ->
    stop(is_registered()).
 
 stop(true) ->
-   trace ! stop;
+   trace ! {stop,self()},
+   wait(stop);
 
 stop(_) ->
-   ok.
+   [].
 
 trace(Event,Data) ->
    trace(is_registered(),Event,Data).
@@ -66,7 +67,7 @@ is_registered() ->
 
 wait(Event) ->
    receive 
-      {snapshot,Snapshot} ->
+      {Event,Snapshot} ->
          Snapshot;
 
       _any ->
@@ -78,16 +79,16 @@ run() ->
 
 loop(Trace) ->
    receive
-      stop ->
+      {stop,PID} ->
          unregister(trace),
+         PID ! {stop,lists:reverse(Trace)},
          ok;
 
       {trace,Event} ->
-         ?debugFmt("TRACE  ~p",[Event]),
          loop([Event | Trace]);
 
       {snapshot,PID} ->
-         PID ! {snapshot,Trace},
+         PID ! {snapshot,lists:reverse(Trace)},
          loop(Trace);
 
        _any ->
