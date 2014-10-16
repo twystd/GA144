@@ -23,9 +23,9 @@ compare_impl([H|Expected],[H|Trace]) ->
    compare_impl(Expected,Trace);
 
 compare_impl([X|_],[Y|_]) ->
-   ?debugFmt("VERIFY/??  EXPECTED:~p  ACTUAL:~p",[X,Y]),
-   failed;
+   io:format(user,"VERIFY/??  EXPECTED:~p  ACTUAL:~p",[X,Y]),
+   { failed,{expected,X},{actual,Y}};
 
 compare_impl(X,Y) ->
-   ?debugFmt("VERIFY/??  EXPECTED:~p  ACTUAL:~p",[X,Y]),
-   failed.
+   io:format(user,"VERIFY/??  EXPECTED:~p  ACTUAL:~p",[X,Y]),
+   { failed,{expected,X},{actual,Y}}.

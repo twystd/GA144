@@ -3,9 +3,10 @@
 % EXPORTS
 
 -export([create/3]).
--export([reset/1,go/1]).
--export([step/1,step/2]).
+-export([reset/1,reset/2]).
+-export([go/1]).
 -export([stop/1,stop/2]).
+-export([step/1,step/2]).
 -export([run/1]).
 
 % INCLUDES
@@ -30,6 +31,8 @@
 
 % API
 
+%% @doc Initialises an F18A node and starts the internal instruction 
+%%      execution process.
 create(ID,Channel,Program) ->
    CPU = #cpu{ id = ID,
                channel = Channel,
@@ -43,43 +46,58 @@ create(ID,Channel,Program) ->
           pid = PID
         }.
 
-reset(Node) ->
-   Node#node.pid ! reset,
+%% @doc Issues a RESET command to the F18A node and returns immediately.
+%%
+reset(F18A) ->
+   F18A#node.pid ! reset.
+
+reset(F18A,wait) ->
+   F18A#node.pid ! {reset,self() },
+   reset_wait().
+
+reset_wait() ->
+   receive
+      reset -> ok;
+      _     -> reset_wait()
+   end.
+  
+ 
+%% @doc Issues a STEP command to the F18A node and returns immediately.
+%%
+step(F18A) ->
+   F18A#node.pid ! step.
+
+step(F18A,wait) ->
+   F18A#node.pid ! { step,self() },
+   step_wait().
+
+step_wait() ->
+   receive
+      step -> ok;
+      _    -> step_wait()
+   end.
+
+
+%% @doc Issues a GO command to the F18A node and returns immediately.
+%%
+go(F18A) ->
+   F18A#node.pid ! go,
    ok.
 
-step(Node) ->
-   step(Node,nowait).
 
-step(Node,wait) ->
-   Node#node.pid ! { step,self() },
-   wait(stepped);
+%% @doc Issues a STOP command to the F18A node and returns immediately.
+%%
+stop(F18A) ->
+   F18A#node.pid ! stop.
 
-step(Node,_) ->
-   Node#node.pid ! step,
-   ok.
+stop(F18A,wait) ->
+   F18A#node.pid ! { stop,self() },
+   stop_wait().
 
-go(Node) ->
-   Node#node.pid ! go,
-   ok.
-
-stop(Node) ->
-  stop(Node,nowait).
-
-stop(Node,wait) ->
-   Node#node.pid ! { stop,self() },
-   wait(stopped);
-
-stop(Node,_) ->
-   Node#node.pid ! stop,
-   ok.
-
-wait(Event) ->
-   receive 
-      stopped ->
-          ok;
-
-      _ ->
-         wait(Event)
+stop_wait() ->
+   receive
+      stopped -> ok;
+      _       -> stop_wait()
    end.
 
 % INTERNAL
@@ -94,13 +112,18 @@ loop(CPU) ->
          trace:trace(f18A,{ CPU#cpu.id,reset}),     
          loop(CPU#cpu{pc=1});
 
+      {reset,PID} ->
+         log:info(?TAG,"RESET/W"),
+         trace:trace(f18A,{ CPU#cpu.id,reset}),     
+         PID ! reset,
+         loop(CPU#cpu{pc=1});
+
       step ->
-         log:info(?TAG,"STEP"),
-         loop(exec(CPU));
+         step_impl(CPU);
 
       {step,PID} ->
          log:info(?TAG,"STEP/W"),
-         PID ! stepped,
+         PID ! step,
          loop(exec(CPU));
 
       stop ->
@@ -123,6 +146,23 @@ loop(CPU) ->
          loop(CPU)
       end.
 
+step_impl(CPU) ->
+   log:info(?TAG,"STEP"),
+   case exec(CPU) of
+      {ok,CPUX} ->
+         loop(CPUX);
+
+      {stop,PID} ->
+         log:info(?TAG,"STOP/W"),
+         trace:trace(f18A,{ CPU#cpu.id,stop}),     
+         PID ! stopped,
+         stopped;
+
+      _any ->   
+         log:error(?TAG,"STEP/? : ~p",[_any]),
+         error
+   end.
+
 exec(CPU) ->
    PC     = CPU#cpu.pc,     
    OpCode = lists:nth(PC,CPU#cpu.program),
@@ -130,54 +170,45 @@ exec(CPU) ->
 
 exec(CPU,nop) ->
    log:info(?TAG,"NOP"),     
-   trace:trace(f18A,CPU),     
+   trace:trace(f18A,{ CPU#cpu.id,nop }),     
    PC  = CPU#cpu.pc + 1,
-   CPU#cpu{pc=PC};
+   {ok,CPU#cpu{pc=PC}};
 
-exec(CPU,{write,_Word}) ->
-   log:info(?TAG,"WRITE"),
-%    trace:trace(f18A,CPU),
-% %   M = self(),     
-%    PID = spawn(f18A,write,[CPU,Word]),
-% %   case exec_wait(written) of
-% %      ok ->
-% %         log:debug(?TAG,"EXEC_WAIT/OK"),
-% %         PC  = CPU#cpu.pc + 1,
-% %         CPU#cpu{pc=PC};
-% %
-% %      stop ->
-% %         log:debug(?TAG,"EXEC_WAIT/STOP"),
-% %         stop;
-% %
-% %      {stop,PID} ->
-% %         log:debug(?TAG,"EXEC_WAIT/STOP:PID"),
-% %         {stop,PID}
-% %      end;
-   CPU;    
+exec(CPU,{write,Word}) ->
+   write(CPU,Word);
    
 exec(CPU,OpCode) ->
    log:warn(?TAG,"UNIMPLEMENTED OPCODE: ~p~n",[OpCode]),
    PC  = CPU#cpu.pc + 1,
-   CPU#cpu{pc=PC}.
+   {ok,CPU#cpu{pc=PC}}.
 
-%exec_wait(Event) ->
-%   receive
-%      Event ->
-%         ok;
-%
-%      stop ->
-%         stop;
-%
-%      {stop,PID} ->
-%         {stop,PID};
-%
-%      _else ->
-%         exec_wait(Event)
-%      end.
+% write
 
-% write(CPU,Word) ->
-%    channel:write(CPU#cpu.channel,Word).
+write(CPU,Word) ->
+   log:info(?TAG,"WRITE"),
+   trace:trace(f18A,{ CPU#cpu.id,write,Word }),     
+   M  = self(),
+   Ch = CPU#cpu.channel,
+   spawn(fun() -> channel:write(Ch,Word),M ! written end),
+   write_wait(CPU).    
+   
+write_wait(CPU) ->
+   receive
+      written -> 
+         PC = CPU#cpu.pc + 1,
+         {ok,CPU#cpu{pc = PC }};
 
+      step ->
+         write_wait(CPU);
+
+      {stop,PID} ->
+         {stop,PID};
+
+      _any ->
+         log:warn(?TAG,"WRITE-WAIT/? ~p",[_any]),
+         {error,_any}
+   end.
+   
 % EUNIT TESTS
 
 % write_testx() ->
@@ -200,15 +231,15 @@ exec(CPU,OpCode) ->
 %    ?assertEqual({ok,{ok,678}},wait(undefined,undefined)).
 
 write_step_test() ->
+   trace:stop (),
    trace:start(),
    Ch   = channel:create(1),
-   Prog = [ {write,123} ],
+   Prog = [ nop,{write,123},nop,nop,nop ],
    F18A = create(1,Ch,Prog),
    reset(F18A),
-   step (F18A),
+   step (F18A), step (F18A), step (F18A), step (F18A), step (F18A),
    stop (F18A,wait),
-   channel:close (Ch),
-   ?assertEqual(ok,verify:compare([{f18A,{1,reset}},{f18A,{1,stop}}],
+   ?assertEqual(ok,verify:compare([{f18A,{1,reset}},{f18A,{1,nop}},{f18A,{1,write,123}},{f18A,{1,stop}}],
                                   trace:stop())),
    ok.
 

@@ -5,7 +5,7 @@
 -export([debug/2]).
 -export([info/2]).
 -export([warn/2,warn/3]).
--export([error/2]).
+-export([error/2,error/3]).
 
 % INCLUDES
 
@@ -28,3 +28,7 @@ warn(Tag,Fmt,Values) ->
 
 error(Tag,Msg) ->
    ?debugFmt("ERROR: ~s  ~s",[Tag,Msg]).
+
+error(Tag,Fmt,Values) ->
+   Msg = io_lib:format(Fmt,Values),     
+   ?debugFmt("ERROR:  ~s  ~s",[Tag,Msg]).
