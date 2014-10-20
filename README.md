@@ -28,7 +28,7 @@ The ColorForth IDE is something only a mother could love (she *would* have to be
 forgiving and loving mother though). And the official manual for the IDE is ummm, cryptic in the extreme (?). 
 There are several fairly helpful tutorials out there, of which the [HCC!Forth][hccforth] seemed to be the
 one that gets you up and running with the least loss of hair. Just in case it ever goes missing, there is
-a copy of the webpage in the archive folder (hopefully nobody at HCC!Forth minds too much).
+a copy of the web page in the archive folder - hopefully nobody at HCC!Forth minds too much.
 
 References
 ----------

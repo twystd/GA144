@@ -93,6 +93,14 @@ files() ->
           Info#file_info.mtime
        end,
 
-   {ok,Files} = file:list_dir("./src"),
-   [ { X,G(X) } || X <- lists:filter(F,Files) ].
+   H = fun(X) ->
+          {ok,Info} = file:read_file_info(filename:join("eunit",X)),
+          Info#file_info.mtime
+       end,
+
+   {ok,Src  } = file:list_dir("./src"),
+   {ok,Tests} = file:list_dir("./eunit"),
+
+   lists:append([ { X,G(X) } || X <- lists:filter(F,Src)   ],
+                [ { X,H(X) } || X <- lists:filter(F,Tests) ]).
 

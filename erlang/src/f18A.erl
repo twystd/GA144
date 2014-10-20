@@ -174,6 +174,9 @@ exec(CPU,nop) ->
    PC  = CPU#cpu.pc + 1,
    {ok,CPU#cpu{pc=PC}};
 
+exec(CPU,read) ->
+   read(CPU);
+
 exec(CPU,{write,Word}) ->
    write(CPU,Word);
    
@@ -182,19 +185,49 @@ exec(CPU,OpCode) ->
    PC  = CPU#cpu.pc + 1,
    {ok,CPU#cpu{pc=PC}}.
 
-% write
+% READ
+
+read(CPU) ->
+   log:info(?TAG,"READ"),
+   M  = self(),
+   Ch = CPU#cpu.channel,
+   spawn(fun() -> X = channel:read(Ch),M ! {read,X} end),
+   read_wait(CPU).    
+
+read_wait(CPU) ->
+   receive
+      {read,{ok,Word}} -> 
+         ?debugMsg("READ/OK"),
+         trace:trace(f18A,{ CPU#cpu.id,read,Word }),     
+         PC = CPU#cpu.pc + 1,
+         {ok,CPU#cpu{pc = PC }};
+
+      step ->
+         log:info(?TAG,"READ/STEP"),
+         read_wait(CPU);
+
+%      {stop,PID} ->
+%         {stop,PID};
+
+      _any ->
+         log:warn(?TAG,"READ-WAIT/? ~p",[_any]),
+         {error,_any}
+   end.
+   
+
+% WRITE
 
 write(CPU,Word) ->
    log:info(?TAG,"WRITE"),
    trace:trace(f18A,{ CPU#cpu.id,write,Word }),     
    M  = self(),
    Ch = CPU#cpu.channel,
-   spawn(fun() -> channel:write(Ch,Word),M ! written end),
+   spawn(fun() -> channel:write(Ch,Word),M ! write_ok end),
    write_wait(CPU).    
    
 write_wait(CPU) ->
    receive
-      written -> 
+      write_ok -> 
          PC = CPU#cpu.pc + 1,
          {ok,CPU#cpu{pc = PC }};
 
@@ -209,52 +242,3 @@ write_wait(CPU) ->
          {error,_any}
    end.
    
-% EUNIT TESTS
-
-% write_testx() ->
-%    M    = self(),
-%    Ch   = channel:create(1),
-%    Prog = [ {write,678} ],
-%    F18A = create(1,Ch,Prog),
-% 
-%    spawn(fun() -> 
-%             reset(F18A),
-%             step (F18A),
-%             stop (F18A),
-%             M ! { a,ok } 
-%          end),
-% 
-%    spawn(fun() -> 
-%             M ! { b,channel:read (Ch) } 
-%          end),
-% 
-%    ?assertEqual({ok,{ok,678}},wait(undefined,undefined)).
-
-write_step_test() ->
-   trace:stop (),
-   trace:start(),
-   Ch   = channel:create(1),
-   Prog = [ nop,{write,123},nop,nop,nop ],
-   F18A = create(1,Ch,Prog),
-   reset(F18A),
-   step (F18A), step (F18A), step (F18A), step (F18A), step (F18A),
-   stop (F18A,wait),
-   ?assertEqual(ok,verify:compare([{f18A,{1,reset}},{f18A,{1,nop}},{f18A,{1,write,123}},{f18A,{1,stop}}],
-                                  trace:stop())),
-   ok.
-
-% wait({a,X},{b,Y}) ->
-%    {X,Y};
-% 
-% wait(X,Y) ->
-%    receive 
-%       { a,A } ->
-%          wait({a,A},Y);
-% 
-%       { b,B } ->
-%          wait(X,{b,B});
-% 
-%       _any ->
-%          wait(X,Y)
-%    end.
-
