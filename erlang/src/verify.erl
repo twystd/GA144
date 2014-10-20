@@ -28,20 +28,34 @@ compare_impl([],[],print) ->
 compare_impl([],[],_) ->
    ok;
 
+compare_impl([X|_],[],print) ->
+   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p",[X,none]),
+   { failed,{expected,X},{actual,none}};
+
+compare_impl([X|_],[],_) ->
+   { failed,{expected,X},{actual,none}};
+
+compare_impl([],[Y|_],print) ->
+   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p",[none,Y]),
+   { failed,{expected,none},{actual,Y}};
+
+compare_impl([],[Y|_],_) ->
+   { failed,{expected,none},{actual,Y}};
+
 compare_impl([H|Expected],[H|Trace],Print) ->
    compare_impl(Expected,Trace,Print);
 
 compare_impl([X|_],[Y|_],print) ->
-   io:format(user,"VERIFY/??  EXPECTED:~p  ACTUAL:~p",[X,Y]),
+   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p",[X,Y]),
    { failed,{expected,X},{actual,Y}};
 
 compare_impl([X|_],[Y|_],_) ->
    { failed,{expected,X},{actual,Y}};
 
 compare_impl(X,Y,print) ->
-   io:format(user,"VERIFY/??  EXPECTED:~p  ACTUAL:~p",[X,Y]),
+   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p",[X,Y]),
    { failed,{expected,X},{actual,Y}};
 
 compare_impl(X,Y,_) ->
-   io:format(user,"VERIFY/??  EXPECTED:~p  ACTUAL:~p",[X,Y]),
+   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p",[X,Y]),
    { failed,{expected,X},{actual,Y}}.

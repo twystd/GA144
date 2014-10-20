@@ -29,7 +29,6 @@ stop() ->
    stop(is_registered()).
 
 stop(true) ->
-   io:format(user,"######## ~p~n",[stop]),
    trace ! {stop,self()},
    wait(stop);
 
@@ -37,11 +36,9 @@ stop(_) ->
    [].
 
 trace(Event,Data) ->
-   io:format(user,">>>>>>>> ~p ~p~n",[Event,Data]),
    trace(is_registered(),Event,Data).
 
 trace(true,Event,Data) ->
-   io:format(user,"######## ~p ~p~n",[Event,Data]),
    trace ! {trace,{Event,Data}},
    ok;
 

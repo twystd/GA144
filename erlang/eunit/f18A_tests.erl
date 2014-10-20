@@ -4,6 +4,11 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
+% DEFINES
+
+-define(READ,      [{f18A,{1,reset}},{f18A,{1,read}},{f18A,{1,read,{ok,678}}},{f18A,{1,stop}}]).
+-define(WRITE_STEP,[{f18A,{1,reset}},{f18A,{1,nop}},{f18A,{1,write,123}},{f18A,{1,stop}}]).
+
 % EUNIT TESTS
 
 read_test() ->
@@ -16,7 +21,8 @@ read_test() ->
 
    spawn(fun() -> 
             f18A:reset(F18A),
-            f18A:step (F18A),
+            f18A:step (F18A,wait),
+            f18A:stop (F18A,wait),
             M ! { a,ok}
          end),
 
@@ -25,18 +31,10 @@ read_test() ->
             M ! { b,ok}
          end),
 
-   wait     (undefined,undefined),
-   f18A:stop(F18A),
-   
-   ?debugFmt("**** ~p~n",[trace:stop()]),
+   ?assertEqual({ok,ok},wait(undefined,undefined)),
+   ?assertEqual(ok,verify:compare(?READ,trace:stop(),noprint)).
 
-%%   ?assertEqual(ok,verify:compare([{f18A,{1,reset}},{f18A,{1,read,678}},{f18A,{1,stop}}],
-%%                                  trace:stop(),
-%%                                  print)).
-   ok.
-
-
-write_xtest() ->
+write_test() ->
    M    = self(),
    Ch   = channel:create(1),
    Prog = [ {write,678} ],
@@ -44,8 +42,8 @@ write_xtest() ->
  
    spawn(fun() -> 
             f18A:reset(F18A),
-            f18A:step (F18A),
-            f18A:stop (F18A),
+            f18A:step (F18A,wait),
+            f18A:stop (F18A,wait),
             M ! { a,ok } 
          end),
 
@@ -55,7 +53,7 @@ write_xtest() ->
 
    ?assertEqual({ok,{ok,678}},wait(undefined,undefined)).
 
-write_step_xtest() ->
+write_step_test() ->
    trace:stop (),
    trace:start(),
    Ch   = channel:create(1),
@@ -64,8 +62,7 @@ write_step_xtest() ->
    f18A:reset(F18A),
    f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A),
    f18A:stop (F18A,wait),
-   ?assertEqual(ok,verify:compare([{f18A,{1,reset}},{f18A,{1,nop}},{f18A,{1,write,123}},{f18A,{1,stop}}],
-                                  trace:stop())).
+   ?assertEqual(ok,verify:compare(?WRITE_STEP,trace:stop(),noprint)).
 
 wait({a,X},{b,Y}) ->
    {X,Y};

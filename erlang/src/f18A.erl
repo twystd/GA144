@@ -103,28 +103,36 @@ stop_wait() ->
 % INTERNAL
 
 run(CPU) ->
-   loop(CPU).
+   loop({run,CPU}).
 
-loop(CPU) ->
+loop({stop,_CPU}) ->
+   stopped;
+
+loop({error,_CPU}) ->
+   stopped;
+
+loop({run,CPU}) ->
    receive
       reset ->
          log:info(?TAG,"RESET"),
          trace:trace(f18A,{ CPU#cpu.id,reset}),     
-         loop(CPU#cpu{pc=1});
+         loop({run,CPU#cpu{pc=1}});
 
       {reset,PID} ->
          log:info(?TAG,"RESET/W"),
          trace:trace(f18A,{ CPU#cpu.id,reset}),     
          PID ! reset,
-         loop(CPU#cpu{pc=1});
+         loop({run,CPU#cpu{pc=1}});
 
       step ->
-         step_impl(CPU);
+         log:info(?TAG,"STEP"),
+         loop(step_impl(CPU));
 
       {step,PID} ->
          log:info(?TAG,"STEP/W"),
+         Next = step_impl(CPU),
          PID ! step,
-         loop(exec(CPU));
+         loop(Next);
 
       stop ->
          log:info(?TAG,"STOP"),
@@ -139,28 +147,26 @@ loop(CPU) ->
 
       go ->
          log:info(?TAG,"GO"),
-         loop(CPU);
+         loop({run,CPU});
 
       _any ->
          ?debugFmt("??? F18A: ~p",[_any]),
-         loop(CPU)
+         loop({run,CPU})
       end.
 
 step_impl(CPU) ->
-   log:info(?TAG,"STEP"),
    case exec(CPU) of
       {ok,CPUX} ->
-         loop(CPUX);
+         {run,CPUX};
 
       {stop,PID} ->
-         log:info(?TAG,"STOP/W"),
          trace:trace(f18A,{ CPU#cpu.id,stop}),     
          PID ! stopped,
-         stopped;
+         {stop,CPU};
 
       _any ->   
          log:error(?TAG,"STEP/? : ~p",[_any]),
-         error
+         {error,CPU}
    end.
 
 exec(CPU) ->
@@ -189,6 +195,7 @@ exec(CPU,OpCode) ->
 
 read(CPU) ->
    log:info(?TAG,"READ"),
+   trace:trace(f18A,{ CPU#cpu.id,read}),     
    M  = self(),
    Ch = CPU#cpu.channel,
    spawn(fun() -> X = channel:read(Ch),M ! {read,X} end),
@@ -197,20 +204,18 @@ read(CPU) ->
 read_wait(CPU) ->
    receive
       {read,{ok,Word}} -> 
-         ?debugMsg("READ/OK"),
-         trace:trace(f18A,{ CPU#cpu.id,read,Word }),     
+         trace:trace(f18A,{ CPU#cpu.id,read,{ok,Word}}),     
          PC = CPU#cpu.pc + 1,
          {ok,CPU#cpu{pc = PC }};
 
       step ->
-         log:info(?TAG,"READ/STEP"),
          read_wait(CPU);
 
-%      {stop,PID} ->
-%         {stop,PID};
+      {stop,PID} ->
+         {stop,PID};
 
       _any ->
-         log:warn(?TAG,"READ-WAIT/? ~p",[_any]),
+         log:warn(?TAG,"READ/? ~p",[_any]),
          {error,_any}
    end.
    
@@ -228,6 +233,7 @@ write(CPU,Word) ->
 write_wait(CPU) ->
    receive
       write_ok -> 
+         trace:trace(f18A,{ CPU#cpu.id,write,ok }),     
          PC = CPU#cpu.pc + 1,
          {ok,CPU#cpu{pc = PC }};
 
@@ -238,7 +244,7 @@ write_wait(CPU) ->
          {stop,PID};
 
       _any ->
-         log:warn(?TAG,"WRITE-WAIT/? ~p",[_any]),
+         log:warn(?TAG,"WRITE/? ~p",[_any]),
          {error,_any}
    end.
    
