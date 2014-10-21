@@ -12,7 +12,9 @@
 -define(WRITE,     [{f18A,{1,reset}},{f18A,{1,write,678}},{f18A,{1,write,ok}},     {f18A,{1,stop}}]).
 -define(READ_STEP, [{f18A,{1,reset}},{f18A,{1,nop}},{f18A,{1,read}},     {f18A,{1,stop}}]).
 -define(WRITE_STEP,[{f18A,{1,reset}},{f18A,{1,nop}},{f18A,{1,write,123}},{f18A,{1,stop}}]).
--define(READWRITE, [{f18A,{1,reset}},{f18A,{1,read}},     {f18A,{1,read,{ok,678}}},{f18A,{1,stop}}]).
+
+-define(READWRITE1,[{f18A,{1,reset}},{f18A,{1,read}},{f18A,{1,read,{ok,135}}},{f18A,{1,nop}},      {f18A,{1,nop}},     {f18A,{1,nop}},{f18A,{1,stop}}]).
+-define(READWRITE2,[{f18A,{2,reset}},{f18A,{2,nop}}, {f18A,{2,nop}},          {f18A,{2,write,135}},{f18A,{2,write,ok}},{f18A,{2,nop}},{f18A,{2,stop}}]).
 
 % EUNIT TESTS
 
@@ -92,21 +94,39 @@ readwrite_test() ->
    trace:stop (),
    trace:start(),
 
-   Ch   = channel:create(1),
-   Prog1 = [ read,nop,nop,        nop ],
-   Prog2 = [ nop, nop,{write,135},nop ],
-   F18A1 = f18A:create(1,Ch,Prog1),
-   F18A2 = f18A:create(2,Ch,Prog2),
+   M  = self(),
+   Ch = channel:create(1),
 
-   f18A:reset(F18A1), f18A:reset(F18A2),
-   f18A:step (F18A1), f18A:step (F18A2),
-   f18A:step (F18A1), f18A:step (F18A2),
-   f18A:step (F18A1), f18A:step (F18A2),
-   f18A:step (F18A1), f18A:step (F18A2),
-   f18A:stop (F18A1,wait), f18A:stop (F18A2,wait),
+   spawn(fun() ->
+      Prog = [ read,nop,nop,nop],
+      F18A = f18A:create(1,Ch,Prog),
+      f18A:reset(F18A),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:stop (F18A,wait),
+      M ! { a,ok } 
+      end),
+
+   spawn(fun() ->
+      Prog = [ nop,nop,{write,135},nop],
+      F18A = f18A:create(2,Ch,Prog),
+      f18A:reset(F18A),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:stop (F18A,wait),
+      M ! { b,ok } 
+      end),
+      
+   ?assertEqual({ok,ok},wait(undefined,undefined)),
 
    Trace = trace:stop(),
-   ?assertEqual(ok,verify:compare(?READWRITE,Trace,print)).
+
+   ?assertEqual(ok,verify:compare(?READWRITE1,trace:extract(Trace,1),noprint)),
+   ?assertEqual(ok,verify:compare(?READWRITE2,trace:extract(Trace,2),noprint)).
 
 wait({a,X},{b,Y}) ->
    {X,Y};

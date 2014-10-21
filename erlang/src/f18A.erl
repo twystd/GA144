@@ -198,7 +198,10 @@ read(CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,read}),     
    M  = self(),
    Ch = CPU#cpu.channel,
-   spawn(fun() -> X = channel:read(Ch),M ! {read,X} end),
+   spawn(fun() -> 
+         X = channel:read(Ch),
+         M ! {read,X} 
+         end),
    read_wait(CPU).    
 
 read_wait(CPU) ->
@@ -227,7 +230,10 @@ write(CPU,Word) ->
    trace:trace(f18A,{ CPU#cpu.id,write,Word }),     
    M  = self(),
    Ch = CPU#cpu.channel,
-   spawn(fun() -> channel:write(Ch,Word),M ! write_ok end),
+   spawn(fun() -> 
+         channel:write(Ch,Word),
+         M ! write_ok
+         end),
    write_wait(CPU).    
    
 write_wait(CPU) ->

@@ -4,6 +4,7 @@
 %
 -export([start/0,stop/0]).
 -export([trace/2,snapshot/0]).
+-export([extract/2]).
 -export([run/0]).
 
 % INCLUDES
@@ -54,6 +55,22 @@ snapshot(true) ->
 
 snapshot(_) ->
    [].
+
+extract(Trace,F18A) ->
+   F = fun(X) ->
+         case X of
+            {f18A,{F18A,_}} ->
+               true;
+
+            {f18A,{F18A,_,_}} -> 
+               true;
+
+            _else -> 
+               false
+            end
+         end,
+
+   lists:filter(F,Trace).
 
 % INTERNAL
 
