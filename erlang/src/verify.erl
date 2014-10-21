@@ -14,8 +14,8 @@ compare(Expected,Trace) ->
    compare(Expected,Trace,noprint).
 
 compare(Expected,Trace,print) ->
-   ?debugFmt("EXPECTED: ~p",[Expected]),
-   ?debugFmt("TRACE:    ~p",[Trace]),
+   ?debugFmt("EXPECTED: ~p~n",[Expected]),
+   ?debugFmt("TRACE:    ~p~n",[Trace]),
    compare_impl(Expected,Trace,print);
 
 compare(Expected,Trace,_) ->
@@ -29,14 +29,14 @@ compare_impl([],[],_) ->
    ok;
 
 compare_impl([X|_],[],print) ->
-   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p",[X,none]),
+   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p~n",[X,none]),
    { failed,{expected,X},{actual,none}};
 
 compare_impl([X|_],[],_) ->
    { failed,{expected,X},{actual,none}};
 
 compare_impl([],[Y|_],print) ->
-   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p",[none,Y]),
+   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p~n",[none,Y]),
    { failed,{expected,none},{actual,Y}};
 
 compare_impl([],[Y|_],_) ->
@@ -46,16 +46,16 @@ compare_impl([H|Expected],[H|Trace],Print) ->
    compare_impl(Expected,Trace,Print);
 
 compare_impl([X|_],[Y|_],print) ->
-   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p",[X,Y]),
+   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p~n",[X,Y]),
    { failed,{expected,X},{actual,Y}};
 
 compare_impl([X|_],[Y|_],_) ->
    { failed,{expected,X},{actual,Y}};
 
 compare_impl(X,Y,print) ->
-   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p",[X,Y]),
+   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p~n",[X,Y]),
    { failed,{expected,X},{actual,Y}};
 
 compare_impl(X,Y,_) ->
-   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p",[X,Y]),
+   io:format(user,"VERIFY/?  EXPECTED:~p  ACTUAL:~p~n",[X,Y]),
    { failed,{expected,X},{actual,Y}}.
