@@ -8,77 +8,64 @@
 
 -define(TAG,"F18A").
 
--define(READ,      [{f18X,{n001,reset}},{f18X,{n001,read}},     {f18X,{n001,read,{ok,678}}},{f18X,{n001,stop}}]).
--define(WRITE,     [{f18X,{n001,reset}},{f18X,{n001,write,678}},{f18X,{n001,write,ok}},     {f18X,{n001,stop}}]).
-
+-define(READ,      [{f18A,{1,reset}},{f18A,{1,read}},     {f18A,{1,read,{ok,678}}},{f18A,{1,stop}}]).
+-define(WRITE,     [{f18A,{1,reset}},{f18A,{1,write,678}},{f18A,{1,write,ok}},     {f18A,{1,stop}}]).
 -define(READ_STEP, [{f18A,{1,reset}},{f18A,{1,nop}},{f18A,{1,read}},     {f18A,{1,stop}}]).
 -define(WRITE_STEP,[{f18A,{1,reset}},{f18A,{1,nop}},{f18A,{1,write,123}},{f18A,{1,stop}}]).
 -define(READWRITE1,[{f18A,{1,reset}},{f18A,{1,read}},{f18A,{1,read,{ok,135}}},{f18A,{1,nop}},      {f18A,{1,nop}},     {f18A,{1,nop}},{f18A,{1,stop}}]).
 -define(READWRITE2,[{f18A,{2,reset}},{f18A,{2,nop}}, {f18A,{2,nop}},          {f18A,{2,write,135}},{f18A,{2,write,ok}},{f18A,{2,nop}},{f18A,{2,stop}}]).
+
 -define(WRITEREAD1,[{f18A,{1,reset}},{f18A,{1,nop}},      {f18A,{1,nop}},     {f18A,{1,read}},{f18A,{1,read,{ok,135}}},{f18A,{1,nop}},{f18A,{1,stop}}]).
 -define(WRITEREAD2,[{f18A,{2,reset}},{f18A,{2,write,135}},{f18A,{2,write,ok}},{f18A,{2,nop}}, {f18A,{2,nop}},          {f18A,{2,nop}},{f18A,{2,stop}}]).
 
 % EUNIT TESTS
 
 read_test() ->
-   log:info   (?TAG,"-- READ TEST"),
-   util:unregister(n000),
-   util:unregister(n001),
+   log:info(?TAG,"-- READ TEST"),
    trace:stop (),
    trace:start(),
-
    M    = self(),
-   F18A = f18X:create(n001,n000,[ read ]),
+   Ch   = channel:create(1),
+   Prog = [ read ],
+   F18A = f18A:create(1,Ch,Prog),
 
-   spawn(fun() ->
-            f18X:reset(F18A),
-            f18X:step (F18A,wait),
-            f18X:stop (F18A,wait),
-            M ! { n001,stopped }
+   spawn(fun() -> 
+            f18A:reset(F18A),
+            f18A:step (F18A,wait),
+            f18A:stop (F18A,wait),
+            M ! { a,ok}
          end),
 
-   register(n000,spawn(fun() ->
-                          n001 ! { n000,write,678 },
-                          wait({n001,read,ok}),
-                          M    ! { n000,stopped }
-                       end)),
-   
-   wait({n000,stopped}),
-   wait({n001,stopped}),
+   spawn(fun() -> 
+            channel:write(Ch,678),
+            M ! { b,ok}
+         end),
 
+   ?assertEqual({ok,ok},wait(undefined,undefined)),
    ?assertEqual(ok,verify:compare(?READ,trace:stop(),noprint)).
 
 write_test() ->
-   log:info   (?TAG,"-- WRITE TEST"),
-   util:unregister(n000),
-   util:unregister(n001),
+   log:info(?TAG,"-- WRITE TEST"),
    trace:stop (),
    trace:start(),
-
    M    = self(),
-   F18A = f18X:create(n001,n000,[ {write,678} ]),
-   
-   register(n000,spawn(fun() ->
-                          wait({ n001,write,678 }),
-                          n001 ! { n000,read,ok },
-                          M ! { n000,stopped }
-                       end)),
-
-   spawn(fun() ->
-            f18X:reset(F18A),
-            f18X:step (F18A,wait),
-            f18X:stop (F18A,wait),
-            M ! { n001,stopped }
+   Ch   = channel:create(1),
+   Prog = [ {write,678} ],
+   F18A = f18A:create(1,Ch,Prog),
+ 
+   spawn(fun() -> 
+            f18A:reset(F18A),
+            f18A:step (F18A,wait),
+            f18A:stop (F18A,wait),
+            M ! { a,ok } 
          end),
-         
-   wait({n000,stopped}),
-   wait({n001,stopped}),
-   ?assertEqual(ok,verify:compare(?WRITE,trace:stop(),noprint)).
 
-wait(X) ->
-   receive 
-      X -> ok
-   end.
+   spawn(fun() -> 
+            M ! { b,channel:read (Ch) } 
+         end),
+
+   ?assertEqual({ok,{ok,678}},wait(undefined,undefined)),
+   ?assertEqual(ok,verify:compare(?WRITE,trace:stop(),noprint)).
 
 read_step_test() ->
    log:info(?TAG,"-- READ STEP TEST"),
