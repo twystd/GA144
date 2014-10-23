@@ -15,14 +15,11 @@
 
 % RECORDS
 
--record(node,{ id,
-               pid
-             }).
-
 -record(cpu,{ id,
               channel,
               program,
-              pc
+              pc,
+              fifo
             }).
 
 % DEFINES
@@ -34,25 +31,30 @@
 %% @doc Initialises an F18A node and starts the internal instruction 
 %%      execution process.
 create(ID,Channel,Program) ->
-   CPU = #cpu{ id = ID,
-               channel = Channel,
-               program = Program,
-               pc      = 1
-             },
+   start(ID,#cpu{ id      = ID,
+                  channel = Channel,
+                  program = Program,
+                  pc      = 1
+                }).
 
-   PID = spawn(f18A,run,[CPU]),
+start(ID,CPU) ->
+   start(ID,CPU,util:is_registered(ID)),
+   ID.
 
-   #node{ id  = ID,
-          pid = PID
-        }.
+start(ID,CPU,true) ->
+   unregister(ID),
+   register  (ID,spawn(f18A,run,[CPU]));
+
+start(ID,CPU,_) ->
+   register(ID,spawn(f18A,run,[CPU])).
 
 %% @doc Issues a RESET command to the F18A node and returns immediately.
 %%
 reset(F18A) ->
-   F18A#node.pid ! reset.
+   F18A ! reset.
 
 reset(F18A,wait) ->
-   F18A#node.pid ! {reset,self() },
+   F18A ! {reset,self() },
    reset_wait().
 
 reset_wait() ->
@@ -65,10 +67,10 @@ reset_wait() ->
 %% @doc Issues a STEP command to the F18A node and returns immediately.
 %%
 step(F18A) ->
-   F18A#node.pid ! step.
+   F18A ! step.
 
 step(F18A,wait) ->
-   F18A#node.pid ! { step,self() },
+   F18A ! { step,self() },
    step_wait().
 
 step_wait() ->
@@ -81,23 +83,30 @@ step_wait() ->
 %% @doc Issues a GO command to the F18A node and returns immediately.
 %%
 go(F18A) ->
-   F18A#node.pid ! go,
+   F18A ! go,
    ok.
 
 
 %% @doc Issues a STOP command to the F18A node and returns immediately.
 %%
 stop(F18A) ->
-   F18A#node.pid ! stop.
+   F18A ! stop,
+   ok.
 
 stop(F18A,wait) ->
-   F18A#node.pid ! { stop,self() },
+   F18A ! { stop,self() },
    stop_wait().
 
 stop_wait() ->
    receive
-      stopped -> ok;
-      _       -> stop_wait()
+      stopped -> 
+         ok;
+
+      {error,Reason} ->
+         {error,Reason};
+
+      _any -> 
+         stop_wait()
    end.
 
 % INTERNAL
@@ -108,7 +117,8 @@ run(CPU) ->
 loop({stop,_CPU}) ->
    stopped;
 
-loop({error,_CPU}) ->
+loop({error,CPU}) ->
+   unregister(CPU#cpu.id),
    stopped;
 
 loop({run,CPU}) ->
@@ -137,17 +147,24 @@ loop({run,CPU}) ->
       stop ->
          log:info(?TAG,"STOP"),
          trace:trace(f18A,{ CPU#cpu.id,stop}),     
+         unregister (CPU#cpu.id),
          stopped;
 
       {stop,PID} ->
          log:info(?TAG,"STOP/W"),
          trace:trace(f18A,{ CPU#cpu.id,stop}),     
+         unregister(CPU#cpu.id),
          PID ! stopped,
          stopped;
 
       go ->
          log:info(?TAG,"GO"),
          loop({run,CPU});
+
+      {Ch,write,Word} ->
+         loop({run,CPU#cpu{fifo={Ch,Word}
+                          }
+              });
 
       _any ->
          ?debugFmt("??? F18A: ~p",[_any]),
@@ -163,6 +180,10 @@ step_impl(CPU) ->
          trace:trace(f18A,{ CPU#cpu.id,stop}),     
          PID ! stopped,
          {stop,CPU};
+
+      {error,Reason} ->
+         log:error(?TAG,"OOOOPS/ : ~p",[Reason]),
+         {error,CPU};
 
       _any ->   
          log:error(?TAG,"STEP/? : ~p",[_any]),
@@ -181,9 +202,13 @@ exec(CPU,nop) ->
    {ok,CPU#cpu{pc=PC}};
 
 exec(CPU,read) ->
+   log:info   (?TAG,"READ"),
+   trace:trace(f18A,{ CPU#cpu.id,read}),     
    read(CPU);
 
 exec(CPU,{write,Word}) ->
+   log:info   (?TAG,"WRITE"),
+   trace:trace(f18A,{ CPU#cpu.id,write,Word }),     
    write(CPU,Word);
    
 exec(CPU,OpCode) ->
@@ -194,25 +219,34 @@ exec(CPU,OpCode) ->
 % READ
 
 read(CPU) ->
-   log:info(?TAG,"READ"),
-   trace:trace(f18A,{ CPU#cpu.id,read}),     
-   M  = self(),
-   Ch = CPU#cpu.channel,
-   spawn(fun() -> 
-         X = channel:read(Ch),
-         M ! {read,X} 
-         end),
-   read_wait(CPU).    
+   Word = CPU#cpu.fifo,
+   read(CPU,Word).
 
+read(CPU,undefined) ->  
+   read_wait(CPU);
+
+read(CPU,{Ch,Word}) ->
+   ID   = CPU#cpu.id,
+   Ch   = CPU#cpu.channel,
+   trace:trace(f18A,{ CPU#cpu.id,read,{ok,Word}}),     
+   Ch ! { ID,read,ok },
+   PC = CPU#cpu.pc + 1,
+   {ok,CPU#cpu{ pc = PC,
+                fifo = undefined
+               }}.
+ 
 read_wait(CPU) ->
+   ID = CPU#cpu.id,
+   Ch = CPU#cpu.channel,
    receive
-      {read,{ok,Word}} -> 
+      {Ch,write,Word} -> 
          trace:trace(f18A,{ CPU#cpu.id,read,{ok,Word}}),     
+         Ch ! { ID,read,ok },
          PC = CPU#cpu.pc + 1,
          {ok,CPU#cpu{pc = PC }};
 
       step ->
-         read_wait(CPU);
+         read(CPU);
 
       {stop,PID} ->
          {stop,PID};
@@ -226,19 +260,25 @@ read_wait(CPU) ->
 % WRITE
 
 write(CPU,Word) ->
-   log:info(?TAG,"WRITE"),
-   trace:trace(f18A,{ CPU#cpu.id,write,Word }),     
-   M  = self(),
+   ID = CPU#cpu.id,
    Ch = CPU#cpu.channel,
-   spawn(fun() -> 
-         channel:write(Ch,Word),
-         M ! write_ok
-         end),
-   write_wait(CPU).    
+   try
+      Ch ! { ID,write,Word },
+      write_wait(CPU)
+   catch
+      error:badarg ->
+         log:error(?TAG,"~p:WRITE to invalid node ~p",[ID,Ch]),   
+         {error,invalid_peer};
+
+      C:X ->
+         log:error(?TAG,"~p:WRITE ~p failed ~p:~p",[ID,Ch,C,X]),   
+         {error,{C,X}}
+   end.
    
 write_wait(CPU) ->
+   Ch = CPU#cpu.channel,
    receive
-      write_ok -> 
+      { Ch,read,ok } -> 
          trace:trace(f18A,{ CPU#cpu.id,write,ok }),     
          PC = CPU#cpu.pc + 1,
          {ok,CPU#cpu{pc = PC }};
@@ -253,4 +293,5 @@ write_wait(CPU) ->
          log:warn(?TAG,"WRITE/? ~p",[_any]),
          {error,_any}
    end.
-   
+
+% EUNIT TESTS

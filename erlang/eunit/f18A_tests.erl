@@ -8,14 +8,14 @@
 
 -define(TAG,"F18A").
 
--define(READ,      [{f18X,{n001,reset}},{f18X,{n001,read}},     {f18X,{n001,read,{ok,678}}},{f18X,{n001,stop}}]).
--define(WRITE,     [{f18X,{n001,reset}},{f18X,{n001,write,678}},{f18X,{n001,write,ok}},     {f18X,{n001,stop}}]).
--define(READ_STEP, [{f18X,{n001,reset}},{f18X,{n001,nop}},{f18X,{n001,read}},     {f18X,{n001,stop}}]).
--define(WRITE_STEP,[{f18X,{n001,reset}},{f18X,{n001,nop}},{f18X,{n001,write,123}},{f18X,{n001,stop}}]).
--define(READWRITE1,[{f18X,{n001,reset}},{f18X,{n001,read}},{f18X,{n001,read,{ok,135}}},{f18X,{n001,nop}},      {f18X,{n001,nop}},     {f18X,{n001,nop}},{f18X,{n001,stop}}]).
--define(READWRITE2,[{f18X,{n002,reset}},{f18X,{n002,nop}}, {f18X,{n002,nop}},          {f18X,{n002,write,135}},{f18X,{n002,write,ok}},{f18X,{n002,nop}},{f18X,{n002,stop}}]).
--define(WRITEREAD1,[{f18X,{n001,reset}},{f18X,{n001,nop}},      {f18X,{n001,nop}},     {f18X,{n001,read}},{f18X,{n001,read,{ok,135}}},{f18X,{n001,nop}},{f18X,{n001,stop}}]).
--define(WRITEREAD2,[{f18X,{n002,reset}},{f18X,{n002,write,135}},{f18X,{n002,write,ok}},{f18X,{n002,nop}}, {f18X,{n002,nop}},          {f18X,{n002,nop}},{f18X,{n002,stop}}]).
+-define(READ,      [{f18A,{n001,reset}},{f18A,{n001,read}},     {f18A,{n001,read,{ok,678}}},{f18A,{n001,stop}}]).
+-define(WRITE,     [{f18A,{n001,reset}},{f18A,{n001,write,678}},{f18A,{n001,write,ok}},     {f18A,{n001,stop}}]).
+-define(READ_STEP, [{f18A,{n001,reset}},{f18A,{n001,nop}},{f18A,{n001,read}},     {f18A,{n001,stop}}]).
+-define(WRITE_STEP,[{f18A,{n001,reset}},{f18A,{n001,nop}},{f18A,{n001,write,123}},{f18A,{n001,stop}}]).
+-define(READWRITE1,[{f18A,{n001,reset}},{f18A,{n001,read}},{f18A,{n001,read,{ok,135}}},{f18A,{n001,nop}},      {f18A,{n001,nop}},     {f18A,{n001,nop}},{f18A,{n001,stop}}]).
+-define(READWRITE2,[{f18A,{n002,reset}},{f18A,{n002,nop}}, {f18A,{n002,nop}},          {f18A,{n002,write,135}},{f18A,{n002,write,ok}},{f18A,{n002,nop}},{f18A,{n002,stop}}]).
+-define(WRITEREAD1,[{f18A,{n001,reset}},{f18A,{n001,nop}},      {f18A,{n001,nop}},     {f18A,{n001,read}},{f18A,{n001,read,{ok,135}}},{f18A,{n001,nop}},{f18A,{n001,stop}}]).
+-define(WRITEREAD2,[{f18A,{n002,reset}},{f18A,{n002,write,135}},{f18A,{n002,write,ok}},{f18A,{n002,nop}}, {f18A,{n002,nop}},          {f18A,{n002,nop}},{f18A,{n002,stop}}]).
 
 % EUNIT TESTS
 
@@ -27,12 +27,12 @@ read_test() ->
    trace:start(),
 
    M    = self(),
-   F18A = f18X:create(n001,n000,[read]),
+   F18A = f18A:create(n001,n000,[read]),
 
    spawn(fun() ->
-            f18X:reset(F18A),
-            f18X:step (F18A,wait),
-            f18X:stop (F18A,wait),
+            f18A:reset(F18A),
+            f18A:step (F18A,wait),
+            f18A:stop (F18A,wait),
             M ! { n001,stopped }
          end),
 
@@ -55,7 +55,7 @@ write_test() ->
    trace:start(),
 
    M    = self(),
-   F18A = f18X:create(n001,n000,[{write,678}]),
+   F18A = f18A:create(n001,n000,[{write,678}]),
    
    register(n000,spawn(fun() ->
                           wait({ n001,write,678 }),
@@ -64,9 +64,9 @@ write_test() ->
                        end)),
 
    spawn(fun() ->
-            f18X:reset(F18A),
-            f18X:step (F18A,wait),
-            f18X:stop (F18A,wait),
+            f18A:reset(F18A),
+            f18A:step (F18A,wait),
+            f18A:stop (F18A,wait),
             M ! { n001,stopped }
          end),
          
@@ -78,10 +78,10 @@ read_stop_test() ->
    log:info(?TAG,"-- READ STOP TEST"),
    trace:stop (),
    trace:start(),
-   F18A = f18X:create(n001,n000,[nop,read,nop,nop,nop]),
-   f18X:reset(F18A),
-   f18X:step (F18A), f18X:step (F18A), f18X:step (F18A), f18X:step (F18A), f18X:step (F18A),
-   f18X:stop (F18A,wait),
+   F18A = f18A:create(n001,n000,[nop,read,nop,nop,nop]),
+   f18A:reset(F18A),
+   f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A),
+   f18A:stop (F18A,wait),
    ?assertEqual(ok,verify:compare(?READ_STEP,trace:stop(),noprint)).
 
 write_stop_test() ->
@@ -95,14 +95,14 @@ write_stop_test() ->
                         util:unregister(n000)
                         end)),
                                  
-   F18A = f18X:create(n001,n000,[nop,{write,123},nop,nop,nop]),
-   f18X:reset(F18A),
-   f18X:step (F18A), 
-   f18X:step (F18A), 
-   f18X:step (F18A), 
-   f18X:step (F18A), 
-   f18X:step (F18A),
-   f18X:stop (F18A,wait),
+   F18A = f18A:create(n001,n000,[nop,{write,123},nop,nop,nop]),
+   f18A:reset(F18A),
+   f18A:step (F18A), 
+   f18A:step (F18A), 
+   f18A:step (F18A), 
+   f18A:step (F18A), 
+   f18A:step (F18A),
+   f18A:stop (F18A,wait),
    ?assertEqual(ok,verify:compare(?WRITE_STEP,trace:stop(),noprint)).
 
 readwrite_test() ->
@@ -113,24 +113,24 @@ readwrite_test() ->
    M = self(),
 
    spawn(fun() ->
-      F18A = f18X:create(n001,n002,[read,nop,nop,nop]),
-      f18X:reset(F18A),
-      f18X:step (F18A,wait),
-      f18X:step (F18A,wait),
-      f18X:step (F18A,wait),
-      f18X:step (F18A,wait),
-      f18X:stop (F18A,wait),
+      F18A = f18A:create(n001,n002,[read,nop,nop,nop]),
+      f18A:reset(F18A),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:stop (F18A,wait),
       M ! { n001,stopped }
       end),
 
    spawn(fun() ->
-      F18A = f18X:create(n002,n001,[nop,nop,{write,135},nop]),
-      f18X:reset(F18A),
-      f18X:step (F18A,wait),
-      f18X:step (F18A,wait),
-      f18X:step (F18A,wait),
-      f18X:step (F18A,wait),
-      f18X:stop (F18A,wait),
+      F18A = f18A:create(n002,n001,[nop,nop,{write,135},nop]),
+      f18A:reset(F18A),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:stop (F18A,wait),
       M ! { n002,stopped }
       end),
       
@@ -150,24 +150,24 @@ writeread_test() ->
    M  = self(),
 
    spawn(fun() ->
-      F18A = f18X:create(n001,n002,[nop,nop,read,nop]),
-      f18X:reset(F18A),
-      f18X:step (F18A,wait),
-      f18X:step (F18A,wait),
-      f18X:step (F18A,wait),
-      f18X:step (F18A,wait),
-      f18X:stop (F18A,wait),
+      F18A = f18A:create(n001,n002,[nop,nop,read,nop]),
+      f18A:reset(F18A),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:stop (F18A,wait),
       M ! { n001,stopped } 
       end),
 
    spawn(fun() ->
-      F18A = f18X:create(n002,n001,[{write,135},nop,nop,nop]),
-      f18X:reset(F18A),
-      f18X:step (F18A,wait),
-      f18X:step (F18A,wait),
-      f18X:step (F18A,wait),
-      f18X:step (F18A,wait),
-      f18X:stop (F18A,wait),
+      F18A = f18A:create(n002,n001,[{write,135},nop,nop,nop]),
+      f18A:reset(F18A),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:stop (F18A,wait),
       M ! { n002,stopped } 
       end),
       
