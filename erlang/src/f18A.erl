@@ -208,7 +208,7 @@ exec(CPU,read) ->
 
 exec(CPU,{write,Word}) ->
    log:info   (?TAG,"WRITE"),
-   trace:trace(f18A,{ CPU#cpu.id,write,Word }),     
+   trace:trace(f18A,{ CPU#cpu.id,{write,Word}}),     
    write(CPU,Word);
    
 exec(CPU,OpCode) ->
@@ -228,7 +228,7 @@ read(CPU,undefined) ->
 read(CPU,{Ch,Word}) ->
    ID   = CPU#cpu.id,
    Ch   = CPU#cpu.channel,
-   trace:trace(f18A,{ CPU#cpu.id,read,{ok,Word}}),     
+   trace:trace(f18A,{ CPU#cpu.id,{read,Word}}),     
    Ch ! { ID,read,ok },
    PC = CPU#cpu.pc + 1,
    {ok,CPU#cpu{ pc = PC,
@@ -240,7 +240,7 @@ read_wait(CPU) ->
    Ch = CPU#cpu.channel,
    receive
       {Ch,write,Word} -> 
-         trace:trace(f18A,{ CPU#cpu.id,read,{ok,Word}}),     
+         trace:trace(f18A,{ CPU#cpu.id,{read,Word}}),     
          Ch ! { ID,read,ok },
          PC = CPU#cpu.pc + 1,
          {ok,CPU#cpu{pc = PC }};
@@ -279,7 +279,7 @@ write_wait(CPU) ->
    Ch = CPU#cpu.channel,
    receive
       { Ch,read,ok } -> 
-         trace:trace(f18A,{ CPU#cpu.id,write,ok }),     
+         trace:trace(f18A,{ CPU#cpu.id,{write,ok}}),     
          PC = CPU#cpu.pc + 1,
          {ok,CPU#cpu{pc = PC }};
 

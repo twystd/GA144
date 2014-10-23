@@ -57,26 +57,17 @@ snapshot(_) ->
    [].
 
 extract(Trace,ID) ->
-   F = fun(X) ->
-         case X of
-            {f18A,{ID,_}} ->
-               true;
-
-            {f18X,{ID,_}} ->
-               true;
-
-            {f18A,{ID,_,_}} -> 
-               true;
-
-            {f18X,{ID,_,_}} -> 
-               true;
+   F = fun(R,A) ->
+         case R of
+            {f18A,{ID,X}} ->
+               [X | A];
 
             _else -> 
-               false
+               A
             end
          end,
 
-   lists:filter(F,Trace).
+   lists:reverse(lists:foldl(F,[],Trace)).
 
 % INTERNAL
 

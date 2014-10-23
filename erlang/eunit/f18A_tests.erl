@@ -8,14 +8,14 @@
 
 -define(TAG,"F18A").
 
--define(READ,      [{f18A,{n001,reset}},{f18A,{n001,read}},     {f18A,{n001,read,{ok,678}}},{f18A,{n001,stop}}]).
--define(WRITE,     [{f18A,{n001,reset}},{f18A,{n001,write,678}},{f18A,{n001,write,ok}},     {f18A,{n001,stop}}]).
--define(READ_STEP, [{f18A,{n001,reset}},{f18A,{n001,nop}},{f18A,{n001,read}},     {f18A,{n001,stop}}]).
--define(WRITE_STEP,[{f18A,{n001,reset}},{f18A,{n001,nop}},{f18A,{n001,write,123}},{f18A,{n001,stop}}]).
--define(READWRITE1,[{f18A,{n001,reset}},{f18A,{n001,read}},{f18A,{n001,read,{ok,135}}},{f18A,{n001,nop}},      {f18A,{n001,nop}},     {f18A,{n001,nop}},{f18A,{n001,stop}}]).
--define(READWRITE2,[{f18A,{n002,reset}},{f18A,{n002,nop}}, {f18A,{n002,nop}},          {f18A,{n002,write,135}},{f18A,{n002,write,ok}},{f18A,{n002,nop}},{f18A,{n002,stop}}]).
--define(WRITEREAD1,[{f18A,{n001,reset}},{f18A,{n001,nop}},      {f18A,{n001,nop}},     {f18A,{n001,read}},{f18A,{n001,read,{ok,135}}},{f18A,{n001,nop}},{f18A,{n001,stop}}]).
--define(WRITEREAD2,[{f18A,{n002,reset}},{f18A,{n002,write,135}},{f18A,{n002,write,ok}},{f18A,{n002,nop}}, {f18A,{n002,nop}},          {f18A,{n002,nop}},{f18A,{n002,stop}}]).
+-define(READ,      [reset,read,{read,678},stop]).
+-define(WRITE,     [reset,{write,678},{write,ok},stop]).
+-define(READ_STEP, [reset,nop,read,stop]).
+-define(WRITE_STEP,[reset,nop,{write,123},stop]).
+-define(READWRITE1,[reset,read,{read,135},nop,nop,nop,stop]).
+-define(READWRITE2,[reset,nop,nop,{write,135},{write,ok},nop,stop]).
+-define(WRITEREAD1,[reset,nop,nop,read,{read,135},nop,stop]).
+-define(WRITEREAD2,[reset,{write,135},{write,ok},nop,nop,nop,stop]).
 
 % EUNIT TESTS
 
@@ -45,7 +45,9 @@ read_test() ->
    wait({n000,stopped}),
    wait({n001,stopped}),
 
-   ?assertEqual(ok,verify:compare(?READ,trace:stop(),noprint)).
+   Trace = trace:stop(),
+
+   ?assertEqual(ok,verify:compare(?READ,trace:extract(Trace,n001),noprint)).
 
 write_test() ->
    log:info   (?TAG,"-- WRITE TEST"),
@@ -72,7 +74,10 @@ write_test() ->
          
    wait({n000,stopped}),
    wait({n001,stopped}),
-   ?assertEqual(ok,verify:compare(?WRITE,trace:stop(),noprint)).
+
+   Trace = trace:stop(),
+
+   ?assertEqual(ok,verify:compare(?WRITE,trace:extract(Trace,n001),noprint)).
 
 read_stop_test() ->
    log:info(?TAG,"-- READ STOP TEST"),
@@ -82,7 +87,10 @@ read_stop_test() ->
    f18A:reset(F18A),
    f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A),
    f18A:stop (F18A,wait),
-   ?assertEqual(ok,verify:compare(?READ_STEP,trace:stop(),noprint)).
+
+   Trace = trace:stop(),
+
+   ?assertEqual(ok,verify:compare(?READ_STEP,trace:extract(Trace,n001),noprint)).
 
 write_stop_test() ->
    log:info(?TAG,"-- WRITE STOP TEST"),
@@ -103,7 +111,10 @@ write_stop_test() ->
    f18A:step (F18A), 
    f18A:step (F18A),
    f18A:stop (F18A,wait),
-   ?assertEqual(ok,verify:compare(?WRITE_STEP,trace:stop(),noprint)).
+
+   Trace = trace:stop(),
+
+   ?assertEqual(ok,verify:compare(?WRITE_STEP,trace:extract(Trace,n001),noprint)).
 
 readwrite_test() ->
    log:info(?TAG,"-- READ/WRITE TEST"),
