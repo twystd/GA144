@@ -56,13 +56,19 @@ snapshot(true) ->
 snapshot(_) ->
    [].
 
-extract(Trace,F18A) ->
+extract(Trace,ID) ->
    F = fun(X) ->
          case X of
-            {f18A,{F18A,_}} ->
+            {f18A,{ID,_}} ->
                true;
 
-            {f18A,{F18A,_,_}} -> 
+            {f18X,{ID,_}} ->
+               true;
+
+            {f18A,{ID,_,_}} -> 
+               true;
+
+            {f18X,{ID,_,_}} -> 
                true;
 
             _else -> 

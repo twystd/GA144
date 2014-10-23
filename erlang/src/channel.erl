@@ -14,20 +14,15 @@
 
 % RECORD DEFINITIONS
 
--record(channel,{ id,
-                  pid
-                }).
-
 % API
 
 %% @spec create(ID::integer) -> {id,pid}
 %% @doc  Spawns a channel process and returns a 'channel' record for
 %%       use with read, write and close.
 create(ID) ->
-   PID = spawn(channel,run,[ID]),
-   #channel{ id  = ID,
-             pid = PID
-           }.
+   util:unregister(ID),
+   register       (ID,spawn(channel,run,[ID])),
+   ID.
   
 %% @spec write(Channel::channel,Word::integer) -> ok | closed
 %% @doc  Writes the value to the channel and waits for the value to be 'read'.
@@ -39,23 +34,21 @@ write(Channel,Word) ->
 %% @doc  Sends a 'write' message to the channel process and waits for acknowledgement.
 %%
 write_with_timeout(Channel,Value,Timeout) ->
-   ID  = Channel#channel.id,
-   PID = Channel#channel.pid,
-   PID ! { write,Value,self() },
-   write_wait(ID,Timeout).
+   Channel ! { write,Value,self() },
+   write_wait(Channel,Timeout).
 
 %% @doc Wait loop for a 'written' reply from the channel process.
 %%
-write_wait(ID,Timeout) ->
+write_wait(Channel,Timeout) ->
    receive
-      { written,{channel,ID} } ->
+      { written,{channel,Channel} } ->
          ok;
 
-      { closed,{channel,ID} } ->
+      { closed,{channel,Channel} } ->
          closed;
 
       _any ->
-         write_wait(ID,Timeout)
+         write_wait(Channel,Timeout)
 
    after Timeout ->
       timeout
@@ -69,23 +62,21 @@ read(Channel) ->
 %% @doc Sends a 'read' message to the channel process and returns the value
 %%      received.
 read_with_timeout(Channel,Timeout) ->
-   ID  = Channel#channel.id,
-   PID = Channel#channel.pid,
-   PID !  { read,self() },
-   read_wait(ID,Timeout).
+   Channel !  { read,self() },
+   read_wait(Channel,Timeout).
 
 %% @doc Wait loop for a 'read' reply from the channel process.
 %%
-read_wait(ID,Timeout) ->
+read_wait(Channel,Timeout) ->
    receive
-      { read,{channel,ID},Word } ->
+      { read,{channel,Channel},Word } ->
          { ok,Word };
 
-      { closed,{channel,ID} } ->
+      { closed,{channel,Channel} } ->
          closed;
 
    _any ->
-      read_wait(ID,Timeout)
+      read_wait(Channel,Timeout)
 
    after Timeout ->
       timeout
@@ -99,20 +90,18 @@ close(Channel) ->
 %% @doc Sends a 'close' message to the channel process and waits for acknowledgment.
 %%
 close_with_timeout(Channel,Timeout) ->
-   ID  = Channel#channel.id,
-   PID = Channel#channel.pid,
-   PID ! { close,self() },
-   close_wait(ID,Timeout).
+   Channel ! { close,self() },
+   close_wait(Channel,Timeout).
 
 %% @doc Wait loop for a 'closed' reply from the channel process.
 %%
-close_wait(ID,Timeout) ->
+close_wait(Channel,Timeout) ->
    receive
-      { closed,{channel,ID}} ->
+      { closed,{channel,Channel}} ->
          closed;
 
       _any ->
-         close_wait(ID,Timeout)
+         close_wait(Channel,Timeout)
 
       after Timeout ->
          timeout
@@ -122,51 +111,51 @@ close_wait(ID,Timeout) ->
 
 %% @doc Internal function used for spawning a channel process. 
 %%      (INTERNAL USE ONLY)
-run(ID) ->
-   loop(ID,idle).
+run(Channel) ->
+   loop(Channel,idle).
 
-loop(ID,idle) ->
+loop(Channel,idle) ->
    receive
       { close,PID } ->
-         PID ! { closed,{channel,ID} };
+         PID ! { closed,{channel,Channel} };
 
       { write,Word,WRITER } ->
-         loop(ID,{ write_pending,Word,WRITER}); 
+         loop(Channel,{ write_pending,Word,WRITER}); 
 
       { read,READER } ->
-         loop(ID,{ read_pending,READER }); 
+         loop(Channel,{ read_pending,READER }); 
 
       _any ->
-         loop(ID,idle)
+         loop(Channel,idle)
    end;
 
-loop(ID,{write_pending,Word,WRITER}) ->
+loop(Channel,{write_pending,Word,WRITER}) ->
    receive
       { close,PID } ->
-         WRITER ! { closed,{channel,ID} },
-         PID    ! { closed,{channel,ID} };
+         WRITER ! { closed,{channel,Channel} },
+         PID    ! { closed,{channel,Channel} };
 
       { read,READER } ->
-         WRITER ! { written,{channel,ID}      },
-         READER ! { read,   {channel,ID},Word },
-         loop(ID,idle);
+         WRITER ! { written,{channel,Channel}      },
+         READER ! { read,   {channel,Channel},Word },
+         loop(Channel,idle);
 
       _any ->
-         loop(ID,{write_pending,Word,WRITER})
+         loop(Channel,{write_pending,Word,WRITER})
    end;
 
-loop(ID,{read_pending,READER}) ->
+loop(Channel,{read_pending,READER}) ->
    receive
       { close,PID } ->
-         READER ! { closed,{channel,ID} },
-         PID    ! { closed,{channel,ID} };
+         READER ! { closed,{channel,Channel} },
+         PID    ! { closed,{channel,Channel} };
 
       { write,Word,WRITER } ->
-         READER ! { read,   {channel,ID},Word },
-         WRITER ! { written,{channel,ID}      },
-         loop(ID,idle);
+         READER ! { read,   {channel,Channel},Word },
+         WRITER ! { written,{channel,Channel}      },
+         loop(Channel,idle);
 
       _any ->
-         loop(ID,{read_pending,READER})
+         loop(Channel,{read_pending,READER})
    end.
 

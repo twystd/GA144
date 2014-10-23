@@ -18,7 +18,8 @@
 -record(cpu,{ id,
               channel,
               program,
-              pc
+              pc,
+              fifo
             }).
 
 % DEFINES
@@ -89,7 +90,8 @@ go(F18A) ->
 %% @doc Issues a STOP command to the F18A node and returns immediately.
 %%
 stop(F18A) ->
-   F18A ! stop.
+   F18A ! stop,
+   ok.
 
 stop(F18A,wait) ->
    F18A ! { stop,self() },
@@ -97,8 +99,14 @@ stop(F18A,wait) ->
 
 stop_wait() ->
    receive
-      stopped -> ok;
-      _       -> stop_wait()
+      stopped -> 
+         ok;
+
+      {error,Reason} ->
+         {error,Reason};
+
+      _any -> 
+         stop_wait()
    end.
 
 % INTERNAL
@@ -109,7 +117,8 @@ run(CPU) ->
 loop({stop,_CPU}) ->
    stopped;
 
-loop({error,_CPU}) ->
+loop({error,CPU}) ->
+   unregister(CPU#cpu.id),
    stopped;
 
 loop({run,CPU}) ->
@@ -152,6 +161,11 @@ loop({run,CPU}) ->
          log:info(?TAG,"GO"),
          loop({run,CPU});
 
+      {Ch,write,Word} ->
+         loop({run,CPU#cpu{fifo={Ch,Word}
+                          }
+              });
+
       _any ->
          ?debugFmt("??? F18A: ~p",[_any]),
          loop({run,CPU})
@@ -166,6 +180,10 @@ step_impl(CPU) ->
          trace:trace(f18X,{ CPU#cpu.id,stop}),     
          PID ! stopped,
          {stop,CPU};
+
+      {error,Reason} ->
+         log:error(?TAG,"OOOOPS/ : ~p",[Reason]),
+         {error,CPU};
 
       _any ->   
          log:error(?TAG,"STEP/? : ~p",[_any]),
@@ -201,6 +219,23 @@ exec(CPU,OpCode) ->
 % READ
 
 read(CPU) ->
+   Word = CPU#cpu.fifo,
+   read(CPU,Word).
+
+read(CPU,undefined) ->  
+   read_wait(CPU);
+
+read(CPU,{Ch,Word}) ->
+   ID   = CPU#cpu.id,
+   Ch   = CPU#cpu.channel,
+   trace:trace(f18X,{ CPU#cpu.id,read,{ok,Word}}),     
+   Ch ! { ID,read,ok },
+   PC = CPU#cpu.pc + 1,
+   {ok,CPU#cpu{ pc = PC,
+                fifo = undefined
+               }}.
+ 
+read_wait(CPU) ->
    ID = CPU#cpu.id,
    Ch = CPU#cpu.channel,
    receive
@@ -227,8 +262,18 @@ read(CPU) ->
 write(CPU,Word) ->
    ID = CPU#cpu.id,
    Ch = CPU#cpu.channel,
-   Ch ! { ID,write,Word },
-   write_wait(CPU).    
+   try
+      Ch ! { ID,write,Word },
+      write_wait(CPU)
+   catch
+      error:badarg ->
+         log:error(?TAG,"~p:WRITE to invalid node ~p",[ID,Ch]),   
+         {error,invalid_peer};
+
+      C:X ->
+         log:error(?TAG,"~p:WRITE ~p failed ~p:~p",[ID,Ch,C,X]),   
+         {error,{C,X}}
+   end.
    
 write_wait(CPU) ->
    Ch = CPU#cpu.channel,

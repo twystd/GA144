@@ -10,13 +10,12 @@
 
 -define(READ,      [{f18X,{n001,reset}},{f18X,{n001,read}},     {f18X,{n001,read,{ok,678}}},{f18X,{n001,stop}}]).
 -define(WRITE,     [{f18X,{n001,reset}},{f18X,{n001,write,678}},{f18X,{n001,write,ok}},     {f18X,{n001,stop}}]).
-
--define(READ_STEP, [{f18A,{1,reset}},{f18A,{1,nop}},{f18A,{1,read}},     {f18A,{1,stop}}]).
--define(WRITE_STEP,[{f18A,{1,reset}},{f18A,{1,nop}},{f18A,{1,write,123}},{f18A,{1,stop}}]).
--define(READWRITE1,[{f18A,{1,reset}},{f18A,{1,read}},{f18A,{1,read,{ok,135}}},{f18A,{1,nop}},      {f18A,{1,nop}},     {f18A,{1,nop}},{f18A,{1,stop}}]).
--define(READWRITE2,[{f18A,{2,reset}},{f18A,{2,nop}}, {f18A,{2,nop}},          {f18A,{2,write,135}},{f18A,{2,write,ok}},{f18A,{2,nop}},{f18A,{2,stop}}]).
--define(WRITEREAD1,[{f18A,{1,reset}},{f18A,{1,nop}},      {f18A,{1,nop}},     {f18A,{1,read}},{f18A,{1,read,{ok,135}}},{f18A,{1,nop}},{f18A,{1,stop}}]).
--define(WRITEREAD2,[{f18A,{2,reset}},{f18A,{2,write,135}},{f18A,{2,write,ok}},{f18A,{2,nop}}, {f18A,{2,nop}},          {f18A,{2,nop}},{f18A,{2,stop}}]).
+-define(READ_STEP, [{f18X,{n001,reset}},{f18X,{n001,nop}},{f18X,{n001,read}},     {f18X,{n001,stop}}]).
+-define(WRITE_STEP,[{f18X,{n001,reset}},{f18X,{n001,nop}},{f18X,{n001,write,123}},{f18X,{n001,stop}}]).
+-define(READWRITE1,[{f18X,{n001,reset}},{f18X,{n001,read}},{f18X,{n001,read,{ok,135}}},{f18X,{n001,nop}},      {f18X,{n001,nop}},     {f18X,{n001,nop}},{f18X,{n001,stop}}]).
+-define(READWRITE2,[{f18X,{n002,reset}},{f18X,{n002,nop}}, {f18X,{n002,nop}},          {f18X,{n002,write,135}},{f18X,{n002,write,ok}},{f18X,{n002,nop}},{f18X,{n002,stop}}]).
+-define(WRITEREAD1,[{f18X,{n001,reset}},{f18X,{n001,nop}},      {f18X,{n001,nop}},     {f18X,{n001,read}},{f18X,{n001,read,{ok,135}}},{f18X,{n001,nop}},{f18X,{n001,stop}}]).
+-define(WRITEREAD2,[{f18X,{n002,reset}},{f18X,{n002,write,135}},{f18X,{n002,write,ok}},{f18X,{n002,nop}}, {f18X,{n002,nop}},          {f18X,{n002,nop}},{f18X,{n002,stop}}]).
 
 % EUNIT TESTS
 
@@ -28,7 +27,7 @@ read_test() ->
    trace:start(),
 
    M    = self(),
-   F18A = f18X:create(n001,n000,[ read ]),
+   F18A = f18X:create(n001,n000,[read]),
 
    spawn(fun() ->
             f18X:reset(F18A),
@@ -56,7 +55,7 @@ write_test() ->
    trace:start(),
 
    M    = self(),
-   F18A = f18X:create(n001,n000,[ {write,678} ]),
+   F18A = f18X:create(n001,n000,[{write,678}]),
    
    register(n000,spawn(fun() ->
                           wait({ n001,write,678 }),
@@ -75,33 +74,35 @@ write_test() ->
    wait({n001,stopped}),
    ?assertEqual(ok,verify:compare(?WRITE,trace:stop(),noprint)).
 
-wait(X) ->
-   receive 
-      X -> ok
-   end.
-
-read_step_test() ->
-   log:info(?TAG,"-- READ STEP TEST"),
+read_stop_test() ->
+   log:info(?TAG,"-- READ STOP TEST"),
    trace:stop (),
    trace:start(),
-   Ch   = channel:create(1),
-   Prog = [ nop,read,nop,nop,nop ],
-   F18A = f18A:create(1,Ch,Prog),
-   f18A:reset(F18A),
-   f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A),
-   f18A:stop (F18A,wait),
+   F18A = f18X:create(n001,n000,[nop,read,nop,nop,nop]),
+   f18X:reset(F18A),
+   f18X:step (F18A), f18X:step (F18A), f18X:step (F18A), f18X:step (F18A), f18X:step (F18A),
+   f18X:stop (F18A,wait),
    ?assertEqual(ok,verify:compare(?READ_STEP,trace:stop(),noprint)).
 
-write_step_test() ->
-   log:info(?TAG,"-- WRITE STEP TEST"),
+write_stop_test() ->
+   log:info(?TAG,"-- WRITE STOP TEST"),
    trace:stop (),
    trace:start(),
-   Ch   = channel:create(1),
-   Prog = [ nop,{write,123},nop,nop,nop ],
-   F18A = f18A:create(1,Ch,Prog),
-   f18A:reset(F18A),
-   f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A),
-   f18A:stop (F18A,wait),
+   register(n000,spawn(fun() -> 
+                           receive
+                              _ -> ok
+                           end,
+                        util:unregister(n000)
+                        end)),
+                                 
+   F18A = f18X:create(n001,n000,[nop,{write,123},nop,nop,nop]),
+   f18X:reset(F18A),
+   f18X:step (F18A), 
+   f18X:step (F18A), 
+   f18X:step (F18A), 
+   f18X:step (F18A), 
+   f18X:step (F18A),
+   f18X:stop (F18A,wait),
    ?assertEqual(ok,verify:compare(?WRITE_STEP,trace:stop(),noprint)).
 
 readwrite_test() ->
@@ -109,39 +110,37 @@ readwrite_test() ->
    trace:stop (),
    trace:start(),
 
-   M  = self(),
-   Ch = channel:create(1),
+   M = self(),
 
    spawn(fun() ->
-      Prog = [ read,nop,nop,nop],
-      F18A = f18A:create(1,Ch,Prog),
-      f18A:reset(F18A),
-      f18A:step (F18A,wait),
-      f18A:step (F18A,wait),
-      f18A:step (F18A,wait),
-      f18A:step (F18A,wait),
-      f18A:stop (F18A,wait),
-      M ! { a,ok } 
+      F18A = f18X:create(n001,n002,[read,nop,nop,nop]),
+      f18X:reset(F18A),
+      f18X:step (F18A,wait),
+      f18X:step (F18A,wait),
+      f18X:step (F18A,wait),
+      f18X:step (F18A,wait),
+      f18X:stop (F18A,wait),
+      M ! { n001,stopped }
       end),
 
    spawn(fun() ->
-      Prog = [ nop,nop,{write,135},nop],
-      F18A = f18A:create(2,Ch,Prog),
-      f18A:reset(F18A),
-      f18A:step (F18A,wait),
-      f18A:step (F18A,wait),
-      f18A:step (F18A,wait),
-      f18A:step (F18A,wait),
-      f18A:stop (F18A,wait),
-      M ! { b,ok } 
+      F18A = f18X:create(n002,n001,[nop,nop,{write,135},nop]),
+      f18X:reset(F18A),
+      f18X:step (F18A,wait),
+      f18X:step (F18A,wait),
+      f18X:step (F18A,wait),
+      f18X:step (F18A,wait),
+      f18X:stop (F18A,wait),
+      M ! { n002,stopped }
       end),
       
-   ?assertEqual({ok,ok},wait(undefined,undefined)),
+   wait({n001,stopped}),
+   wait({n002,stopped}),
 
    Trace = trace:stop(),
 
-   ?assertEqual(ok,verify:compare(?READWRITE1,trace:extract(Trace,1),noprint)),
-   ?assertEqual(ok,verify:compare(?READWRITE2,trace:extract(Trace,2),noprint)).
+   ?assertEqual(ok,verify:compare(?READWRITE1,trace:extract(Trace,n001),noprint)),
+   ?assertEqual(ok,verify:compare(?READWRITE2,trace:extract(Trace,n002),noprint)).
 
 writeread_test() ->
    log:info(?TAG,"-- WRITE/READ TEST"),
@@ -149,51 +148,39 @@ writeread_test() ->
    trace:start(),
 
    M  = self(),
-   Ch = channel:create(1),
 
    spawn(fun() ->
-      Prog = [ nop,nop,read,nop],
-      F18A = f18A:create(1,Ch,Prog),
-      f18A:reset(F18A),
-      f18A:step (F18A,wait),
-      f18A:step (F18A,wait),
-      f18A:step (F18A,wait),
-      f18A:step (F18A,wait),
-      f18A:stop (F18A,wait),
-      M ! { a,ok } 
+      F18A = f18X:create(n001,n002,[nop,nop,read,nop]),
+      f18X:reset(F18A),
+      f18X:step (F18A,wait),
+      f18X:step (F18A,wait),
+      f18X:step (F18A,wait),
+      f18X:step (F18A,wait),
+      f18X:stop (F18A,wait),
+      M ! { n001,stopped } 
       end),
 
    spawn(fun() ->
-      Prog = [ {write,135},nop,nop,nop],
-      F18A = f18A:create(2,Ch,Prog),
-      f18A:reset(F18A),
-      f18A:step (F18A,wait),
-      f18A:step (F18A,wait),
-      f18A:step (F18A,wait),
-      f18A:step (F18A,wait),
-      f18A:stop (F18A,wait),
-      M ! { b,ok } 
+      F18A = f18X:create(n002,n001,[{write,135},nop,nop,nop]),
+      f18X:reset(F18A),
+      f18X:step (F18A,wait),
+      f18X:step (F18A,wait),
+      f18X:step (F18A,wait),
+      f18X:step (F18A,wait),
+      f18X:stop (F18A,wait),
+      M ! { n002,stopped } 
       end),
       
-   ?assertEqual({ok,ok},wait(undefined,undefined)),
+   wait({n001,stopped}),
+   wait({n002,stopped}),
 
    Trace = trace:stop(),
 
-   ?assertEqual(ok,verify:compare(?WRITEREAD1,trace:extract(Trace,1),noprint)),
-   ?assertEqual(ok,verify:compare(?WRITEREAD2,trace:extract(Trace,2),noprint)).
+   ?assertEqual(ok,verify:compare(?WRITEREAD1,trace:extract(Trace,n001),noprint)),
+   ?assertEqual(ok,verify:compare(?WRITEREAD2,trace:extract(Trace,n002),noprint)).
 
-wait({a,X},{b,Y}) ->
-   {X,Y};
-
-wait(X,Y) ->
+wait(X) ->
    receive 
-      { a,A } ->
-         wait({a,A},Y);
-
-      { b,B } ->
-         wait(X,{b,B});
-
-      _any ->
-         wait(X,Y)
+      X -> ok
    end.
 
