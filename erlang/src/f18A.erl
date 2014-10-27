@@ -4,7 +4,7 @@
 
 -export([create/3]).
 -export([reset/1,reset/2]).
--export([go/1]).
+-export([go/1,go/2]).
 -export([stop/1,stop/2]).
 -export([step/1,step/2]).
 -export([run/1]).
@@ -86,6 +86,16 @@ go(F18A) ->
    F18A ! go,
    ok.
 
+go(F18A,wait) ->
+   F18A ! { go,self() },
+   go_wait().
+
+go_wait() ->
+   receive
+      gone -> ok;
+      _    -> go_wait()
+   end.
+
 
 %% @doc Issues a STOP command to the F18A node and returns immediately.
 %%
@@ -115,6 +125,9 @@ run(CPU) ->
    loop({run,CPU}).
 
 loop({stop,_CPU}) ->
+   stopped;
+
+loop({eof,_CPU}) ->
    stopped;
 
 loop({error,CPU}) ->
@@ -159,7 +172,13 @@ loop({run,CPU}) ->
 
       go ->
          log:info(?TAG,"GO"),
-         loop({run,CPU});
+         loop(go_impl(CPU));
+
+      {go,PID} ->
+         log:info(?TAG,"GO/W"),
+         Next = go_impl(CPU),
+         PID ! gone,
+         loop(Next);
 
       {Ch,write,Word} ->
          loop({run,CPU#cpu{fifo={Ch,Word}
@@ -176,6 +195,10 @@ step_impl(CPU) ->
       {ok,CPUX} ->
          {run,CPUX};
 
+      eof ->
+         trace:trace(f18A,{ CPU#cpu.id,eof}),     
+         {eof,CPU};
+   
       {stop,PID} ->
          trace:trace(f18A,{ CPU#cpu.id,stop}),     
          PID ! stopped,
@@ -190,10 +213,40 @@ step_impl(CPU) ->
          {error,CPU}
    end.
 
+go_impl(CPU) ->
+   case exec(CPU) of 
+      {ok,CPUX} ->
+         go_impl(CPUX);
+
+      eof ->
+         trace:trace(f18A,{ CPU#cpu.id,eof}),     
+         {eof,CPU};
+   
+      {stop,PID} ->
+         trace:trace(f18A,{ CPU#cpu.id,stop}),     
+         PID ! stopped,
+         {stop,CPU};
+
+      {error,Reason} ->
+         log:error(?TAG,"OOOOPS/ : ~p",[Reason]),
+         {error,CPU};
+   
+      _any ->   
+         log:error(?TAG,"GO/? : ~p",[_any]),
+         {error,CPU}
+   end.
+
+
 exec(CPU) ->
-   PC     = CPU#cpu.pc,     
-   OpCode = lists:nth(PC,CPU#cpu.program),
-   exec(CPU,OpCode).
+   PC      = CPU#cpu.pc,     
+   Program = CPU#cpu.program,
+   case opcode(PC,Program) of 
+      {ok,OpCode} ->
+         exec(CPU,OpCode);
+
+      eof ->
+         eof
+      end.
 
 exec(CPU,nop) ->
    log:info(?TAG,"NOP"),     
@@ -215,6 +268,12 @@ exec(CPU,OpCode) ->
    log:warn(?TAG,"UNIMPLEMENTED OPCODE: ~p~n",[OpCode]),
    PC  = CPU#cpu.pc + 1,
    {ok,CPU#cpu{pc=PC}}.
+
+opcode(PC,Program) when PC =< length(Program) ->
+   {ok,lists:nth(PC,Program)};
+
+opcode(_PC,_Program) ->
+   eof.
 
 % READ
 

@@ -8,6 +8,8 @@
 
 -define(TAG,"F18A").
 
+-define(GO,        [reset,nop,nop,nop,nop,nop,eof]).
+-define(STEP,      [reset,nop,nop,nop,nop,nop,eof]).
 -define(READ,      [reset,read,{read,678},stop]).
 -define(WRITE,     [reset,{write,678},{write,ok},stop]).
 -define(READ_STEP, [reset,nop,read,stop]).
@@ -19,10 +21,53 @@
 
 % EUNIT TESTS
 
+go_test() ->
+   log:info   (?TAG,"-- GO TEST"),
+   trace:stop (),
+   trace:start(),
+
+   M    = self(),
+   F18A = f18A:create(n001,n000,[nop,nop,nop,nop,nop]),
+
+   spawn(fun() ->
+            f18A:reset(F18A),
+            f18A:go   (F18A,wait),
+            M ! { n001,stopped }
+         end),
+
+   wait({n001,stopped}),
+   Trace = trace:stop(),
+
+   ?assertEqual(ok,verify:compare(?GO,trace:extract(Trace,n001),noprint)).
+
+step_test() ->
+   log:info   (?TAG,"-- STEP TEST"),
+   trace:stop (),
+   trace:start(),
+
+   M    = self(),
+   F18A = f18A:create(n001,n000,[nop,nop,nop,nop,nop]),
+
+   spawn(fun() ->
+            f18A:reset(F18A),
+            f18A:step (F18A,wait),
+            f18A:step (F18A,wait),
+            f18A:step (F18A,wait),
+            f18A:step (F18A,wait),
+            f18A:step (F18A,wait),
+            f18A:step (F18A,wait),
+            M ! { n001,stopped }
+         end),
+
+   wait({n001,stopped}),
+   Trace = trace:stop(),
+
+   ?assertEqual(ok,verify:compare(?STEP,trace:extract(Trace,n001),noprint)).
+
+
 read_test() ->
    log:info   (?TAG,"-- READ TEST"),
    util:unregister(n000),
-   util:unregister(n001),
    trace:stop (),
    trace:start(),
 
