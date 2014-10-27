@@ -10,23 +10,19 @@
 
 -define(GO,        [reset,nop,nop,nop,nop,nop,eof]).
 -define(STEP,      [reset,nop,nop,nop,nop,nop,eof]).
--define(READ,      [reset,read,{read,678},stop]).
--define(WRITE,     [reset,{write,678},{write,ok},stop]).
--define(READ_STEP, [reset,nop,read,stop]).
--define(WRITE_STEP,[reset,nop,{write,123},stop]).
--define(READWRITE1,[reset,read,{read,135},nop,nop,nop,stop]).
--define(READWRITE2,[reset,nop,nop,{write,135},{write,ok},nop,stop]).
--define(WRITEREAD1,[reset,nop,nop,read,{read,135},nop,stop]).
--define(WRITEREAD2,[reset,{write,135},{write,ok},nop,nop,nop,stop]).
+-define(READ,      [reset,read,{read,678},eof]).
+-define(WRITE,     [reset,{write,678},{write,ok},eof]).
+-define(READ_STOP, [reset,nop,read,stop]).
+-define(WRITE_STOP,[reset,nop,{write,123},stop]).
+-define(READWRITE1,[reset,read,{read,135},nop,nop,nop,eof]).
+-define(READWRITE2,[reset,nop,nop,{write,135},{write,ok},nop,eof]).
+-define(WRITEREAD1,[reset,nop,nop,read,{read,135},nop,eof]).
+-define(WRITEREAD2,[reset,{write,135},{write,ok},nop,nop,nop,eof]).
 
 % EUNIT TESTS
 
 go_test() ->
-   log:info   (?TAG,"-- GO TEST"),
-   trace:stop (),
-   trace:start(),
-
-   M    = self(),
+   M    = setup("-- GO TEST"),
    F18A = f18A:create(n001,n000,[nop,nop,nop,nop,nop]),
 
    spawn(fun() ->
@@ -35,17 +31,12 @@ go_test() ->
             M ! { n001,stopped }
          end),
 
-   wait({n001,stopped}),
-   Trace = trace:stop(),
-
-   ?assertEqual(ok,verify:compare(?GO,trace:extract(Trace,n001),noprint)).
+   check(waitall([{n001,stopped}]),
+         [ { ?GO,n001 }
+         ]).
 
 step_test() ->
-   log:info   (?TAG,"-- STEP TEST"),
-   trace:stop (),
-   trace:start(),
-
-   M    = self(),
+   M    = setup("-- STEP TEST"),
    F18A = f18A:create(n001,n000,[nop,nop,nop,nop,nop]),
 
    spawn(fun() ->
@@ -59,25 +50,19 @@ step_test() ->
             M ! { n001,stopped }
          end),
 
-   wait({n001,stopped}),
-   Trace = trace:stop(),
+   check(waitall([{n001,stopped}]),
+         [ { ?STEP,n001 }
+         ]).
 
-   ?assertEqual(ok,verify:compare(?STEP,trace:extract(Trace,n001),noprint)).
-
-
-read_test() ->
-   log:info   (?TAG,"-- READ TEST"),
+read_go_test() ->
+   M = setup("-- READ TEST/GO"),
    util:unregister(n000),
-   trace:stop (),
-   trace:start(),
 
-   M    = self(),
    F18A = f18A:create(n001,n000,[read]),
 
    spawn(fun() ->
             f18A:reset(F18A),
-            f18A:step (F18A,wait),
-            f18A:stop (F18A,wait),
+            f18A:go   (F18A,wait),
             M ! { n001,stopped }
          end),
 
@@ -87,21 +72,62 @@ read_test() ->
                           M    ! { n000,stopped }
                        end)),
    
-   wait({n000,stopped}),
-   wait({n001,stopped}),
+   check(waitall([{n000,stopped},{n001,stopped}]),
+         [ { ?READ,n001 }
+         ]).
 
-   Trace = trace:stop(),
 
-   ?assertEqual(ok,verify:compare(?READ,trace:extract(Trace,n001),noprint)).
+read_step_test() ->
+   M = setup("-- READ TEST/STEP"),
+   util:unregister(n000),
 
-write_test() ->
-   log:info   (?TAG,"-- WRITE TEST"),
+   F18A = f18A:create(n001,n000,[read]),
+
+   spawn(fun() ->
+            f18A:reset(F18A),
+            f18A:step (F18A,wait),
+            f18A:step (F18A,wait),
+            M ! { n001,stopped }
+         end),
+
+   register(n000,spawn(fun() ->
+                          n001 ! { n000,write,678 },
+                          wait({n001,read,ok}),
+                          M    ! { n000,stopped }
+                       end)),
+   
+   check(waitall([{n000,stopped},{n001,stopped}]),
+         [ { ?READ,n001 }
+         ]).
+
+write_go_test() ->
+   M = setup("-- WRITE TEST/GO"),
    util:unregister(n000),
    util:unregister(n001),
-   trace:stop (),
-   trace:start(),
 
-   M    = self(),
+   F18A = f18A:create(n001,n000,[{write,678}]),
+   
+   register(n000,spawn(fun() ->
+                          wait({ n001,write,678 }),
+                          n001 ! { n000,read,ok },
+                          M ! { n000,stopped }
+                       end)),
+
+   spawn(fun() ->
+            f18A:reset(F18A),
+            f18A:go   (F18A,wait),
+            M ! { n001,stopped }
+         end),
+         
+   check(waitall([{n000,stopped},{n001,stopped}]),
+         [ { ?WRITE,n001 }
+         ]).
+
+write_step_test() ->
+   M = setup("-- WRITE TEST/STEP"),
+   util:unregister(n000),
+   util:unregister(n001),
+
    F18A = f18A:create(n001,n000,[{write,678}]),
    
    register(n000,spawn(fun() ->
@@ -113,19 +139,27 @@ write_test() ->
    spawn(fun() ->
             f18A:reset(F18A),
             f18A:step (F18A,wait),
-            f18A:stop (F18A,wait),
+            f18A:step (F18A,wait),
             M ! { n001,stopped }
          end),
          
-   wait({n000,stopped}),
-   wait({n001,stopped}),
+   check(waitall([{n000,stopped},{n001,stopped}]),
+         [ { ?WRITE,n001 }
+         ]).
 
-   Trace = trace:stop(),
+read_stop_go_test() ->
+   setup("-- READ STOP TEST/GO"),
+   F18A = f18A:create(n001,n000,[nop,read,nop,nop,nop]),
+   f18A:reset(F18A),
+   f18A:go   (F18A),
+   f18A:stop (F18A,wait),
 
-   ?assertEqual(ok,verify:compare(?WRITE,trace:extract(Trace,n001),noprint)).
+   check(waitall([]),
+         [ { ?READ_STOP,n001 }
+         ]).
 
-read_stop_test() ->
-   log:info(?TAG,"-- READ STOP TEST"),
+read_stop_step_test() ->
+   log:info(?TAG,"-- READ STOP TEST/STEP"),
    trace:stop (),
    trace:start(),
    F18A = f18A:create(n001,n000,[nop,read,nop,nop,nop]),
@@ -133,14 +167,33 @@ read_stop_test() ->
    f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A),
    f18A:stop (F18A,wait),
 
-   Trace = trace:stop(),
+   check(waitall([]),
+         [ { ?READ_STOP,n001 }
+         ]).
 
-   ?assertEqual(ok,verify:compare(?READ_STEP,trace:extract(Trace,n001),noprint)).
-
-write_stop_test() ->
-   log:info(?TAG,"-- WRITE STOP TEST"),
+write_stop_go_test() ->
+   setup("-- WRITE STOP TEST/GO"),
    trace:stop (),
    trace:start(),
+   register(n000,spawn(fun() -> 
+                           receive
+                              _ -> ok
+                           end,
+                        util:unregister(n000)
+                        end)),
+                                 
+   F18A = f18A:create(n001,n000,[nop,{write,123},nop,nop,nop]),
+   f18A:reset(F18A),
+   f18A:go   (F18A), 
+   f18A:stop (F18A,wait),
+
+   check(waitall([]),
+         [ { ?WRITE_STOP,n001 }
+         ]).
+
+write_stop_step_test() ->
+   setup("-- WRITE STOP TEST/STEP"),
+
    register(n000,spawn(fun() -> 
                            receive
                               _ -> ok
@@ -157,16 +210,34 @@ write_stop_test() ->
    f18A:step (F18A),
    f18A:stop (F18A,wait),
 
-   Trace = trace:stop(),
+   check(waitall([]),
+         [ { ?WRITE_STOP,n001 }
+         ]).
 
-   ?assertEqual(ok,verify:compare(?WRITE_STEP,trace:extract(Trace,n001),noprint)).
+readwrite_go_test() ->
+   M = setup("-- READ-WRITE TEST/GO"),
 
-readwrite_test() ->
-   log:info(?TAG,"-- READ/WRITE TEST"),
-   trace:stop (),
-   trace:start(),
+   spawn(fun() ->
+      F18A = f18A:create(n001,n002,[read,nop,nop,nop]),
+      f18A:reset(F18A),
+      f18A:go   (F18A,wait),
+      M ! { n001,stopped }
+      end),
 
-   M = self(),
+   spawn(fun() ->
+      F18A = f18A:create(n002,n001,[nop,nop,{write,135},nop]),
+      f18A:reset(F18A),
+      f18A:go   (F18A,wait),
+      M ! { n002,stopped }
+      end),
+      
+   check(waitall([{n001,stopped},{n002,stopped}]),
+         [ { ?READWRITE1,n001 },
+           { ?READWRITE2,n002 }
+         ]).
+
+readwrite_step_test() ->
+   M = setup("-- READ-WRITE TEST/STEP"),
 
    spawn(fun() ->
       F18A = f18A:create(n001,n002,[read,nop,nop,nop]),
@@ -175,7 +246,7 @@ readwrite_test() ->
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
-      f18A:stop (F18A,wait),
+      f18A:step (F18A,wait),
       M ! { n001,stopped }
       end),
 
@@ -186,24 +257,39 @@ readwrite_test() ->
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
-      f18A:stop (F18A,wait),
+      f18A:step (F18A,wait),
       M ! { n002,stopped }
       end),
       
-   wait({n001,stopped}),
-   wait({n002,stopped}),
+   check(waitall([{n001,stopped},{n002,stopped}]),
+         [ { ?READWRITE1,n001 },
+           { ?READWRITE2,n002 }
+         ]).
 
-   Trace = trace:stop(),
+writeread_go_test() ->
+   M = setup("-- WRITE-READ TEST/GO"),
 
-   ?assertEqual(ok,verify:compare(?READWRITE1,trace:extract(Trace,n001),noprint)),
-   ?assertEqual(ok,verify:compare(?READWRITE2,trace:extract(Trace,n002),noprint)).
+   spawn(fun() ->
+      F18A = f18A:create(n001,n002,[nop,nop,read,nop]),
+      f18A:reset(F18A),
+      f18A:go   (F18A,wait),
+      M ! { n001,stopped } 
+      end),
 
-writeread_test() ->
-   log:info(?TAG,"-- WRITE/READ TEST"),
-   trace:stop (),
-   trace:start(),
+   spawn(fun() ->
+      F18A = f18A:create(n002,n001,[{write,135},nop,nop,nop]),
+      f18A:reset(F18A),
+      f18A:go   (F18A,wait),
+      M ! { n002,stopped } 
+      end),
+      
+   check(waitall([{n001,stopped},{n002,stopped}]),
+        [ { ?WRITEREAD1,n001 },
+          { ?WRITEREAD2,n002 }
+        ]).
 
-   M  = self(),
+writeread_step_test() ->
+   M = setup("-- WRITE-READ TEST/STEP"),
 
    spawn(fun() ->
       F18A = f18A:create(n001,n002,[nop,nop,read,nop]),
@@ -212,7 +298,7 @@ writeread_test() ->
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
-      f18A:stop (F18A,wait),
+      f18A:step (F18A,wait),
       M ! { n001,stopped } 
       end),
 
@@ -223,17 +309,36 @@ writeread_test() ->
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
-      f18A:stop (F18A,wait),
+      f18A:step (F18A,wait),
       M ! { n002,stopped } 
       end),
       
-   wait({n001,stopped}),
-   wait({n002,stopped}),
+   check(waitall([{n001,stopped},{n002,stopped}]),
+        [ { ?WRITEREAD1,n001 }, 
+          { ?WRITEREAD2,n002 } 
+        ]).
 
-   Trace = trace:stop(),
+%% UTILILITY FUNCTIONS
 
-   ?assertEqual(ok,verify:compare(?WRITEREAD1,trace:extract(Trace,n001),noprint)),
-   ?assertEqual(ok,verify:compare(?WRITEREAD2,trace:extract(Trace,n002),noprint)).
+setup(TestName) ->
+   log:info(?TAG,TestName),
+   trace:stop (),
+   trace:start(),
+   self().
+
+check(_Trace,[]) ->
+   ok;
+
+check(Trace,[{Expected,ID}|T]) ->
+   ?assertEqual(ok,verify:compare(Expected,trace:extract(Trace,ID),noprint)),
+   check(Trace,T).
+
+waitall([]) ->
+   trace:stop();
+
+waitall([H|T]) ->
+   wait(H),
+   waitall(T).
 
 wait(X) ->
    receive 
