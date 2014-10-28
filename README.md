@@ -24,13 +24,6 @@ all of which conspire to make a software simulation relatively straightforward. 
 Notes
 -----
 
-The ColorForth IDE is something only a mother could love (she *would* have to be an exceptionally
-kind, forgiving and loving mother though). Getting started using just the official documentation
-can be something of a hair tearing out experience - there are several fairly helpful tutorials out
-there, of which the [HCC!Forth][hccforth] seemed to be the one that got me up and running the most
-easily. Just in case it ever goes missing, there is a copy of the web page in the archive folder -
-hopefully nobody at HCC!Forth minds too much.
-
 References
 ----------
 
