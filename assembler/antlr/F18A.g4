@@ -1,7 +1,14 @@
 grammar F18A;
 
-prog
-    : (line? EOL)+
+program
+    : (comment)*
+      EOL*
+      (origin EOL)
+      (line? EOL)+
+    ;
+
+origin
+    : label? WS ORIGIN WS ORG (WS COMMENT)?
     ;
 
  line
@@ -27,8 +34,14 @@ name
 
 comment
     : COMMENT
-      { System.out.println("COMMENT: " + $COMMENT.text);
-      }
+    ;
+
+ORIGIN
+    : [0-9]+
+    ;
+
+ORG
+    : 'org'
     ;
 
 OPCODE

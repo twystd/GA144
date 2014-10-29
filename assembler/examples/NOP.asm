@@ -1,4 +1,3 @@
-      000 node
 test  0   org                      # test: nop
 
 main  nop  ;
