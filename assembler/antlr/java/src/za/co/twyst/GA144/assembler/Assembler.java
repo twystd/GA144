@@ -23,10 +23,13 @@ import za.co.twyst.GA144.assembler.antlr.F18AParser.ProgramContext;
 public class Assembler extends F18ABaseListener {
 	// CONSTANTS
 	
+    private static final int NOP = 0x1c;
+    
 	// INSTANCE VARIABLES
 	
 	private int   origin;
 	private int   pc;
+	private int   slot;
 	private int[] ram = new int[64];
 	
 	// ENTRY POINT
@@ -99,12 +102,31 @@ public class Assembler extends F18ABaseListener {
 	
 	// CONSTRUCTOR
 	
-	private Assembler() {
+	protected Assembler() {
 		Arrays.fill(ram,0);
 	}
 
 	// INSTANCE METHODS
-	
+
+	protected int[] assemble(String src) throws Exception {
+		ANTLRInputStream  input     = new ANTLRInputStream(src);
+		F18ALexer         lexer     = new F18ALexer(input);
+		CommonTokenStream tokens    = new CommonTokenStream(lexer);
+		F18AParser        parser    = new F18AParser(tokens);
+		ParseTree         tree      = parser.program(); 
+		ParseTreeWalker   walker    = new ParseTreeWalker();
+
+		walker.walk(this,tree); 
+		
+		// ... XOR with 0x15555;
+		
+		for (int i=0; i<ram.length; i++) {
+			ram[i] ^= 0x15555;
+		}
+
+		return ram;
+	}
+
 	private void assemble(File file) throws Exception {
 		try (PrintWriter writer = new PrintWriter(file)) {
 			writer.println(String.format("%-8s org %d","xx",origin));
@@ -115,7 +137,7 @@ public class Assembler extends F18ABaseListener {
 			}
 		}
 	}
-
+	
 	// *** F18ABaseListener ***
 
 	@Override
@@ -130,6 +152,7 @@ public class Assembler extends F18ABaseListener {
 	public void enterOrigin(OriginContext ctx) {
 		this.origin = Integer.parseInt(ctx.ORIGIN().getText());
 		this.pc     = Integer.parseInt(ctx.ORIGIN().getText());
+		this.slot   = 0;
 	}
 
 	@Override
@@ -155,10 +178,13 @@ public class Assembler extends F18ABaseListener {
 	@Override
 	public void enterOpcode(OpcodeContext ctx) {
 		String opcode = ctx.OPCODE().getText();
+		int    lsh    = 5*(3-slot) - 2;
 		
 		switch(opcode) {
 			case "nop":
-				ram[pc++] = 0x8888;
+				ram[pc] = NOP << lsh;
+				pc      = slot == 0 ? pc + 1 : pc;
+				slot    = slot++ % 4;
 				break;
 		}
 	}
