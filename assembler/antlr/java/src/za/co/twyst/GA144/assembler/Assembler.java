@@ -23,7 +23,8 @@ import za.co.twyst.GA144.assembler.antlr.F18AParser.ProgramContext;
 public class Assembler extends F18ABaseListener {
 	// CONSTANTS
 	
-    private static final int NOP = 0x1c;
+    private static final int   NOP    = 0x1c;
+    private static final int[] RSHIFT = { 0,5,10,15 };
     
 	// INSTANCE VARIABLES
 	
@@ -103,12 +104,20 @@ public class Assembler extends F18ABaseListener {
 	// CONSTRUCTOR
 	
 	protected Assembler() {
-		Arrays.fill(ram,0);
 	}
 
 	// INSTANCE METHODS
 
 	protected int[] assemble(String src) throws Exception {
+	    // ... initialise
+	    
+        pc   = 0;
+        slot = 0;
+        
+        Arrays.fill(ram,0);
+
+        // ... parse
+
 		ANTLRInputStream  input     = new ANTLRInputStream(src);
 		F18ALexer         lexer     = new F18ALexer(input);
 		CommonTokenStream tokens    = new CommonTokenStream(lexer);
@@ -174,17 +183,17 @@ public class Assembler extends F18ABaseListener {
 	@Override
 	public void exitLabel(LabelContext ctx) {
 	}
-
+	
 	@Override
 	public void enterOpcode(OpcodeContext ctx) {
 		String opcode = ctx.OPCODE().getText();
-		int    lsh    = 5*(3-slot) - 2;
+		int    rsh    = RSHIFT[slot];
 		
 		switch(opcode) {
 			case "nop":
-				ram[pc] = NOP << lsh;
-				pc      = slot == 0 ? pc + 1 : pc;
-				slot    = slot++ % 4;
+				ram[pc] |= (NOP << 13) >>> rsh;
+				pc       = slot == 3 ? pc + 1 : pc;
+				slot     = ++slot % 4;
 				break;
 		}
 	}
