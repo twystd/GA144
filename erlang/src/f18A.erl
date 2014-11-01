@@ -238,12 +238,18 @@ go_impl(CPU) ->
    end.
 
 
-exec(CPU) when CPU#cpu.pc < length(CPU#cpu.program) ->
+exec(CPU) ->
    PC      = CPU#cpu.pc,     
-   Program = CPU#cpu.program,
-   exec(CPU,opcode(PC,lists:nth(PC+1,Program)));
+   Address = PC div 4,
+   Slot    = PC rem 4,   
+   exec(CPU,Address,Slot).
 
-exec(_CPU) ->
+exec(CPU,Address,Slot) when Address < length(CPU#cpu.program) ->
+   Program = CPU#cpu.program,
+   Word    = lists:nth(Address+1,Program),
+   exec(CPU,opcode(Word,Slot));
+
+exec(_CPU,_Address,_Slot) ->
    eof.
 
 exec(CPU,?NOP) ->
@@ -255,7 +261,7 @@ exec(CPU,?NOP) ->
 exec(CPU,nop) ->
    log:info(?TAG,"NOP"),     
    trace:trace(f18A,{ CPU#cpu.id,nop }),     
-   PC  = CPU#cpu.pc + 1,
+   PC  = CPU#cpu.pc + 4,
    {ok,CPU#cpu{pc=PC}};
 
 exec(CPU,read) ->
@@ -279,27 +285,25 @@ exec(CPU,OpCode) ->
 
 % OPCODE DECODER
 
-opcode(PC,Word) when is_integer(Word) ->
-   Address = PC div 4,
-   Slot    = PC rem 4,   
-   opcode(Word bxor 16#15555,Address,Slot);
+opcode(Word,Slot) when is_integer(Word) ->
+   decode(Word bxor 16#15555,Slot);
 
-opcode(_PC,Word) ->
+opcode(Word,_) ->
    Word.
 
-opcode(Word,_Address,0) ->
+decode(Word,0) ->
    (Word bsr 13) band 16#001F;
 
-opcode(Word,_Address,1) ->
+decode(Word,1) ->
    (Word bsr 8) band 16#001F;
 
-opcode(Word,_Address,2) ->
+decode(Word,2) ->
    (Word bsr 3) band 16#001F;
 
-opcode(Word,_Address,3) ->
-   (Word bsl 5) band 16#001F;
+decode(Word,3) ->
+   (Word bsl 2) band 16#001F;
 
-opcode(_Word,_Address,_) ->
+decode(_Word,_) ->
    { error,invalid_slot }.
 
 % READ
@@ -316,7 +320,7 @@ read(CPU,{Ch,Word}) ->
    Ch   = CPU#cpu.channel,
    trace:trace(f18A,{ CPU#cpu.id,{read,Word}}),     
    Ch ! { ID,read,ok },
-   PC = CPU#cpu.pc + 1,
+   PC = CPU#cpu.pc + 4,
    {ok,CPU#cpu{ pc = PC,
                 fifo = undefined
                }}.
@@ -328,7 +332,7 @@ read_wait(CPU) ->
       {Ch,write,Word} -> 
          trace:trace(f18A,{ CPU#cpu.id,{read,Word}}),     
          Ch ! { ID,read,ok },
-         PC = CPU#cpu.pc + 1,
+         PC = CPU#cpu.pc + 4,
          {ok,CPU#cpu{pc = PC }};
 
       step ->
@@ -366,7 +370,7 @@ write_wait(CPU) ->
    receive
       { Ch,read,ok } -> 
          trace:trace(f18A,{ CPU#cpu.id,{write,ok}}),     
-         PC = CPU#cpu.pc + 1,
+         PC = CPU#cpu.pc + 4,
          {ok,CPU#cpu{pc = PC }};
 
       step ->
