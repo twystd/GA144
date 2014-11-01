@@ -8,7 +8,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestAssembler {
+public class TestNOP {
 	private static final String NOP1 = "antlr 0 org\n"
 			                         + "      nop\n";
 
@@ -57,6 +57,8 @@ public class TestAssembler {
 	public void tearDown() throws Exception {
 	}
 
+	// UNIT TESTS 
+	
 	@Test
 	public void testNOP() throws Exception {
 		for (TestVector vector: NOP) {

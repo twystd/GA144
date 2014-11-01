@@ -30,7 +30,6 @@ public class Assembler extends F18ABaseListener {
 	
 	private int   origin;
 	private int   pc;
-	private int   slot;
 	private int[] ram = new int[64];
 	
 	// ENTRY POINT
@@ -83,19 +82,11 @@ public class Assembler extends F18ABaseListener {
 		}
 		
 		// ... parse
-		
-		try (InputStream istream = new FileInputStream (in)) {
-			ANTLRInputStream  input     = new ANTLRInputStream(istream);
-			F18ALexer         lexer     = new F18ALexer(input);
-			CommonTokenStream tokens    = new CommonTokenStream(lexer);
-			F18AParser        parser    = new F18AParser(tokens);
-			ParseTree         tree      = parser.program(); 
-			ParseTreeWalker   walker    = new ParseTreeWalker();
-			Assembler         assembler = new Assembler();
 
-			walker.walk       (assembler,tree); 
-			assembler.assemble(out);
-			
+        Assembler assembler = new Assembler();
+
+		try {
+            assembler.assemble(in,out);
 		} catch(Throwable x) {
 			System.err.println("ERROR: " + x);
 		}
@@ -109,16 +100,37 @@ public class Assembler extends F18ABaseListener {
 	// INSTANCE METHODS
 
 	protected int[] assemble(String src) throws Exception {
+        return assemble(new ANTLRInputStream(src));
+	}
+
+    protected void assemble(File src,File bin) throws Exception {
+        // ... assemble
+        
+        try (InputStream istream = new FileInputStream (src)) {
+            assemble(new ANTLRInputStream(istream));
+        }
+        
+        // ... write to file
+        
+        try (PrintWriter writer = new PrintWriter(bin)) {
+            writer.println(String.format("%-8s org %d","xx",origin));
+            writer.println();
+            
+            for (int i=0; i<ram.length; i++) {
+                writer.println(String.format("%04X  %04X",i,ram[i]));
+            }
+        }
+    }
+
+	private int[] assemble(ANTLRInputStream input) throws Exception {
 	    // ... initialise
 	    
-        pc   = 0;
-        slot = 0;
+        pc = 0;
         
         Arrays.fill(ram,0);
 
         // ... parse
 
-		ANTLRInputStream  input     = new ANTLRInputStream(src);
 		F18ALexer         lexer     = new F18ALexer(input);
 		CommonTokenStream tokens    = new CommonTokenStream(lexer);
 		F18AParser        parser    = new F18AParser(tokens);
@@ -135,17 +147,6 @@ public class Assembler extends F18ABaseListener {
 
 		return ram;
 	}
-
-	private void assemble(File file) throws Exception {
-		try (PrintWriter writer = new PrintWriter(file)) {
-			writer.println(String.format("%-8s org %d","xx",origin));
-			writer.println();
-			
-			for (int i=0; i<ram.length; i++) {
-				writer.println(String.format("%04X  %04X",i,ram[i]));
-			}
-		}
-	}
 	
 	// *** F18ABaseListener ***
 
@@ -161,7 +162,6 @@ public class Assembler extends F18ABaseListener {
 	public void enterOrigin(OriginContext ctx) {
 		this.origin = Integer.parseInt(ctx.ORIGIN().getText());
 		this.pc     = Integer.parseInt(ctx.ORIGIN().getText());
-		this.slot   = 0;
 	}
 
 	@Override
@@ -186,14 +186,15 @@ public class Assembler extends F18ABaseListener {
 	
 	@Override
 	public void enterOpcode(OpcodeContext ctx) {
-		String opcode = ctx.OPCODE().getText();
-		int    rsh    = RSHIFT[slot];
+		String opcode  = ctx.OPCODE().getText();
+		int    address = pc/4;
+		int    slot    = pc % 4;
+		int    rsh     = RSHIFT[slot];
 		
 		switch(opcode) {
 			case "nop":
-				ram[pc] |= (NOP << 13) >>> rsh;
-				pc       = slot == 3 ? pc + 1 : pc;
-				slot     = ++slot % 4;
+				ram[address] |= (NOP << 13) >>> rsh;
+				pc++;
 				break;
 		}
 	}
