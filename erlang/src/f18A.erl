@@ -25,6 +25,7 @@
 % DEFINES
 
 -define(TAG,"F18A").
+-define(NOP,16#1c).
 
 % API
 
@@ -34,7 +35,7 @@ create(ID,Channel,Program) ->
    start(ID,#cpu{ id      = ID,
                   channel = Channel,
                   program = Program,
-                  pc      = 1
+                  pc      = 0
                 }).
 
 start(ID,CPU) ->
@@ -139,13 +140,13 @@ loop({run,CPU}) ->
       reset ->
          log:info(?TAG,"RESET"),
          trace:trace(f18A,{ CPU#cpu.id,reset}),     
-         loop({run,CPU#cpu{pc=1}});
+         loop({run,CPU#cpu{pc=0}});
 
       {reset,PID} ->
          log:info(?TAG,"RESET/W"),
          trace:trace(f18A,{ CPU#cpu.id,reset}),     
          PID ! reset,
-         loop({run,CPU#cpu{pc=1}});
+         loop({run,CPU#cpu{pc=0}});
 
       step ->
          log:info(?TAG,"STEP"),
@@ -237,16 +238,19 @@ go_impl(CPU) ->
    end.
 
 
-exec(CPU) ->
+exec(CPU) when CPU#cpu.pc < length(CPU#cpu.program) ->
    PC      = CPU#cpu.pc,     
    Program = CPU#cpu.program,
-   case opcode(PC,Program) of 
-      {ok,OpCode} ->
-         exec(CPU,OpCode);
+   exec(CPU,opcode(PC,lists:nth(PC+1,Program)));
 
-      eof ->
-         eof
-      end.
+exec(_CPU) ->
+   eof.
+
+exec(CPU,?NOP) ->
+   log:info(?TAG,"NOP"),     
+   trace:trace(f18A,{ CPU#cpu.id,nop }),     
+   PC  = CPU#cpu.pc + 1,
+   {ok,CPU#cpu{pc=PC}};
 
 exec(CPU,nop) ->
    log:info(?TAG,"NOP"),     
@@ -263,17 +267,40 @@ exec(CPU,{write,Word}) ->
    log:info   (?TAG,"WRITE"),
    trace:trace(f18A,{ CPU#cpu.id,{write,Word}}),     
    write(CPU,Word);
-   
+  
+exec(_CPU,{error,Reason}) ->
+   log:error(?TAG,"INVALID OPERATION ~p~n",[Reason]),
+   {error,Reason};
+
 exec(CPU,OpCode) ->
    log:warn(?TAG,"UNIMPLEMENTED OPCODE: ~p~n",[OpCode]),
    PC  = CPU#cpu.pc + 1,
    {ok,CPU#cpu{pc=PC}}.
 
-opcode(PC,Program) when PC =< length(Program) ->
-   {ok,lists:nth(PC,Program)};
+% OPCODE DECODER
 
-opcode(_PC,_Program) ->
-   eof.
+opcode(PC,Word) when is_integer(Word) ->
+   Address = PC div 4,
+   Slot    = PC rem 4,   
+   opcode(Word bxor 16#15555,Address,Slot);
+
+opcode(_PC,Word) ->
+   Word.
+
+opcode(Word,_Address,0) ->
+   (Word bsr 13) band 16#001F;
+
+opcode(Word,_Address,1) ->
+   (Word bsr 8) band 16#001F;
+
+opcode(Word,_Address,2) ->
+   (Word bsr 3) band 16#001F;
+
+opcode(Word,_Address,3) ->
+   (Word bsl 5) band 16#001F;
+
+opcode(_Word,_Address,_) ->
+   { error,invalid_slot }.
 
 % READ
 

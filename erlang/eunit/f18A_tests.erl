@@ -10,6 +10,7 @@
 
 -define(GO,        [reset,nop,nop,nop,nop,nop,eof]).
 -define(STEP,      [reset,nop,nop,nop,nop,nop,eof]).
+-define(NOP,       [reset,nop]).
 -define(READ,      [reset,read,{read,678},eof]).
 -define(WRITE,     [reset,{write,678},{write,ok},eof]).
 -define(READ_STOP, [reset,nop,read,stop]).
@@ -52,6 +53,17 @@ step_test() ->
 
    check(waitall([{n001,stopped}]),
          [ { ?STEP,n001 }
+         ]).
+
+nop_test() ->
+   setup("-- NOP TEST"),
+   F18A = f18A:create(n001,n000,[ 16#2d555 ]),
+
+   f18A:reset(F18A),
+   f18A:step (F18A,wait),
+
+   check(trace:stop(),
+         [ { ?NOP,n001 }
          ]).
 
 read_go_test() ->
