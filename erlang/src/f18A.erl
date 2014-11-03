@@ -18,8 +18,8 @@
 -record(cpu,{ id,
               channel,
               program,
-              pc,
-              fifo
+              p,
+              i
             }).
 
 % DEFINES
@@ -35,7 +35,8 @@ create(ID,Channel,Program) ->
    start(ID,#cpu{ id      = ID,
                   channel = Channel,
                   program = Program,
-                  pc      = 0
+                  p       = 0,
+                  i       = []
                 }).
 
 start(ID,CPU) ->
@@ -49,7 +50,7 @@ start(ID,CPU,true) ->
 start(ID,CPU,_) ->
    register(ID,spawn(f18A,run,[CPU])).
 
-%% @doc Issues a RESET command to the F18A node and returns immediately.
+%% @doc Issues a RESET command to the F18A node and waits for completion.
 %%
 reset(F18A) ->
    F18A ! {reset,self() },
@@ -182,9 +183,11 @@ reset_impl(CPU) ->
       _any ->
          reset_impl(CPU)
 
-      after 100 ->   
-         {run,CPU#cpu{pc=0}}
-      end.         
+   after 100 ->   
+      {run,CPU#cpu{ p  = 0,
+                    i  = []
+                  }}
+   end.         
 
 step_impl(CPU) ->
    case exec(CPU) of
@@ -202,11 +205,11 @@ step_impl(CPU) ->
 
       {error,Reason} ->
          log:error(?TAG,"OOOOPS/ : ~p",[Reason]),
-         {error,CPU};
-
-      _any ->   
-         log:error(?TAG,"STEP/? : ~p",[_any]),
          {error,CPU}
+
+%      _any ->   
+%         log:error(?TAG,"STEP/? : ~p",[_any]),
+%         {error,CPU}
    end.
 
 go_impl(CPU) ->
@@ -225,66 +228,85 @@ go_impl(CPU) ->
 
       {error,Reason} ->
          log:error(?TAG,"OOOOPS/ : ~p",[Reason]),
-         {error,CPU};
-   
-      _any ->   
-         log:error(?TAG,"GO/? : ~p",[_any]),
          {error,CPU}
+   
+%      _any ->   
+%         log:error(?TAG,"GO/? : ~p",[_any]),
+%         {error,CPU}
    end.
 
 
 exec(CPU) ->
-   PC      = CPU#cpu.pc,     
-   Address = PC div 4,
-   Slot    = PC rem 4,   
-   exec(CPU,Address,Slot).
+   I = CPU#cpu.i,      
+   exec(CPU,I).
 
-exec(CPU,Address,Slot) when Address < length(CPU#cpu.program) ->
-   Program = CPU#cpu.program,
-   Word    = lists:nth(Address+1,Program),
-   exec(CPU,opcode(Word,Slot));
+exec(CPU,[]) ->
+   P = CPU#cpu.p,     
+   case load_next(CPU) of
+        {ok,I} ->
+            exec(CPU#cpu{ p = P + 1,
+                          i = I
+                        });
 
-exec(_CPU,_Address,_Slot) ->
-   eof.
+         eof ->
+            eof
+   end;
 
-exec(CPU,?NOP) ->
+exec(CPU,[H|T]) ->
+   exec_impl(CPU#cpu{ i=T },H).
+
+exec_impl(CPU,?NOP) ->
    log:info(?TAG,"NOP"),     
    trace:trace(f18A,{ CPU#cpu.id,nop }),     
-   PC  = CPU#cpu.pc + 1,
-   {ok,CPU#cpu{pc=PC}};
+   {ok,CPU};
 
-exec(CPU,nop) ->
+exec_impl(CPU,nop) ->
    log:info(?TAG,"NOP"),     
    trace:trace(f18A,{ CPU#cpu.id,nop }),     
-   PC  = CPU#cpu.pc + 4,
-   {ok,CPU#cpu{pc=PC}};
+   {ok,CPU};
 
-exec(CPU,read) ->
+exec_impl(CPU,read) ->
    log:info   (?TAG,"READ"),
    trace:trace(f18A,{ CPU#cpu.id,read}),     
    read(CPU);
 
-exec(CPU,{write,Word}) ->
+exec_impl(CPU,{write,Word}) ->
    log:info   (?TAG,"WRITE"),
    trace:trace(f18A,{ CPU#cpu.id,{write,Word}}),     
    write(CPU,Word);
   
-exec(_CPU,{error,Reason}) ->
+exec_impl(_CPU,{error,Reason}) ->
    log:error(?TAG,"INVALID OPERATION ~p~n",[Reason]),
    {error,Reason};
 
-exec(CPU,OpCode) ->
+exec_impl(CPU,OpCode) ->
    log:warn(?TAG,"UNIMPLEMENTED OPCODE: ~p~n",[OpCode]),
-   PC  = CPU#cpu.pc + 1,
-   {ok,CPU#cpu{pc=PC}}.
+   {ok,CPU}.
+
+% INSTRUCTION LOADER
+
+load_next(CPU) ->
+   Program = CPU#cpu.program,
+   P       = CPU#cpu.p,     
+   load_next(Program,P).
+
+load_next(Program,Address) when Address < length(Program) ->
+   { ok,decode(lists:nth(Address+1,Program)) };
+
+load_next(_Program,_Address) ->
+   eof.
 
 % OPCODE DECODER
 
-opcode(Word,Slot) when is_integer(Word) ->
-   decode(Word bxor 16#15555,Slot);
+decode(Word) when is_integer(Word) ->
+   [ decode(Word bxor 16#15555,0),
+     decode(Word bxor 16#15555,1),
+     decode(Word bxor 16#15555,2),
+     decode(Word bxor 16#15555,3)
+   ];
 
-opcode(Word,_) ->
-   Word.
+decode(Word) ->
+   [ Word ].
 
 decode(Word,0) ->
    (Word bsr 13) band 16#001F;
@@ -296,10 +318,7 @@ decode(Word,2) ->
    (Word bsr 3) band 16#001F;
 
 decode(Word,3) ->
-   (Word bsl 2) band 16#001F;
-
-decode(_Word,_) ->
-   { error,invalid_slot }.
+   (Word bsl 2) band 16#001F.
 
 % READ
 
@@ -310,8 +329,7 @@ read(CPU) ->
       {Ch,write,Word} -> 
          trace:trace(f18A,{ CPU#cpu.id,{read,Word}}),     
          Ch ! { ID,read,ok },
-         PC = CPU#cpu.pc + 4,
-         {ok,CPU#cpu{pc = PC }};
+         {ok,CPU};
 
       step ->
          read(CPU);
@@ -345,8 +363,7 @@ write_wait(CPU) ->
    receive
       { Ch,read,ok } -> 
          trace:trace(f18A,{ CPU#cpu.id,{write,ok}}),     
-         PC = CPU#cpu.pc + 4,
-         {ok,CPU#cpu{pc = PC }};
+         {ok,CPU};
 
       step ->
          write_wait(CPU);
