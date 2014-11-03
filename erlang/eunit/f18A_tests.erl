@@ -130,8 +130,9 @@ read_go_test() ->
 
    F18A = f18A:create(n001,n000,[read]),
 
+   f18A:reset(F18A),
+
    spawn(fun() ->
-            f18A:reset(F18A),
             f18A:go   (F18A,wait),
             M ! { n001,stopped }
          end),
@@ -153,8 +154,9 @@ read_step_test() ->
 
    F18A = f18A:create(n001,n000,[read]),
 
+   f18A:reset(F18A),
+
    spawn(fun() ->
-            f18A:reset(F18A),
             f18A:step (F18A,wait),
             f18A:step (F18A,wait),
             M ! { n001,stopped }

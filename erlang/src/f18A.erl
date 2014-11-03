@@ -3,7 +3,7 @@
 % EXPORTS
 
 -export([create/3]).
--export([reset/1,reset/2]).
+-export([reset/1]).
 -export([go/1,go/2]).
 -export([stop/1,stop/2]).
 -export([step/1,step/2]).
@@ -52,16 +52,9 @@ start(ID,CPU,_) ->
 %% @doc Issues a RESET command to the F18A node and returns immediately.
 %%
 reset(F18A) ->
-   F18A ! reset.
-
-reset(F18A,wait) ->
    F18A ! {reset,self() },
-   reset_wait().
-
-reset_wait() ->
    receive
-      reset -> ok;
-      _     -> reset_wait()
+      reset -> ok
    end.
   
  
@@ -140,13 +133,14 @@ loop({run,CPU}) ->
       reset ->
          log:info(?TAG,"RESET"),
          trace:trace(f18A,{ CPU#cpu.id,reset}),     
-         loop({run,CPU#cpu{pc=0}});
+         loop(reset_impl(CPU));
 
       {reset,PID} ->
          log:info(?TAG,"RESET/W"),
          trace:trace(f18A,{ CPU#cpu.id,reset}),     
+         Next = reset_impl(CPU),
          PID ! reset,
-         loop({run,CPU#cpu{pc=0}});
+         loop(Next);
 
       step ->
          log:info(?TAG,"STEP"),
@@ -182,6 +176,15 @@ loop({run,CPU}) ->
          loop(Next)
 
       end.
+
+reset_impl(CPU) ->
+   receive
+      _any ->
+         reset_impl(CPU)
+
+      after 100 ->   
+         {run,CPU#cpu{pc=0}}
+      end.         
 
 step_impl(CPU) ->
    case exec(CPU) of
