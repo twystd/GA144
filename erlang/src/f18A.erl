@@ -179,16 +179,8 @@ loop({run,CPU}) ->
          log:info(?TAG,"GO/W"),
          Next = go_impl(CPU),
          PID ! gone,
-         loop(Next);
+         loop(Next)
 
-      {Ch,write,Word} ->
-         loop({run,CPU#cpu{fifo={Ch,Word}
-                          }
-              });
-
-      _any ->
-         ?debugFmt("??? F18A: ~p",[_any]),
-         loop({run,CPU})
       end.
 
 step_impl(CPU) ->
@@ -309,23 +301,6 @@ decode(_Word,_) ->
 % READ
 
 read(CPU) ->
-   Word = CPU#cpu.fifo,
-   read(CPU,Word).
-
-read(CPU,undefined) ->  
-   read_wait(CPU);
-
-read(CPU,{Ch,Word}) ->
-   ID   = CPU#cpu.id,
-   Ch   = CPU#cpu.channel,
-   trace:trace(f18A,{ CPU#cpu.id,{read,Word}}),     
-   Ch ! { ID,read,ok },
-   PC = CPU#cpu.pc + 4,
-   {ok,CPU#cpu{ pc = PC,
-                fifo = undefined
-               }}.
- 
-read_wait(CPU) ->
    ID = CPU#cpu.id,
    Ch = CPU#cpu.channel,
    receive
@@ -339,11 +314,8 @@ read_wait(CPU) ->
          read(CPU);
 
       {stop,PID} ->
-         {stop,PID};
+         {stop,PID}
 
-      _any ->
-         log:warn(?TAG,"READ/? ~p",[_any]),
-         {error,_any}
    end.
    
 
@@ -377,11 +349,7 @@ write_wait(CPU) ->
          write_wait(CPU);
 
       {stop,PID} ->
-         {stop,PID};
-
-      _any ->
-         log:warn(?TAG,"WRITE/? ~p",[_any]),
-         {error,_any}
+         {stop,PID}
    end.
 
 % EUNIT TESTS
