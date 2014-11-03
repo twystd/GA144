@@ -10,6 +10,7 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import za.co.twyst.GA144.assembler.antlr.F18ABaseListener;
 import za.co.twyst.GA144.assembler.antlr.F18ALexer;
@@ -23,13 +24,27 @@ import za.co.twyst.GA144.assembler.antlr.F18AParser.ProgramContext;
 public class Assembler extends F18ABaseListener {
 	// CONSTANTS
 	
+    private static final int   FETCHP = 0x08;
     private static final int   NOP    = 0x1c;
+    
+    private static final int   RIGHT  = 0x01d5;
+
     private static final int[] RSHIFT = { 0,5,10,15 };
+    private static final int   XOR    = 0x15555;
+    private static final int[] MASK   = { 0x3e000,0x01f00,0x000f8,0x00007 };
+
+//  01010 10101 01010 101
+//  00000 00000 00000 111
+//  00 0000 0000 0000 0111
+
     
 	// INSTANCE VARIABLES
 	
 	private int   origin;
-	private int   pc;
+    private int   location;
+    private int   slot;
+    
+	private int   P;
 	private int[] ram = new int[64];
 	
 	// ENTRY POINT
@@ -125,8 +140,10 @@ public class Assembler extends F18ABaseListener {
 	private int[] assemble(ANTLRInputStream input) throws Exception {
 	    // ... initialise
 	    
-        pc = 0;
+        location = 0;
+        slot     = 0;
         
+        P = 0;
         Arrays.fill(ram,0);
 
         // ... parse
@@ -139,12 +156,6 @@ public class Assembler extends F18ABaseListener {
 
 		walker.walk(this,tree); 
 		
-		// ... XOR with 0x15555;
-		
-		for (int i=0; i<ram.length; i++) {
-			ram[i] ^= 0x15555;
-		}
-
 		return ram;
 	}
 	
@@ -160,8 +171,10 @@ public class Assembler extends F18ABaseListener {
 
 	@Override
 	public void enterOrigin(OriginContext ctx) {
-		this.origin = Integer.parseInt(ctx.ORIGIN().getText());
-		this.pc     = Integer.parseInt(ctx.ORIGIN().getText());
+		this.origin   = Integer.parseInt(ctx.ORIGIN().getText());
+		this.P        = Integer.parseInt(ctx.ORIGIN().getText());
+		this.location = Integer.parseInt(ctx.ORIGIN().getText());
+		this.slot     = 0;
 	}
 
 	@Override
@@ -186,20 +199,66 @@ public class Assembler extends F18ABaseListener {
 	
 	@Override
 	public void enterOpcode(OpcodeContext ctx) {
-		String opcode  = ctx.OPCODE().getText();
-		int    address = pc/4;
-		int    slot    = pc % 4;
-		int    rsh     = RSHIFT[slot];
-		
-		switch(opcode) {
-			case "nop":
-				ram[address] |= (NOP << 13) >>> rsh;
-				pc++;
-				break;
-		}
+        TerminalNode node;
+        
+        // ... opcode ?
+        
+	    if ((node = ctx.OPCODE()) != null) {
+	        switch(node.getText()) {
+			    case "nop":
+			        encode(NOP);
+			        break;
+	        }
+	       
+	        return;
+	    }
+        
+        // ... word ?
+        
+        if ((node = ctx.WORD()) != null) {
+            switch(node.getText()) {
+                case "right":
+                    encode(FETCHP,RIGHT);
+                    break;
+            }
+           
+            return;
+        }
 	}
 
 	@Override
 	public void exitOpcode(OpcodeContext ctx) {
 	}
+	
+	// INTERNAL
+	
+	private void encode(int opcode) {
+	    int rsh  = RSHIFT[slot];
+	    int mask = MASK[slot];
+	        
+	    ram[location] |= (((opcode << 13) >>> rsh) ^ XOR) & mask;
+	    slot           = (slot + 1) % 4;
+	                    
+	    if (slot == 0) {
+	        location++;
+	        P++;
+	    }
+	}
+	        
+    private void encode(int opcode,int constant) {
+        int rsh  = RSHIFT[slot];
+        int mask = MASK[slot];
+	        
+        ram[location] |= (((opcode << 13) >>> rsh) ^ XOR) & mask;
+        ram[++P]      |= constant;
+        slot           = (slot + 1) % 4;
+	                    
+        if (slot == 0) {
+            location++;
+            P++;
+        }
+    }
+
 }
+
+

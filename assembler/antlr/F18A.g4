@@ -26,6 +26,7 @@ label
 
 opcode
     : OPCODE
+    | WORD
     ;
 
 name
@@ -48,6 +49,9 @@ OPCODE
     : 'nop'
     ;
 
+WORD
+    : 'right'
+    ;
 NAME
     : [a-zA-Z] [a-zA-Z0-9]*
     ;

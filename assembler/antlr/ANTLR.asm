@@ -3,5 +3,5 @@
 antlr 0   org      # ORIGIN: 0
 
 start nop
-      nop
+      right
 end   nop          # line comment
