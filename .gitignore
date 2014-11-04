@@ -1,7 +1,7 @@
 .DS_Store
 erlang/ebin
-tla/F18A.old
 tla/F18A.toolbox
+tla/channel.toolbox
 assembler/antlr/antlr-4.4-complete.jar
 assembler/antlr/java/bin
 assembler/antlr/java/gen
