@@ -11,21 +11,24 @@
 
 % INCLUDES
 
+-include    ("include/opcode.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 % RECORDS
 
 -record(cpu,{ id,
               channel,
-              program,
+              rom,
+              ram,
+              io,
               p,
-              i
+              i,
+              t
             }).
 
 % DEFINES
 
 -define(TAG,"F18A").
--define(NOP,16#1c).
 
 % API
 
@@ -34,9 +37,12 @@
 create(ID,Channel,Program) ->
    start(ID,#cpu{ id      = ID,
                   channel = Channel,
-                  program = Program,
+                  rom     = Program,
+                  ram     = Program,
+                  io      = [],
                   p       = 0,
-                  i       = []
+                  i       = [],
+                  t       = 0
                 }).
 
 start(ID,CPU) ->
@@ -184,8 +190,9 @@ reset_impl(CPU) ->
          reset_impl(CPU)
 
    after 100 ->   
-      {run,CPU#cpu{ p  = 0,
-                    i  = []
+      {run,CPU#cpu{ p = 0,
+                    i = [],
+                    t = 0
                   }}
    end.         
 
@@ -206,10 +213,6 @@ step_impl(CPU) ->
       {error,Reason} ->
          log:error(?TAG,"OOOOPS/ : ~p",[Reason]),
          {error,CPU}
-
-%      _any ->   
-%         log:error(?TAG,"STEP/? : ~p",[_any]),
-%         {error,CPU}
    end.
 
 go_impl(CPU) ->
@@ -229,10 +232,6 @@ go_impl(CPU) ->
       {error,Reason} ->
          log:error(?TAG,"OOOOPS/ : ~p",[Reason]),
          {error,CPU}
-   
-%      _any ->   
-%         log:error(?TAG,"GO/? : ~p",[_any]),
-%         {error,CPU}
    end.
 
 
@@ -255,25 +254,39 @@ exec(CPU,[]) ->
 exec(CPU,[H|T]) ->
    exec_impl(CPU#cpu{ i=T },H).
 
+% 16#08  @p  fetch-p
+exec_impl(CPU,?FETCHP) ->
+   log:info(?TAG,"FETCH-P"),     
+   P = CPU#cpu.p,     
+   T = read(CPU,P),
+   trace:trace(f18A,{ CPU#cpu.id,{fetchp,{t,T}}}),     
+   {ok,CPU#cpu{ p = P+1,
+                t = T
+              }};
+
+% 16#1c  .   nop
 exec_impl(CPU,?NOP) ->
    log:info(?TAG,"NOP"),     
    trace:trace(f18A,{ CPU#cpu.id,nop }),     
    {ok,CPU};
 
+% INTERIM STUFF - REMOVE
 exec_impl(CPU,nop) ->
    log:info(?TAG,"NOP"),     
    trace:trace(f18A,{ CPU#cpu.id,nop }),     
    {ok,CPU};
 
+% INTERIM STUFF - REMOVE
 exec_impl(CPU,read) ->
    log:info   (?TAG,"READ"),
    trace:trace(f18A,{ CPU#cpu.id,read}),     
-   read(CPU);
+   channel_read(CPU);
 
+% INTERIM STUFF - REMOVE
 exec_impl(CPU,{write,Word}) ->
    log:info   (?TAG,"WRITE"),
    trace:trace(f18A,{ CPU#cpu.id,{write,Word}}),     
-   write(CPU,Word);
+   channel_write(CPU,Word);
   
 exec_impl(_CPU,{error,Reason}) ->
    log:error(?TAG,"INVALID OPERATION ~p~n",[Reason]),
@@ -284,20 +297,19 @@ exec_impl(CPU,OpCode) ->
    {ok,CPU}.
 
 % INSTRUCTION LOADER
-
+%
 load_next(CPU) ->
-   Program = CPU#cpu.program,
-   P       = CPU#cpu.p,     
-   load_next(Program,P).
+   P = CPU#cpu.p,     
+   load_next_impl(read(CPU,P)).
 
-load_next(Program,Address) when Address < length(Program) ->
-   { ok,decode(lists:nth(Address+1,Program)) };
+load_next_impl(eof) ->
+   eof;
 
-load_next(_Program,_Address) ->
-   eof.
+load_next_impl(Word) ->
+   { ok,decode(Word) }.
 
 % OPCODE DECODER
-
+%
 decode(Word) when is_integer(Word) ->
    [ decode(Word bxor 16#15555,0),
      decode(Word bxor 16#15555,1),
@@ -309,20 +321,44 @@ decode(Word) ->
    [ Word ].
 
 decode(Word,0) ->
-   (Word bsr 13) band 16#001F;
+   opcode:opcode((Word bsr 13) band 16#001F);
 
 decode(Word,1) ->
-   (Word bsr 8) band 16#001F;
+   opcode:opcode((Word bsr 8) band 16#001F);
 
 decode(Word,2) ->
-   (Word bsr 3) band 16#001F;
+   opcode:opcode((Word bsr 3) band 16#001F);
 
 decode(Word,3) ->
-   (Word bsl 2) band 16#001F.
+   opcode:opcode((Word bsl 2) band 16#001F).
 
-% READ
+% ROM/RAM READ
+%
+read(CPU,Addr) when Addr < 16#40 ->
+   read_mem(CPU#cpu.ram,Addr);
 
-read(CPU) ->
+read(CPU,Addr) when Addr < 16#80 ->
+   read_mem(CPU#cpu.ram,Addr-16#40);
+
+read(CPU,Addr) when Addr < 16#C0 ->
+   read_mem(CPU#cpu.rom,Addr-16#80);
+
+read(CPU,Addr) when Addr < 16#100 ->
+   read_mem(CPU#cpu.rom,Addr-16#C0);
+
+read(CPU,Addr) when Addr < 16#200 ->
+   read_mem(CPU#cpu.io,Addr-16#100).
+
+read_mem(Mem,Addr) when Addr < length(Mem) ->
+   lists:nth(Addr+1,Mem);
+
+read_mem(_Mem,_Addr) ->
+   eof.
+
+
+% CHANNEL READ
+
+channel_read(CPU) ->
    ID = CPU#cpu.id,
    Ch = CPU#cpu.channel,
    receive
@@ -332,7 +368,7 @@ read(CPU) ->
          {ok,CPU};
 
       step ->
-         read(CPU);
+         channel_read(CPU);
 
       {stop,PID} ->
          {stop,PID}
@@ -340,14 +376,14 @@ read(CPU) ->
    end.
    
 
-% WRITE
+% CHANNEL WRITE
 
-write(CPU,Word) ->
+channel_write(CPU,Word) ->
    ID = CPU#cpu.id,
    Ch = CPU#cpu.channel,
    try
       Ch ! { ID,write,Word },
-      write_wait(CPU)
+      channel_write_wait(CPU)
    catch
       error:badarg ->
          log:error(?TAG,"~p:WRITE to invalid node ~p",[ID,Ch]),   
@@ -358,7 +394,7 @@ write(CPU,Word) ->
          {error,{C,X}}
    end.
    
-write_wait(CPU) ->
+channel_write_wait(CPU) ->
    Ch = CPU#cpu.channel,
    receive
       { Ch,read,ok } -> 
@@ -366,7 +402,7 @@ write_wait(CPU) ->
          {ok,CPU};
 
       step ->
-         write_wait(CPU);
+         channel_write_wait(CPU);
 
       {stop,PID} ->
          {stop,PID}

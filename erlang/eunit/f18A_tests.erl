@@ -10,11 +10,12 @@
 
 -define(GO,        [reset,nop,nop,nop,nop,nop,eof]).
 -define(STEP,      [reset,nop,nop,nop,nop,nop,eof]).
--define(NOP1,      [reset,nop]).
+-define(NOP,       [reset,nop]).
 -define(NOP2,      [reset,nop,nop]).
 -define(NOP3,      [reset,nop,nop,nop]).
 -define(NOP4,      [reset,nop,nop,nop,nop]).
 -define(NOP5,      [reset,nop,nop,nop,nop,nop]).
+-define(FETCHP,    [reset,{fetchp,{t,16#1d5}}]).
 -define(READ,      [reset,read,{read,678},eof]).
 -define(WRITE,     [reset,{write,678},{write,ok},eof]).
 -define(READ_STOP, [reset,nop,read,stop]).
@@ -59,15 +60,15 @@ step_test() ->
          [ { ?STEP,n001 }
          ]).
 
-nop1_test() ->
-   setup("-- NOP:1 TEST"),
+nop_test() ->
+   setup("-- NOP TEST"),
    F18A = f18A:create(n001,n000,[ 16#2d555 ]),
 
    f18A:reset(F18A),
    f18A:step (F18A,wait),
 
    check(trace:stop(),
-         [ { ?NOP1,n001 }
+         [ { ?NOP,n001 }
          ]).
 
 nop2_test() ->
@@ -122,6 +123,17 @@ nop5_test() ->
 
    check(trace:stop(),
          [ { ?NOP5,n001 }
+         ]).
+
+fetchp_test() ->
+   setup("-- FETCH-P TEST"),
+   F18A = f18A:create(n001,n000,[ 16#04000,16#001d5 ]),
+
+   f18A:reset(F18A),
+   f18A:step (F18A,wait),
+
+   check(trace:stop(),
+         [ { ?FETCHP,n001 }
          ]).
 
 read_go_test() ->
