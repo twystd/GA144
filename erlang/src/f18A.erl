@@ -22,6 +22,8 @@
               ram,
               io,
               p,
+              a,
+              b,
               i,
               t
             }).
@@ -41,6 +43,8 @@ create(ID,Channel,Program) ->
                   ram     = Program,
                   io      = [],
                   p       = 0,
+                  a       = 0,
+                  b       = 16#100,
                   i       = [],
                   t       = 0
                 }).
@@ -191,6 +195,8 @@ reset_impl(CPU) ->
 
    after 100 ->   
       {run,CPU#cpu{ p = 0,
+                    a = 0,
+                    b = 16#100,
                     i = [],
                     t = 0
                   }}
@@ -269,6 +275,14 @@ exec_impl(CPU,?NOP) ->
    log:info(?TAG,"NOP"),     
    trace:trace(f18A,{ CPU#cpu.id,nop }),     
    {ok,CPU};
+
+% 16#1e  b!  b-store
+exec_impl(CPU,?BSTORE) ->
+   log:info(?TAG,"B-STORE"),     
+   B = CPU#cpu.t,     
+   trace:trace(f18A,{ CPU#cpu.id,{bstore,{b,B}}}),     
+   {ok,CPU#cpu{ b = B
+              }};
 
 % INTERIM STUFF - REMOVE
 exec_impl(CPU,nop) ->

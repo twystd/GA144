@@ -19,6 +19,9 @@ opcode(16#08) ->
 opcode(16#1c) ->
    ?NOP;
 
+opcode(16#1e) ->
+   ?BSTORE;
+
 opcode(_) ->
    unknown.     
 
