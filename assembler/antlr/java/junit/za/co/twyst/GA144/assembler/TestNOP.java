@@ -2,10 +2,6 @@ package za.co.twyst.GA144.assembler;
 
 import static org.junit.Assert.*;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestNOP {
@@ -41,23 +37,7 @@ public class TestNOP {
                                               new TestVector(NOPX,new int[] { 0x2c9b2,0x2d555 },new int[] { 0x3ffff,0x3e000  } ), 
                                             };
 
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-	}
-
-	@Before
-	public void setUp() throws Exception {
-	}
-
-	@After
-	public void tearDown() throws Exception {
-	}
-
-	// UNIT TESTS 
+    // UNIT TESTS 
 	
 	@Test
 	public void testNOP() throws Exception {

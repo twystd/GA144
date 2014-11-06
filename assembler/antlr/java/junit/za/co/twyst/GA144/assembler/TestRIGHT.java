@@ -33,22 +33,6 @@ public class TestRIGHT {
                                                 new TestVector(RIGHT3,new int[] { 0x2c9b7,0x001d5 },new int[] { 0x3ffff,0x3ffff } ) 
                                             };
 
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-	}
-
-	@Before
-	public void setUp() throws Exception {
-	}
-
-	@After
-	public void tearDown() throws Exception {
-	}
-
 	// UNIT TESTS 
 	
 	@Test

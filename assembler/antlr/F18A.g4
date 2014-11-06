@@ -17,7 +17,7 @@ origin
     ;
 
 instruction
-    : label? WS opcode (WS comment)?
+    : label? (WS opcode)+ (WS comment)?
     ;
 
 label
@@ -47,6 +47,8 @@ ORG
 
 OPCODE
     : 'nop'
+    | '@p'
+    | 'b!'
     ;
 
 WORD

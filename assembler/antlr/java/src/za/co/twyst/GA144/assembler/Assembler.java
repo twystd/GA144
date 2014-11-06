@@ -26,6 +26,7 @@ public class Assembler extends F18ABaseListener {
 	
     private static final int   FETCHP = 0x08;
     private static final int   NOP    = 0x1c;
+    private static final int   BSTORE = 0x1e;
     
     private static final int   RIGHT  = 0x01d5;
 
@@ -33,10 +34,7 @@ public class Assembler extends F18ABaseListener {
     private static final int   XOR    = 0x15555;
     private static final int[] MASK   = { 0x3e000,0x01f00,0x000f8,0x00007 };
 
-//  01010 10101 01010 101
-//  00000 00000 00000 111
-//  00 0000 0000 0000 0111
-
+    private static final int[] SLOT3 = { FETCHP,NOP };
     
 	// INSTANCE VARIABLES
 	
@@ -105,6 +103,18 @@ public class Assembler extends F18ABaseListener {
 		} catch(Throwable x) {
 			System.err.println("ERROR: " + x);
 		}
+	}
+	
+	// CLASS METHODS
+	
+	private static boolean contains(int[] array,int value) {
+		for (int item: array) {
+			if (item == value) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 	
 	// CONSTRUCTOR
@@ -208,6 +218,14 @@ public class Assembler extends F18ABaseListener {
 			    case "nop":
 			        encode(NOP);
 			        break;
+			        
+			    case "@p":
+			        encode(FETCHP);
+		        	break;
+			        
+			    case "b!":
+			        encode(BSTORE);
+		        	break;
 	        }
 	       
 	        return;
@@ -233,9 +251,19 @@ public class Assembler extends F18ABaseListener {
 	// INTERNAL
 	
 	private void encode(int opcode) {
+		// ... pad current instruction with NOP ?
+		
+	    if (slot == 3) {
+	    	if (!contains(SLOT3, opcode)) {
+	    		encode(NOP);
+	    	}
+	    }
+
+	    // ... encode into current instruction
+	    
 	    int rsh  = RSHIFT[slot];
 	    int mask = MASK[slot];
-	        
+	    
 	    ram[location] |= (((opcode << 13) >>> rsh) ^ XOR) & mask;
 	    slot           = (slot + 1) % 4;
 	                    
