@@ -30,7 +30,8 @@
 
 % DEFINES
 
--define(TAG,"F18A").
+-define(TAG,  "F18A").
+-define(RIGHT,16#1d5).
 
 % API
 
@@ -260,7 +261,7 @@ exec(CPU,[]) ->
 exec(CPU,[H|T]) ->
    exec_impl(CPU#cpu{ i=T },H).
 
-% 16#08  @p  fetch-p
+% 16#08  @p  fetch P
 exec_impl(CPU,?FETCHP) ->
    log:info(?TAG,"FETCH-P"),     
    P = CPU#cpu.p,     
@@ -268,6 +269,15 @@ exec_impl(CPU,?FETCHP) ->
    trace:trace(f18A,{ CPU#cpu.id,{fetchp,{t,T}}}),     
    {ok,CPU#cpu{ p = P+1,
                 t = T
+              }};
+
+% 16#0e  @b  fetch B
+exec_impl(CPU,?FETCHB) ->
+   log:info(?TAG,"FETCH-B"),     
+   B = CPU#cpu.p,     
+   T = read(CPU,B),
+   trace:trace(f18A,{ CPU#cpu.id,{fetchb,{t,T}}}),     
+   {ok,CPU#cpu{ t = T
               }};
 
 % 16#1c  .   nop
@@ -346,8 +356,9 @@ decode(Word,2) ->
 decode(Word,3) ->
    opcode:opcode((Word bsl 2) band 16#001F).
 
-% ROM/RAM READ
+% READ
 %
+
 read(CPU,Addr) when Addr < 16#40 ->
    read_mem(CPU#cpu.ram,Addr);
 
@@ -360,6 +371,9 @@ read(CPU,Addr) when Addr < 16#C0 ->
 read(CPU,Addr) when Addr < 16#100 ->
    read_mem(CPU#cpu.rom,Addr-16#C0);
 
+read(CPU,?RIGHT) ->
+   read_channel(CPU,?RIGHT);
+
 read(CPU,Addr) when Addr < 16#200 ->
    read_mem(CPU#cpu.io,Addr-16#100).
 
@@ -369,6 +383,22 @@ read_mem(Mem,Addr) when Addr < length(Mem) ->
 read_mem(_Mem,_Addr) ->
    eof.
 
+read_channel(CPU,Ch) ->
+   ID = CPU#cpu.id,
+   Ch = CPU#cpu.channel,
+   receive
+      {Ch,write,Word} -> 
+         trace:trace(f18A,{ CPU#cpu.id,{read,Word}}),     
+         Ch ! { ID,read,ok },
+         Word;
+
+      step ->
+         read_channel(CPU,Ch);
+
+      {stop,PID} ->
+         {stop,PID}
+
+   end.
 
 % CHANNEL READ
 

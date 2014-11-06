@@ -72,7 +72,14 @@ resync(Files) ->
 
    if 
      length(Modified) > 0 ->
-         make:all([load]);
+         case make:all([load]) of 
+            up_to_date ->
+               hooks();
+    
+            _else ->
+               oops()
+         end;
+           
      true ->
          ok
      end,
@@ -103,4 +110,11 @@ files() ->
 
    lists:append([ { X,G(X) } || X <- lists:filter(F,Src)   ],
                 [ { X,H(X) } || X <- lists:filter(F,Tests) ]).
+
+hooks() ->
+   io:format("... running hooks~n"),     
+   ok.
+
+oops() ->
+   ok.
 
