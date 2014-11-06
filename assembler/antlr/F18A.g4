@@ -48,7 +48,9 @@ ORG
 OPCODE
     : 'nop'
     | '@p'
+    | '@b'
     | 'b!'
+    | '!b'
     ;
 
 WORD

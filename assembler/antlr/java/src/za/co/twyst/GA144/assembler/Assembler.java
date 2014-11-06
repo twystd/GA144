@@ -25,6 +25,8 @@ public class Assembler extends F18ABaseListener {
 	// CONSTANTS
 	
     private static final int   FETCHP = 0x08;
+    private static final int   FETCHB = 0x0a;
+    private static final int   STOREB = 0x0e;
     private static final int   NOP    = 0x1c;
     private static final int   BSTORE = 0x1e;
     
@@ -215,14 +217,22 @@ public class Assembler extends F18ABaseListener {
         
 	    if ((node = ctx.OPCODE()) != null) {
 	        switch(node.getText()) {
-			    case "nop":
-			        encode(NOP);
-			        break;
-			        
 			    case "@p":
 			        encode(FETCHP);
 		        	break;
 			        
+			    case "@b":                  
+			        encode(FETCHB);
+		        	break;
+			        
+			    case "!b":                  
+			        encode(STOREB);
+		        	break;
+
+			    case "nop":
+			        encode(NOP);
+			        break;
+
 			    case "b!":
 			        encode(BSTORE);
 		        	break;
