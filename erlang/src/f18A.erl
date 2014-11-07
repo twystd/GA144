@@ -286,7 +286,7 @@ exec_impl(CPU,?STOREB) ->
    B = CPU#cpu.b,     
    T = CPU#cpu.t,
    write(CPU,B,T),
-   trace:trace(f18A,{ CPU#cpu.id,{storeb,{t,T}}}),     
+   trace:trace(f18A,{ CPU#cpu.id,{storeb,{b,B},{t,T}}}),     
    {ok,CPU#cpu{ t = T
               }};
 
@@ -412,7 +412,6 @@ read_channel(CPU,Ch) ->
 % WRITE
 
 write(CPU,?RIGHT,Word) ->
-   ?debugFmt("**** DEBUG: ~p ~p~n",[?RIGHT,Word]),
    Ch = CPU#cpu.channel,
    write_channel(CPU,Ch,Word).
 
@@ -435,7 +434,6 @@ write_wait(CPU) ->
    Ch = CPU#cpu.channel,
    receive
       { Ch,read,ok } -> 
-         trace:trace(f18A,{ CPU#cpu.id,{write,ok}}),     
          ok;
 
       step ->

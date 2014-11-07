@@ -1,0 +1,20 @@
+                                  # 2(x+3)
+                                  #
+                                  #  calc1 0 org
+                                  #
+00  049f3  @p . + dup             #  calc  3 . dup + ;
+01  00003                         #           
+02  3d555  + ;                    #
+                                  #
+03  04992  @p . dup .             #  main  1 . + dup calc !b main;
+04  00001                         #
+05  13400  call 000               #
+06  09703  !b jump 03             #
+                                  #
+07  04b12  @p !b @p  .            #  init  right b!
+08  001d5                         #
+                                  #
+09  3ffff                         #  -1 main ;
+0a  11403  jump 003               #                     
+                                  #
+                                  #  a9 org init ;

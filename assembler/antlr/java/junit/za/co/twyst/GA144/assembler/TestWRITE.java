@@ -4,11 +4,20 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+//00 04b02  @p b! @p .              # right b!
+//01 001d5  right                   #
+//02 002a6  678                     # 678
+//03 09600  !b call 00              # !b call 00
+
+ 
 public class TestWRITE {
 	private static final String PROG = "antlr 0 org\n"
-			                         + "      right b! 678 !b\n";
+			                         + "      right b!\n"
+			                         + "      678   !b\n";
 
-    private static final TestVector[] WRITE = { new TestVector(PROG,new int[] { 0x04b02,0x001d5,0x089b2,0x002a6 },new int[] { 0x3ffff,0x3ffff,0x3ffff,0x3ffff } ), 
+    private static final TestVector[] WRITE = { new TestVector(PROG,
+                                                               new int[] { 0x04b12,0x001d5,0x002a6,0x09600 },
+                                                               new int[] { 0x3ffff,0x3ffff,0x3ffff,0x3e000 }), 
                                              };
 
 	// UNIT TESTS 
