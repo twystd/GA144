@@ -11,7 +11,9 @@ import org.junit.runners.Suite.SuiteClasses;
                 TestFETCHB.class,
                 TestBSTORE.class,
                 TestSTOREB.class,
-	            TestRIGHT.class
+	            TestRIGHT.class,
+	            TestREAD.class,
+	            TestWRITE.class
 	          })
 
 public class AllTests {
