@@ -9,7 +9,7 @@ x() ->
    f18A:test().
 
 xx() ->
-   f18A_tests:fetchp_test().    
+   f18A_tests:fetchb_test().    
 
 r() ->
    make:all([load]).

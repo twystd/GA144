@@ -16,13 +16,20 @@
 opcode(16#08) ->
    ?FETCHP;
 
+opcode(16#0a) ->
+   ?FETCHB;
+
+opcode(16#0e) ->
+   ?STOREB;
+
 opcode(16#1c) ->
    ?NOP;
 
 opcode(16#1e) ->
    ?BSTORE;
 
-opcode(_) ->
+opcode(X) ->
+   ?debugFmt("UKNOWN CODE: ~p~n",[X]),
    unknown.     
 
 % EUNIT TESTS

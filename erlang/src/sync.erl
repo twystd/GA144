@@ -1,6 +1,6 @@
 -module(sync).
 
--export([start/0,stop/0]).
+-export([start/0,stop/0,hook/2]).
 -export([run/0]).
 
 -include_lib("kernel/include/file.hrl").
@@ -26,6 +26,10 @@ stop(true) ->
 stop(_) ->
    ok.
 
+hook(Module,Fun) ->
+   sync !  {hook,{Module,Fun}},
+   ok.
+
 is_registered() ->
    lists:foldl(fun(X,A) ->
                   case X of
@@ -36,18 +40,21 @@ is_registered() ->
                            
 run() ->
    make:all([load]),
-   loop    (files()).
+   loop    (files(),none).
 
-loop(Files) ->
+loop(Files,Hook) ->
    receive
+      {hook,F} ->
+        loop(Files,F);
+
       stop ->
          unregister(sync)
 
       after 1000 ->
-         loop(resync(Files))
+         loop(resync(Files,Hook),Hook)
       end.
 
-resync(Files) ->
+resync(Files,Hook) ->
    Lookup   = dict:from_list(Files),
    SrcFiles = files(),
    
@@ -74,7 +81,7 @@ resync(Files) ->
      length(Modified) > 0 ->
          case make:all([load]) of 
             up_to_date ->
-               hooks();
+               hooks(Hook);
     
             _else ->
                oops()
@@ -111,8 +118,16 @@ files() ->
    lists:append([ { X,G(X) } || X <- lists:filter(F,Src)   ],
                 [ { X,H(X) } || X <- lists:filter(F,Tests) ]).
 
-hooks() ->
-   io:format("... running hooks~n"),     
+hooks(none) ->
+   ok;
+
+hooks({Module,Fun}) ->
+   io:format("... running hook ~p:~p~n",[Module,Fun]),     
+   spawn(Module,Fun,[]),
+   ok;
+
+hooks(Hook) ->
+   io:format("... can't run hook ~p~n",[Hook]),     
    ok.
 
 oops() ->

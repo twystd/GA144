@@ -274,7 +274,7 @@ exec_impl(CPU,?FETCHP) ->
 % 16#0e  @b  fetch B
 exec_impl(CPU,?FETCHB) ->
    log:info(?TAG,"FETCH-B"),     
-   B = CPU#cpu.p,     
+   B = CPU#cpu.b,     
    T = read(CPU,B),
    trace:trace(f18A,{ CPU#cpu.id,{fetchb,{t,T}}}),     
    {ok,CPU#cpu{ t = T
@@ -372,7 +372,8 @@ read(CPU,Addr) when Addr < 16#100 ->
    read_mem(CPU#cpu.rom,Addr-16#C0);
 
 read(CPU,?RIGHT) ->
-   read_channel(CPU,?RIGHT);
+   Ch = CPU#cpu.channel,
+   read_channel(CPU,Ch);
 
 read(CPU,Addr) when Addr < 16#200 ->
    read_mem(CPU#cpu.io,Addr-16#100).
@@ -385,10 +386,8 @@ read_mem(_Mem,_Addr) ->
 
 read_channel(CPU,Ch) ->
    ID = CPU#cpu.id,
-   Ch = CPU#cpu.channel,
    receive
       {Ch,write,Word} -> 
-         trace:trace(f18A,{ CPU#cpu.id,{read,Word}}),     
          Ch ! { ID,read,ok },
          Word;
 
