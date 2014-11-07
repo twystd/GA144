@@ -271,12 +271,22 @@ exec_impl(CPU,?FETCHP) ->
                 t = T
               }};
 
-% 16#0e  @b  fetch B
+% 16#0a  @b  fetch B
 exec_impl(CPU,?FETCHB) ->
    log:info(?TAG,"FETCH-B"),     
    B = CPU#cpu.b,     
    T = read(CPU,B),
    trace:trace(f18A,{ CPU#cpu.id,{fetchb,{t,T}}}),     
+   {ok,CPU#cpu{ t = T
+              }};
+
+% 16#0e  !b  store B
+exec_impl(CPU,?STOREB) ->
+   log:info(?TAG,"STORE-B"),     
+   B = CPU#cpu.b,     
+   T = CPU#cpu.t,
+   write(CPU,B,T),
+   trace:trace(f18A,{ CPU#cpu.id,{storeb,{t,T}}}),     
    {ok,CPU#cpu{ t = T
               }};
 
@@ -399,6 +409,43 @@ read_channel(CPU,Ch) ->
 
    end.
 
+% WRITE
+
+write(CPU,?RIGHT,Word) ->
+   ?debugFmt("**** DEBUG: ~p ~p~n",[?RIGHT,Word]),
+   Ch = CPU#cpu.channel,
+   write_channel(CPU,Ch,Word).
+
+write_channel(CPU,Ch,Word) ->
+   ID = CPU#cpu.id,
+   try
+      Ch ! { ID,write,Word },
+      write_wait(CPU)
+   catch
+      error:badarg ->
+         log:error(?TAG,"~p:WRITE to invalid node ~p",[ID,Ch]),   
+         {error,invalid_peer};
+
+      C:X ->
+         log:error(?TAG,"~p:WRITE ~p failed ~p:~p",[ID,Ch,C,X]),   
+         {error,{C,X}}
+   end.
+   
+write_wait(CPU) ->
+   Ch = CPU#cpu.channel,
+   receive
+      { Ch,read,ok } -> 
+         trace:trace(f18A,{ CPU#cpu.id,{write,ok}}),     
+         ok;
+
+      step ->
+         write_wait(CPU);
+
+      {stop,PID} ->
+         {stop,PID}
+   end.
+
+	
 % CHANNEL READ
 
 channel_read(CPU) ->
