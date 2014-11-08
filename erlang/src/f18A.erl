@@ -143,6 +143,9 @@ run(CPU) ->
 loop({stop,_CPU}) ->
    stopped;
 
+loop({breakpoint,_CPU}) ->
+   stopped;
+
 loop({eof,_CPU}) ->
    stopped;
 
@@ -197,7 +200,6 @@ loop({run,CPU}) ->
          PID ! gone,
          loop(Next);
 
-
       {breakpoint,Address} ->
          Breakpoints = [ Address|CPU#cpu.breakpoints],          
          loop({run,CPU#cpu{ breakpoints = Breakpoints
@@ -224,6 +226,9 @@ step_impl(CPU) ->
       {ok,CPUX} ->
          {run,CPUX};
 
+      breakpoint ->
+         {breakpoint,CPU};
+
       eof ->
          trace:trace(f18A,{ CPU#cpu.id,eof}),     
          {eof,CPU};
@@ -242,6 +247,9 @@ go_impl(CPU) ->
    case exec(CPU) of 
       {ok,CPUX} ->
          go_impl(CPUX);
+
+      breakpoint ->
+         {breakpoint,CPU};
 
       eof ->
          trace:trace(f18A,{ CPU#cpu.id,eof}),     
@@ -269,6 +277,9 @@ exec(CPU,[]) ->
             exec(CPU#cpu{ p = P + 1,
                           i = I
                         });
+
+         breakpoint ->
+           breakpoint;
 
          eof ->
             eof
@@ -354,12 +365,11 @@ load_next(CPU) ->
    F           = fun(X) -> P =:= X end,
    case lists:any(F,Breakpoints) of
         true ->
-             ?debugMsg("**** BREAKPOINT");
+             breakpoint;
 
         _else ->
-             ok      
-        end,
-   load_next_impl(read(CPU,P)).
+             load_next_impl(read(CPU,P))
+        end.
 
 load_next_impl(eof) ->
    eof;

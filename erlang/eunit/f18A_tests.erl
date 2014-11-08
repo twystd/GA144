@@ -8,8 +8,9 @@
 
 -define(TAG,"F18A").
 
--define(GO,        [reset,nop,nop,nop,nop,nop,eof]).
--define(STEP,      [reset,nop,nop,nop,nop,nop,eof]).
+-define(GO,        [reset,nop,nop,nop,nop,nop]).
+-define(STEP,      [reset,nop,nop,nop,nop,nop]).
+-define(BREAKPOINT,[reset,nop,nop,nop]).
 -define(NOP,       [reset,nop]).
 -define(NOP2,      [reset,nop,nop]).
 -define(NOP3,      [reset,nop,nop,nop]).
@@ -34,7 +35,7 @@ go_test() ->
    M    = setup("-- GO TEST"),
    F18A = f18A:create(n001,n000,[nop,nop,nop,nop,nop]),
 
-   f18A:breakpoint(F18A,2),
+   f18A:breakpoint(F18A,5),
 
    spawn(fun() ->
             f18A:reset(F18A),
@@ -50,6 +51,8 @@ step_test() ->
    M    = setup("-- STEP TEST"),
    F18A = f18A:create(n001,n000,[nop,nop,nop,nop,nop]),
 
+   f18A:breakpoint(F18A,5),
+
    spawn(fun() ->
             f18A:reset(F18A),
             f18A:step (F18A,wait),
@@ -63,6 +66,22 @@ step_test() ->
 
    check(waitall([{n001,stopped}]),
          [ { ?STEP,n001 }
+         ]).
+
+breakpoint_test() ->
+   M    = setup("-- BREAKPOINT TEST"),
+   F18A = f18A:create(n001,n000,[nop,nop,nop,nop,nop]),
+
+   f18A:breakpoint(F18A,3),
+
+   spawn(fun() ->
+            f18A:reset(F18A),
+            f18A:go   (F18A,wait),
+            M ! { n001,stopped }
+         end),
+
+   check(waitall([{n001,stopped}]),
+         [ { ?BREAKPOINT,n001 }
          ]).
 
 nop_test() ->
