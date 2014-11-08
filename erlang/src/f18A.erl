@@ -7,6 +7,9 @@
 -export([go/1,go/2]).
 -export([stop/1,stop/2]).
 -export([step/1,step/2]).
+-export([breakpoint/2]).
+
+% FOR INTERNAL USE ONLY
 -export([run/1]).
 
 % INCLUDES
@@ -24,8 +27,9 @@
               p,
               a,
               b,
-              i,
-              t
+              i           = [],
+              t           = 0,
+              breakpoints = []
             }).
 
 % DEFINES
@@ -125,6 +129,12 @@ stop_wait() ->
          stop_wait()
    end.
 
+%% @doc Sets a breakpoint for the program counter.
+%%
+breakpoint(F18A,Address) ->
+   F18A ! {breakpoint,Address},
+   ok.
+
 % INTERNAL
 
 run(CPU) ->
@@ -185,7 +195,13 @@ loop({run,CPU}) ->
          log:info(?TAG,"GO/W"),
          Next = go_impl(CPU),
          PID ! gone,
-         loop(Next)
+         loop(Next);
+
+
+      {breakpoint,Address} ->
+         Breakpoints = [ Address|CPU#cpu.breakpoints],          
+         loop({run,CPU#cpu{ breakpoints = Breakpoints
+                          }})
 
       end.
 
@@ -333,7 +349,16 @@ exec_impl(CPU,OpCode) ->
 % INSTRUCTION LOADER
 %
 load_next(CPU) ->
-   P = CPU#cpu.p,     
+   P           = CPU#cpu.p,     
+   Breakpoints = CPU#cpu.breakpoints,
+   F           = fun(X) -> P =:= X end,
+   case lists:any(F,Breakpoints) of
+        true ->
+             ?debugMsg("**** BREAKPOINT");
+
+        _else ->
+             ok      
+        end,
    load_next_impl(read(CPU,P)).
 
 load_next_impl(eof) ->

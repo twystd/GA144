@@ -34,6 +34,8 @@ go_test() ->
    M    = setup("-- GO TEST"),
    F18A = f18A:create(n001,n000,[nop,nop,nop,nop,nop]),
 
+   f18A:breakpoint(F18A,2),
+
    spawn(fun() ->
             f18A:reset(F18A),
             f18A:go   (F18A,wait),
