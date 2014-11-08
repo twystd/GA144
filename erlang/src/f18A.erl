@@ -14,23 +14,9 @@
 
 % INCLUDES
 
+-include    ("include/f18A.hrl").
 -include    ("include/opcode.hrl").
 -include_lib("eunit/include/eunit.hrl").
-
-% RECORDS
-
--record(cpu,{ id,
-              channel,
-              rom,
-              ram,
-              io,
-              p,
-              a,
-              b,
-              i           = [],
-              t           = 0,
-              breakpoints = []
-            }).
 
 % DEFINES
 
@@ -290,13 +276,12 @@ exec(CPU,[H|T]) ->
 
 % 16#08  @p  fetch P
 exec_impl(CPU,?FETCHP) ->
-   log:info(?TAG,"FETCH-P"),     
-   P = CPU#cpu.p,     
-   T = read(CPU,P),
-   trace:trace(f18A,{ CPU#cpu.id,{fetchp,{t,T}}}),     
-   {ok,CPU#cpu{ p = P+1,
-                t = T
-              }};
+   P    = CPU#cpu.p,     
+   CPUX = CPU#cpu{ p = P + 1,
+                   t = read(CPU,P)
+                 }, 
+   trace(?FETCHP,CPUX),
+   {ok,CPUX};
 
 % 16#0a  @b  fetch B
 exec_impl(CPU,?FETCHB) ->
@@ -319,8 +304,7 @@ exec_impl(CPU,?STOREB) ->
 
 % 16#1c  .   nop
 exec_impl(CPU,?NOP) ->
-   log:info(?TAG,"NOP"),     
-   trace:trace(f18A,{ CPU#cpu.id,nop }),     
+   trace(?NOP,CPU),     
    {ok,CPU};
 
 % 16#1e  b!  b-store
@@ -531,4 +515,10 @@ channel_write_wait(CPU) ->
          {stop,PID}
    end.
 
+% UTILITY FUNCTIONS
+% 
+trace(OpCode,CPU) ->
+   log:info   (?TAG,opcode:to_string(OpCode)),     
+   trace:trace(f18A,OpCode,CPU).
+   
 % EUNIT TESTS

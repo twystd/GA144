@@ -3,6 +3,7 @@
 % EXPORTS
 
 -export([opcode/1]).
+-export([to_string/1]).
 
 % INCLUDES
 
@@ -31,5 +32,24 @@ opcode(16#1e) ->
 opcode(X) ->
    ?debugFmt("UKNOWN CODE: ~p~n",[X]),
    unknown.     
+
+
+to_string(?FETCHP) ->
+   "FETCH-P";
+
+to_string(?FETCHB) ->
+   "FETCH-B";
+
+to_string(?STOREB) ->
+   "STORE-B";
+
+to_string(?NOP) ->
+   "NOP";
+
+to_string(?BSTORE) ->
+   "B-STORE";
+
+to_string(_) ->
+   "???".     
 
 % EUNIT TESTS

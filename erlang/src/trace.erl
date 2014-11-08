@@ -5,10 +5,13 @@
 -export([start/0,stop/0]).
 -export([trace/2,snapshot/0]).
 -export([extract/2]).
+-export([trace/3]).
 -export([run/0]).
 
 % INCLUDES
 
+-include    ("include/f18A.hrl").
+-include    ("include/opcode.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 % RECORDS
@@ -37,14 +40,15 @@ stop(_) ->
    [].
 
 trace(Event,Data) ->
-   trace(is_registered(),Event,Data).
+   trace_impl(is_registered(),Event,Data).
 
-trace(true,Event,Data) ->
+trace_impl(true,Event,Data) ->
    trace ! {trace,{Event,Data}},
    ok;
 
-trace(_,_,_) ->
+trace_impl(_,_,_) ->
    ignored.
+
 
 snapshot() ->
    snapshot(is_registered()).
@@ -68,6 +72,17 @@ extract(Trace,ID) ->
          end,
 
    lists:reverse(lists:foldl(F,[],Trace)).
+
+%% @doc Extracts the CPU trace information relevant to an opcode. 
+%%
+trace(f18A,?FETCHP,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,{fetchp,{t,CPU#cpu.t}}});
+
+trace(f18A,?NOP,CPU) ->
+   trace(f18A,{ CPU#cpu.id,nop });
+
+trace(f18A,_,CPU) ->
+   trace(f18A,{ CPU#cpu.id,unknown }).
 
 % INTERNAL
 
