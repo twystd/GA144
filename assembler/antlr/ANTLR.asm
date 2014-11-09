@@ -2,6 +2,7 @@
 
 antlr 0   org      # ORIGIN: 0
 
-start nop
+start .
       right
-end   nop          # line comment
+      '678
+end   .            # line comment

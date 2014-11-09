@@ -27,6 +27,7 @@ label
 opcode
     : OPCODE
     | WORD
+    | CONSTANT
     ;
 
 name
@@ -47,6 +48,7 @@ ORG
 
 OPCODE
     : 'nop'
+    | '.'
     | '@p'
     | '@b'
     | 'b!'
@@ -56,6 +58,11 @@ OPCODE
 WORD
     : 'right'
     ;
+
+CONSTANT
+    : ['] [0-9]+
+    ;
+
 NAME
     : [a-zA-Z] [a-zA-Z0-9]*
     ;

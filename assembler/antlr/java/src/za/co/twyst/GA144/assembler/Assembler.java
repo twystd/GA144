@@ -40,6 +40,8 @@ public class Assembler extends F18ABaseListener {
     
 	// INSTANCE VARIABLES
 	
+    private final boolean debug;
+    
 	private int   origin;
     private int   location;
     private int   slot;
@@ -52,9 +54,10 @@ public class Assembler extends F18ABaseListener {
 	public static void main(String[] args) {
 		// ... parse command line arguments
 		
-		File in  = null;
-		File out = null;
-		int  ix  = 0;
+		File    in    = null;
+		File    out   = null;
+		boolean debug = false;
+		int     ix    = 0;
 		
 		while(ix < args.length) {
 			String arg = args[ix++];
@@ -71,6 +74,12 @@ public class Assembler extends F18ABaseListener {
 						out = new File(args[ix++]);
 					}
 					break;
+                    
+                case "--debug":
+                    if (ix < args.length) {
+                        debug = true;
+                    }
+                    break;
 			}
 		}
 		
@@ -98,7 +107,7 @@ public class Assembler extends F18ABaseListener {
 		
 		// ... parse
 
-        Assembler assembler = new Assembler();
+        Assembler assembler = new Assembler(debug);
 
 		try {
             assembler.assemble(in,out);
@@ -120,8 +129,13 @@ public class Assembler extends F18ABaseListener {
 	}
 	
 	// CONSTRUCTOR
+    
+    protected Assembler() {
+        this.debug = false;
+    }
 	
-	protected Assembler() {
+	protected Assembler(boolean debug) {
+	    this.debug = debug;
 	}
 
 	// INSTANCE METHODS
@@ -216,6 +230,10 @@ public class Assembler extends F18ABaseListener {
         // ... opcode ?
         
 	    if ((node = ctx.OPCODE()) != null) {
+	        if (debug) {
+	            System.out.println("OPCODE: " + node.getText());
+	        }
+	        
 	        switch(node.getText()) {
 			    case "@p":
 			        encode(FETCHP);

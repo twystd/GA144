@@ -9,11 +9,10 @@ import org.junit.Test;
 //02 002a6  678                     # 678
 //03 09600  !b call 00              # !b call 00
 
- 
 public class TestWRITE {
 	private static final String PROG = "antlr 0 org\n"
-			                         + "      right b!\n"
-			                         + "      678   !b\n";
+			                         + "      right b! @p .\n"
+			                         + "      '678   !b\n";
 
     private static final TestVector[] WRITE = { new TestVector(PROG,
                                                                new int[] { 0x04b12,0x001d5,0x002a6,0x09600 },
@@ -25,12 +24,17 @@ public class TestWRITE {
 	@Test
 	public void testREAD() throws Exception {
 		for (TestVector vector: WRITE) {
-	        Assembler assembler = new Assembler();
+	        Assembler assembler = new Assembler(true);
 	        int[]     ram       = assembler.assemble(vector.src);
             int[]     ref       = vector.ram;
             int[]     mask      = vector.mask;
-	        
+
+            for (int i=0; i<vector.ram.length; i++) {
+                System.err.println(String.format("%d  %08X : %08X",i,ref[i],ram[i]));
+            }
+
 	        for (int i=0; i<vector.ram.length; i++) {
+                System.err.println(String.format("%d  %08X  %08X",i,ref[i],ram[i]));
 	            assertEquals("Invalid RAM[" + i + "]",ref[i] & mask[i],ram[i] & mask[i]);
 	        }
 		}
