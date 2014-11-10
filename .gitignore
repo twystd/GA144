@@ -1,4 +1,5 @@
 .DS_Store
+documentation
 erlang/ebin
 tla/F18A.toolbox
 tla/channel.toolbox

@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -16,27 +18,31 @@ import za.co.twyst.GA144.assembler.antlr.F18ABaseListener;
 import za.co.twyst.GA144.assembler.antlr.F18ALexer;
 import za.co.twyst.GA144.assembler.antlr.F18AParser;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.CommentContext;
+import za.co.twyst.GA144.assembler.antlr.F18AParser.ConstantContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.LabelContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.OpcodeContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.OriginContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.ProgramContext;
+import za.co.twyst.GA144.assembler.antlr.F18AParser.WordContext;
 
 public class Assembler extends F18ABaseListener {
 	// CONSTANTS
 	
-    private static final int   FETCHP = 0x08;
-    private static final int   FETCHB = 0x0a;
-    private static final int   STOREB = 0x0e;
-    private static final int   NOP    = 0x1c;
-    private static final int   BSTORE = 0x1e;
+    private static final int     FETCHP = 0x08;
+    private static final int     FETCHB = 0x0a;
+    private static final int     STOREB = 0x0e;
+    private static final int     NOP    = 0x1c;
+    private static final int     BSTORE = 0x1e;
     
-    private static final int   RIGHT  = 0x01d5;
+    private static final int     RIGHT  = 0x01d5;
+    private static final Pattern CONSTANT = Pattern.compile("([0-9]+)"); 
 
-    private static final int[] RSHIFT = { 0,5,10,15 };
-    private static final int   XOR    = 0x15555;
-    private static final int[] MASK   = { 0x3e000,0x01f00,0x000f8,0x00007 };
+    private static final int[]   RSHIFT = { 0,5,10,15 };
+    private static final int     XOR    = 0x15555;
+    private static final int[]   MASK   = { 0x3e000,0x01f00,0x000f8,0x00007 };
 
-    private static final int[] SLOT3 = { FETCHP,NOP };
+    private static final int[]   SLOT3  = { FETCHP,NOP };
+    private static final int     MAXINT = 262144;
     
 	// INSTANCE VARIABLES
 	
@@ -197,14 +203,12 @@ public class Assembler extends F18ABaseListener {
 
 	@Override
 	public void enterOrigin(OriginContext ctx) {
-		this.origin   = Integer.parseInt(ctx.ORIGIN().getText());
-		this.P        = Integer.parseInt(ctx.ORIGIN().getText());
-		this.location = Integer.parseInt(ctx.ORIGIN().getText());
+		int address = Integer.parseInt(ctx.address().NUMBER().getText());
+		
+		this.origin   = address;
+		this.P        = address;
+		this.location = address;
 		this.slot     = 0;
-	}
-
-	@Override
-	public void exitOrigin(OriginContext ctx) {
 	}
 
 	@Override
@@ -212,17 +216,9 @@ public class Assembler extends F18ABaseListener {
 	}
 
 	@Override
-	public void exitComment(CommentContext ctx) {
-	}
-
-	@Override
 	public void enterLabel(LabelContext ctx) {
 	}
 
-	@Override
-	public void exitLabel(LabelContext ctx) {
-	}
-	
 	@Override
 	public void enterOpcode(OpcodeContext ctx) {
         TerminalNode node;
@@ -231,7 +227,7 @@ public class Assembler extends F18ABaseListener {
         
 	    if ((node = ctx.OPCODE()) != null) {
 	        if (debug) {
-	            System.out.println("OPCODE: " + node.getText());
+	            System.out.println("OPCODE:   " + node.getText());
 	        }
 	        
 	        switch(node.getText()) {
@@ -255,25 +251,48 @@ public class Assembler extends F18ABaseListener {
 			        encode(BSTORE);
 		        	break;
 	        }
-	       
-	        return;
 	    }
-        
-        // ... word ?
+	}
+
+	@Override
+	public void enterWord(WordContext ctx) {
+        TerminalNode node;
         
         if ((node = ctx.WORD()) != null) {
-            switch(node.getText()) {
+	        if (debug) {
+	            System.out.println("WORD:     " + node.getText());
+	        }
+
+	        switch(node.getText()) {
                 case "right":
                     encode(FETCHP,RIGHT);
                     break;
             }
-           
-            return;
         }
 	}
-
+	
 	@Override
-	public void exitOpcode(OpcodeContext ctx) {
+	public void enterConstant(ConstantContext ctx) {
+        TerminalNode node;
+        
+        if ((node = ctx.NUMBER()) != null) {
+	        if (debug) {
+	            System.out.println("CONSTANT: " + node.getText());
+	        }
+
+	        String  text    = node.getText();
+        	Matcher matcher = CONSTANT.matcher(text);
+        	
+        	if (matcher.matches()) {
+            	int constant  = Integer.parseInt(matcher.group(1));
+            	
+            	if (constant > MAXINT) {
+            		System.err.println("WARNING: invalid constant '" + text + "' (will be truncated to 18 bits)");
+            	}
+            	
+                encode(FETCHP,constant & 0x3ffff);
+        	}
+        }
 	}
 	
 	// INTERNAL
@@ -296,8 +315,7 @@ public class Assembler extends F18ABaseListener {
 	    slot           = (slot + 1) % 4;
 	                    
 	    if (slot == 0) {
-	        location++;
-	        P++;
+	    	location = ++P;
 	    }
 	}
 	        
@@ -310,8 +328,7 @@ public class Assembler extends F18ABaseListener {
         slot           = (slot + 1) % 4;
 	                    
         if (slot == 0) {
-            location++;
-            P++;
+            location = ++P;
         }
     }
 

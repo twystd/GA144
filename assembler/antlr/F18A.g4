@@ -8,7 +8,7 @@ program
     ;
 
 origin
-    : label? WS ORIGIN WS ORG (WS COMMENT)?
+    : label? WS address WS ORG (WS COMMENT)?
     ;
 
  line
@@ -17,19 +17,28 @@ origin
     ;
 
 instruction
-    : label? (WS opcode)+ (WS comment)?
+    : label? (WS (opcode|word|constant))+ (WS comment)?
     ;
 
 label
     : name
     ;
 
-opcode
-    : OPCODE
-    | WORD
-    | CONSTANT
+address
+    : NUMBER
     ;
 
+opcode
+    : OPCODE
+    ;
+
+word
+    : WORD
+    ;
+
+constant
+    : NUMBER
+    ;
 name
     : NAME
     ;
@@ -38,17 +47,12 @@ comment
     : COMMENT
     ;
 
-ORIGIN
-    : [0-9]+
-    ;
-
 ORG
     : 'org'
     ;
 
 OPCODE
-    : 'nop'
-    | '.'
+    : 'nop' | '.'
     | '@p'
     | '@b'
     | 'b!'
@@ -59,8 +63,8 @@ WORD
     : 'right'
     ;
 
-CONSTANT
-    : ['] [0-9]+
+NUMBER
+    : [0-9]+
     ;
 
 NAME

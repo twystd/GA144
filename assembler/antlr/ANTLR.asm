@@ -3,6 +3,6 @@
 antlr 0   org      # ORIGIN: 0
 
 start .
-      right
-      '678
+      right @p
+      678 !b
 end   .            # line comment
