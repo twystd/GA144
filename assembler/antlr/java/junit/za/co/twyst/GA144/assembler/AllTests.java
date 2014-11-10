@@ -13,7 +13,8 @@ import org.junit.runners.Suite.SuiteClasses;
                 TestSTOREB.class,
 	            TestRIGHT.class,
 	            TestREAD.class,
-	            TestWRITE.class
+	            TestWRITE.class,
+	            TestN404.class
 	          })
 
 public class AllTests {

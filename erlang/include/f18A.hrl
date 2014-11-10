@@ -8,8 +8,9 @@
               p,
               a,
               b,
-              i           = [],
-              t           = 0,
+              i = [],
+              s = 0,
+              t = 0,
               breakpoints = []
             }).
 

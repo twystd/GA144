@@ -302,6 +302,17 @@ exec_impl(CPU,?STOREB) ->
    {ok,CPU#cpu{ t = T
               }};
 
+% 16#14  +   plus
+% TODO: 2's complement
+%       overflow
+%       add with carry
+exec_impl(CPU,?PLUS) ->
+   S    = CPU#cpu.s band 16#3ffff,
+   T    = CPU#cpu.t band 16#3ffff,   
+   CPUX = CPU#cpu{ t=S+T },
+   trace(?PLUS,CPUX),     
+   {ok,CPUX};
+
 % 16#1c  .   nop
 exec_impl(CPU,?NOP) ->
    trace(?NOP,CPU),     
@@ -522,3 +533,7 @@ trace(OpCode,CPU) ->
    trace:trace(f18A,OpCode,CPU).
    
 % EUNIT TESTS
+
+plus_test() ->
+   {ok,CPU} = exec_impl(#cpu{ s=1,t=2 },?PLUS),
+   ?assertEqual(3,CPU#cpu.t).

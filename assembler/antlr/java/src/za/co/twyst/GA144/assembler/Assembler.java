@@ -28,9 +28,12 @@ import za.co.twyst.GA144.assembler.antlr.F18AParser.WordContext;
 public class Assembler extends F18ABaseListener {
 	// CONSTANTS
 	
+    private static final int     RET    = 0x00;
     private static final int     FETCHP = 0x08;
     private static final int     FETCHB = 0x0a;
     private static final int     STOREB = 0x0e;
+    private static final int     PLUS   = 0x14;
+    private static final int     DUP    = 0x18;
     private static final int     NOP    = 0x1c;
     private static final int     BSTORE = 0x1e;
     
@@ -41,7 +44,7 @@ public class Assembler extends F18ABaseListener {
     private static final int     XOR    = 0x15555;
     private static final int[]   MASK   = { 0x3e000,0x01f00,0x000f8,0x00007 };
 
-    private static final int[]   SLOT3  = { FETCHP,NOP };
+    private static final int[]   SLOT3  = { RET,FETCHP,PLUS,DUP,NOP };
     private static final int     MAXINT = 262144;
     
 	// INSTANCE VARIABLES
@@ -231,6 +234,11 @@ public class Assembler extends F18ABaseListener {
 	        }
 	        
 	        switch(node.getText()) {
+	            case "ret":
+                case ";":
+                     encode(RET);
+                     break;
+                     
 			    case "@p":
 			        encode(FETCHP);
 		        	break;
@@ -242,8 +250,17 @@ public class Assembler extends F18ABaseListener {
 			    case "!b":                  
 			        encode(STOREB);
 		        	break;
+                    
+                case "+":                  
+                    encode(PLUS);
+                    break;
+                    
+                case "dup":                  
+                    encode(DUP);
+                    break;
 
 			    case "nop":
+                case ".":
 			        encode(NOP);
 			        break;
 

@@ -40,5 +40,19 @@ public class AssemblerTest {
             this.ram  = ram;
             this.mask = mask;
         }
+        
+        protected TestVector(String[] src,int[] ram,int[] mask) {
+            StringBuilder string = new StringBuilder();
+            
+            for (String line: src) {
+                string.append(line);
+                string.append("\n");
+            }
+            
+            this.src  = string.toString();
+            this.ram  = ram;
+            this.mask = mask;
+        }
+        
     }
 }

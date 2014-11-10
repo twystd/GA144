@@ -26,6 +26,9 @@ opcode(16#0e) ->
 opcode(16#1c) ->
    ?NOP;
 
+opcode(16#14) ->
+   ?PLUS;
+
 opcode(16#1e) ->
    ?BSTORE;
 
@@ -45,6 +48,9 @@ to_string(?STOREB) ->
 
 to_string(?NOP) ->
    "NOP";
+
+to_string(?PLUS) ->
+   "PLUS";
 
 to_string(?BSTORE) ->
    "B-STORE";
