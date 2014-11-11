@@ -8,9 +8,9 @@
 
 -define(TAG,"F18A").
 
--define(GO,        [reset,nop,nop,nop,nop,nop]).
--define(STEP,      [reset,nop,nop,nop,nop,nop]).
--define(BREAKPOINT,[reset,nop,nop,nop]).
+-define(GO,        [reset,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop]).
+-define(STEP,      [reset,nop,nop,nop,nop,nop,nop]).
+-define(BREAKPOINT,[reset,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop]).
 -define(NOP,       [reset,nop]).
 -define(NOP2,      [reset,nop,nop]).
 -define(NOP3,      [reset,nop,nop,nop]).
@@ -33,7 +33,7 @@
 
 go_test() ->
    M    = setup("-- GO TEST"),
-   F18A = f18A:create(n001,n000,[nop,nop,nop,nop,nop]),
+   F18A = f18A:create(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
 
    f18A:breakpoint(F18A,5),
 
@@ -49,7 +49,7 @@ go_test() ->
 
 step_test() ->
    M    = setup("-- STEP TEST"),
-   F18A = f18A:create(n001,n000,[nop,nop,nop,nop,nop]),
+   F18A = f18A:create(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
 
    f18A:breakpoint(F18A,5),
 
@@ -70,7 +70,7 @@ step_test() ->
 
 breakpoint_test() ->
    M    = setup("-- BREAKPOINT TEST"),
-   F18A = f18A:create(n001,n000,[nop,nop,nop,nop,nop]),
+   F18A = f18A:create(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
 
    f18A:breakpoint(F18A,3),
 

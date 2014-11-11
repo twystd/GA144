@@ -78,10 +78,19 @@ extract(Trace,ID) ->
 trace(f18A,?FETCHP,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{fetchp,{t,CPU#cpu.t}}});
 
+trace(f18A,?FETCHB,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,{fetchb,{t,CPU#cpu.t}}});     
+
+trace(f18A,?STOREB,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,{storeb,{b,CPU#cpu.b},{t,CPU#cpu.t}}});     
+
 trace(f18A,?PLUS,CPU) ->
    S = CPU#cpu.s,
    T = CPU#cpu.t,   
    trace(f18A,{ CPU#cpu.id,{plus,{s,S},{t,T}}});
+
+trace(f18A,?BSTORE,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,{bstore,{b,CPU#cpu.b}}});     
 
 trace(f18A,?NOP,CPU) ->
    trace(f18A,{ CPU#cpu.id,nop });

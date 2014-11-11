@@ -288,9 +288,11 @@ exec_impl(CPU,?FETCHB) ->
    log:info(?TAG,"FETCH-B"),     
    B = CPU#cpu.b,     
    T = read(CPU,B),
-   trace:trace(f18A,{ CPU#cpu.id,{fetchb,{t,T}}}),     
-   {ok,CPU#cpu{ t = T
-              }};
+   CPUX = CPU#cpu{ t = T
+                 },
+
+   trace(?FETCHB,CPUX),
+   {ok,CPUX};
 
 % 16#0e  !b  store B
 exec_impl(CPU,?STOREB) ->
@@ -298,18 +300,26 @@ exec_impl(CPU,?STOREB) ->
    B = CPU#cpu.b,     
    T = CPU#cpu.t,
    write(CPU,B,T),
-   trace:trace(f18A,{ CPU#cpu.id,{storeb,{b,B},{t,T}}}),     
-   {ok,CPU#cpu{ t = T
-              }};
+   CPUX = CPU#cpu{ t = T
+                 },
+
+   trace(?STOREB,CPUX),
+   {ok,CPUX};
 
 % 16#14  +   plus
-% TODO: 2's complement
-%       overflow
-%       add with carry
 exec_impl(CPU,?PLUS) ->
-   S    = CPU#cpu.s band 16#3ffff,
-   T    = CPU#cpu.t band 16#3ffff,   
-   CPUX = CPU#cpu{ t=S+T },
+   S = CPU#cpu.s band 16#3ffff,
+   T = CPU#cpu.t band 16#3ffff,   
+   C = CPU#cpu.carry,
+   R = case (CPU#cpu.p band 16#0200) of
+	    16#0200 ->
+		(S + T + C) band 16#3ffff;
+ 
+            _else ->
+                (S + T) band 16#3ffff
+            end,
+
+   CPUX = CPU#cpu{ t=R },
    trace(?PLUS,CPUX),     
    {ok,CPUX};
 
@@ -320,11 +330,11 @@ exec_impl(CPU,?NOP) ->
 
 % 16#1e  b!  b-store
 exec_impl(CPU,?BSTORE) ->
-   log:info(?TAG,"B-STORE"),     
    B = CPU#cpu.t,     
-   trace:trace(f18A,{ CPU#cpu.id,{bstore,{b,B}}}),     
-   {ok,CPU#cpu{ b = B
-              }};
+   CPUX = CPU#cpu{ b = B
+                 },
+   trace(?BSTORE,CPUX),
+   {ok,CPUX};
 
 % INTERIM STUFF - REMOVE
 exec_impl(CPU,nop) ->
@@ -374,6 +384,7 @@ load_next_impl(Word) ->
 
 % OPCODE DECODER
 %
+% TODO: replace with bitset
 decode(Word) when is_integer(Word) ->
    [ decode(Word bxor 16#15555,0),
      decode(Word bxor 16#15555,1),
@@ -534,6 +545,30 @@ trace(OpCode,CPU) ->
    
 % EUNIT TESTS
 
+nop_test() ->
+   CPUx      = #cpu{},
+   {ok,CPUy} = exec_impl(CPUx,?NOP),
+   ?assertEqual(CPUx#cpu.a,CPUy#cpu.a),
+   ?assertEqual(CPUx#cpu.b,CPUy#cpu.b),
+   ?assertEqual(CPUx#cpu.s,CPUy#cpu.s),
+   ?assertEqual(CPUx#cpu.t,CPUy#cpu.t).
+
 plus_test() ->
-   {ok,CPU} = exec_impl(#cpu{ s=1,t=2 },?PLUS),
-   ?assertEqual(3,CPU#cpu.t).
+   plus_test_impl(16#0000,1,       2,       0,3),
+   plus_test_impl(16#0000,16#3ffff,16#3fffe,0,16#3fffd),
+   plus_test_impl(16#0000,16#3ffff,16#00001,0,0),
+
+   plus_test_impl(16#0200,1,       2,       0,3),
+   plus_test_impl(16#0200,16#3ffff,16#3fffe,0,16#3fffd),
+   plus_test_impl(16#0200,16#3ffff,16#00001,0,0),
+
+   plus_test_impl(16#0200,1,       2,       1,4),
+   plus_test_impl(16#0200,16#3ffff,16#3fffe,1,16#3fffe),
+   plus_test_impl(16#0200,16#3ffff,16#00001,1,1).
+
+plus_test_impl(P,S,T,C,R) ->
+   {ok,CPU} = exec_impl(#cpu{ p=P,
+                              s=S,
+                              t=T,
+                              carry=C },?PLUS),
+   ?assertEqual(R,CPU#cpu.t).

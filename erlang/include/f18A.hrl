@@ -11,6 +11,7 @@
               i = [],
               s = 0,
               t = 0,
+              carry = 0,
               breakpoints = []
             }).
 
