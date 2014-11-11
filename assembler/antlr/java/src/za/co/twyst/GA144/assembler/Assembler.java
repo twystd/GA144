@@ -330,9 +330,19 @@ public class Assembler extends F18ABaseListener {
 	    
 	    ram[location] |= (((opcode << 13) >>> rsh) ^ XOR) & mask;
 	    slot           = (slot + 1) % 4;
-	                    
+
+	    //  ... 'k, done
+	    
 	    if (slot == 0) {
 	    	location = ++P;
+	    } else {
+	    	// ... pad with 'nop' after a 'ret'
+
+	    	if (opcode == RET) {
+		    	while(slot != 0) {
+		    		encode(NOP);
+		    	}
+		    } 
 	    }
 	}
 	        

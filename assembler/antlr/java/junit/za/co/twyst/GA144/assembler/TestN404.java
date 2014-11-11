@@ -9,8 +9,8 @@ public class TestN404 extends AssemblerTest {
 	                                     };
 
     private static final TestVector[] N404 = { new TestVector(PROG,
-                                                              new int[] { 0x049f3,0x00003,0x3d555 },
-                                                              new int[] { 0x3ffff,0x3ffff,0x3ff00 }), 
+                                                              new int[] { 0x049f3,0x00003,0x3d5b2 },
+                                                              new int[] { 0x3ffff,0x3ffff,0x3ffff }), 
                                              };
 
 	// UNIT TESTS 
