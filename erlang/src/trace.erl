@@ -89,6 +89,9 @@ trace(f18A,?PLUS,CPU) ->
    T = CPU#cpu.t,   
    trace(f18A,{ CPU#cpu.id,{plus,{s,S},{t,T}}});
 
+trace(f18A,?DUP,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,dup});     
+
 trace(f18A,?BSTORE,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{bstore,{b,CPU#cpu.b}}});     
 

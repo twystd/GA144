@@ -272,10 +272,10 @@ exec(CPU,[]) ->
    end;
 
 exec(CPU,[H|T]) ->
-   exec_impl(CPU#cpu{ i=T },H).
+   exec_impl(H,CPU#cpu{ i=T }).
 
 % 16#08  @p  fetch P
-exec_impl(CPU,?FETCHP) ->
+exec_impl(?FETCHP,CPU) ->
    P    = CPU#cpu.p,     
    CPUX = CPU#cpu{ p = P + 1,
                    t = read(CPU,P)
@@ -284,7 +284,7 @@ exec_impl(CPU,?FETCHP) ->
    {ok,CPUX};
 
 % 16#0a  @b  fetch B
-exec_impl(CPU,?FETCHB) ->
+exec_impl(?FETCHB,CPU) ->
    log:info(?TAG,"FETCH-B"),     
    B = CPU#cpu.b,     
    T = read(CPU,B),
@@ -295,7 +295,7 @@ exec_impl(CPU,?FETCHB) ->
    {ok,CPUX};
 
 % 16#0e  !b  store B
-exec_impl(CPU,?STOREB) ->
+exec_impl(?STOREB,CPU) ->
    log:info(?TAG,"STORE-B"),     
    B = CPU#cpu.b,     
    T = CPU#cpu.t,
@@ -307,7 +307,7 @@ exec_impl(CPU,?STOREB) ->
    {ok,CPUX};
 
 % 16#14  +   plus
-exec_impl(CPU,?PLUS) ->
+exec_impl(?PLUS,CPU) ->
    S = CPU#cpu.s band 16#3ffff,
    T = CPU#cpu.t band 16#3ffff,   
    C = CPU#cpu.carry,
@@ -323,13 +323,24 @@ exec_impl(CPU,?PLUS) ->
    trace(?PLUS,CPUX),     
    {ok,CPUX};
 
+% 16#18  dup
+exec_impl(?DUP,CPU) ->
+   T    = CPU#cpu.t,
+   S    = CPU#cpu.s,
+   DS   = CPU#cpu.ds,
+   CPUX = CPU#cpu{ s  = T,
+                   ds = push(DS,S)
+                 },
+   trace(?DUP,CPUX),     
+   {ok,CPUX};
+
 % 16#1c  .   nop
-exec_impl(CPU,?NOP) ->
+exec_impl(?NOP,CPU) ->
    trace(?NOP,CPU),     
    {ok,CPU};
 
 % 16#1e  b!  b-store
-exec_impl(CPU,?BSTORE) ->
+exec_impl(?BSTORE,CPU) ->
    B = CPU#cpu.t,     
    CPUX = CPU#cpu{ b = B
                  },
@@ -337,28 +348,28 @@ exec_impl(CPU,?BSTORE) ->
    {ok,CPUX};
 
 % INTERIM STUFF - REMOVE
-exec_impl(CPU,nop) ->
+exec_impl(nop,CPU) ->
    log:info(?TAG,"NOP"),     
    trace:trace(f18A,{ CPU#cpu.id,nop }),     
    {ok,CPU};
 
 % INTERIM STUFF - REMOVE
-exec_impl(CPU,read) ->
+exec_impl(read,CPU) ->
    log:info   (?TAG,"READ"),
    trace:trace(f18A,{ CPU#cpu.id,read}),     
    channel_read(CPU);
 
 % INTERIM STUFF - REMOVE
-exec_impl(CPU,{write,Word}) ->
+exec_impl({write,Word},CPU) ->
    log:info   (?TAG,"WRITE"),
    trace:trace(f18A,{ CPU#cpu.id,{write,Word}}),     
    channel_write(CPU,Word);
   
-exec_impl(_CPU,{error,Reason}) ->
+exec_impl({error,Reason},_CPU) ->
    log:error(?TAG,"INVALID OPERATION ~p~n",[Reason]),
    {error,Reason};
 
-exec_impl(CPU,OpCode) ->
+exec_impl(OpCode,CPU) ->
    log:warn(?TAG,"UNIMPLEMENTED OPCODE: ~p~n",[OpCode]),
    {ok,CPU}.
 
@@ -537,6 +548,11 @@ channel_write_wait(CPU) ->
          {stop,PID}
    end.
 
+% STACK HANDLING
+
+push(DS,S) ->
+   lists:droplast([S|DS]).
+
 % UTILITY FUNCTIONS
 % 
 trace(OpCode,CPU) ->
@@ -547,7 +563,7 @@ trace(OpCode,CPU) ->
 
 nop_test() ->
    CPUx      = #cpu{},
-   {ok,CPUy} = exec_impl(CPUx,?NOP),
+   {ok,CPUy} = exec_impl(?NOP,CPUx),
    ?assertEqual(CPUx#cpu.a,CPUy#cpu.a),
    ?assertEqual(CPUx#cpu.b,CPUy#cpu.b),
    ?assertEqual(CPUx#cpu.s,CPUy#cpu.s),
@@ -567,8 +583,18 @@ plus_test() ->
    plus_test_impl(16#0200,16#3ffff,16#00001,1,1).
 
 plus_test_impl(P,S,T,C,R) ->
-   {ok,CPU} = exec_impl(#cpu{ p=P,
-                              s=S,
-                              t=T,
-                              carry=C },?PLUS),
+   {ok,CPU} = exec_impl(?PLUS,#cpu{ p=P,
+                                    s=S,
+                                    t=T,
+                                    carry=C }),
    ?assertEqual(R,CPU#cpu.t).
+
+dup_test() ->
+   {ok,CPU} = exec_impl(?DUP,#cpu{t=1,
+                                  s=2,
+                                  ds=[3,4,5,6,7,8,9,10]}),
+
+   ?assertEqual(1,CPU#cpu.t),
+   ?assertEqual(1,CPU#cpu.s),
+   ?assertEqual([2,3,4,5,6,7,8,9],CPU#cpu.ds).
+

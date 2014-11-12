@@ -14,6 +14,8 @@
 
 % API
 
+%% @doc Translates a 5 bit value into the equivalent internal op-code
+%%      representation.
 opcode(16#08) ->
    ?FETCHP;
 
@@ -29,6 +31,9 @@ opcode(16#1c) ->
 opcode(16#14) ->
    ?PLUS;
 
+opcode(16#18) ->
+   ?DUP;
+
 opcode(16#1e) ->
    ?BSTORE;
 
@@ -36,7 +41,8 @@ opcode(X) ->
    ?debugFmt("UKNOWN CODE: ~p~n",[X]),
    unknown.     
 
-
+%% @doc Utility function to translate an op-code into a readable string.
+%%
 to_string(?FETCHP) ->
    "FETCH-P";
 
@@ -51,6 +57,9 @@ to_string(?NOP) ->
 
 to_string(?PLUS) ->
    "PLUS";
+
+to_string(?DUP) ->
+   "DUP";
 
 to_string(?BSTORE) ->
    "B-STORE";

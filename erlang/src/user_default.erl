@@ -9,7 +9,7 @@ x() ->
    f18A:test().
 
 xx() ->
-   f18A:plus_test().    
+   f18A:dup_test().    
 
 r() ->
    make:all([load]).
