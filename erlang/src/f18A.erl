@@ -308,18 +308,25 @@ exec_impl(?STOREB,CPU) ->
 
 % 16#14  +   plus
 exec_impl(?PLUS,CPU) ->
-   S = CPU#cpu.s band 16#3ffff,
-   T = CPU#cpu.t band 16#3ffff,   
-   C = CPU#cpu.carry,
-   R = case (CPU#cpu.p band 16#0200) of
-	    16#0200 ->
-		(S + T + C) band 16#3ffff;
+   T  = CPU#cpu.t band 16#3ffff,   
+   S  = CPU#cpu.s band 16#3ffff,
+   DS = CPU#cpu.ds,
+   C  = CPU#cpu.carry,
+   R  = case (CPU#cpu.p band 16#0200) of
+ 	     16#0200 ->
+	 	 (S + T + C) band 16#3ffff;
  
-            _else ->
-                (S + T) band 16#3ffff
-            end,
+             _else ->
+                 (S + T) band 16#3ffff
+             end,
 
-   CPUX = CPU#cpu{ t=R },
+   {SX,DSX} = pop(DS),
+
+   CPUX = CPU#cpu{ t  = R,
+                   s  = SX,
+                   ds = DSX
+                 },
+
    trace(?PLUS,CPUX),     
    {ok,CPUX};
 
@@ -553,6 +560,9 @@ channel_write_wait(CPU) ->
 push(DS,S) ->
    lists:droplast([S|DS]).
 
+pop([D0,D1,D2,D3,D4,D5,D6,D7]) ->
+   {D0,[D1,D2,D3,D4,D5,D6,D7,D0]}.
+
 % UTILITY FUNCTIONS
 % 
 trace(OpCode,CPU) ->
@@ -582,12 +592,17 @@ plus_test() ->
    plus_test_impl(16#0200,16#3ffff,16#3fffe,1,16#3fffe),
    plus_test_impl(16#0200,16#3ffff,16#00001,1,1).
 
-plus_test_impl(P,S,T,C,R) ->
+plus_test_impl(P,T,S,C,R) ->
+   DS  = [3,4,5,6,7,8,9,10],
+   DSX = [4,5,6,7,8,9,10,3],
    {ok,CPU} = exec_impl(?PLUS,#cpu{ p=P,
-                                    s=S,
                                     t=T,
+                                    s=S,
+                                    ds=DS,
                                     carry=C }),
-   ?assertEqual(R,CPU#cpu.t).
+   ?assertEqual(R,  CPU#cpu.t),
+   ?assertEqual(3,  CPU#cpu.s),
+   ?assertEqual(DSX,CPU#cpu.ds).
 
 dup_test() ->
    {ok,CPU} = exec_impl(?DUP,#cpu{t=1,
