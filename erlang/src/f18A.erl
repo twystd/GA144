@@ -402,28 +402,17 @@ load_next_impl(Word) ->
 
 % OPCODE DECODER
 %
-% TODO: replace with bitset
 decode(Word) when is_integer(Word) ->
-   [ decode(Word bxor 16#15555,0),
-     decode(Word bxor 16#15555,1),
-     decode(Word bxor 16#15555,2),
-     decode(Word bxor 16#15555,3)
+   WordX                   = Word bxor 16#15555,
+   <<S0:5,S1:5,S2:5,S3:3>> = <<WordX:18>>,
+   [ opcode:opcode(S0),
+     opcode:opcode(S1),
+     opcode:opcode(S2),
+     opcode:opcode(S3 bsl 2)
    ];
 
 decode(Word) ->
    [ Word ].
-
-decode(Word,0) ->
-   opcode:opcode((Word bsr 13) band 16#001F);
-
-decode(Word,1) ->
-   opcode:opcode((Word bsr 8) band 16#001F);
-
-decode(Word,2) ->
-   opcode:opcode((Word bsr 3) band 16#001F);
-
-decode(Word,3) ->
-   opcode:opcode((Word bsl 2) band 16#001F).
 
 % READ
 %
