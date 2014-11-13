@@ -561,12 +561,12 @@ trace(OpCode,CPU) ->
 % EUNIT TESTS
 
 nop_test() ->
-   CPUx      = #cpu{},
-   {ok,CPUy} = exec_impl(?NOP,CPUx),
-   ?assertEqual(CPUx#cpu.a,CPUy#cpu.a),
-   ?assertEqual(CPUx#cpu.b,CPUy#cpu.b),
-   ?assertEqual(CPUx#cpu.s,CPUy#cpu.s),
-   ?assertEqual(CPUx#cpu.t,CPUy#cpu.t).
+   A = 1,
+   B = 2,
+   T = 3,
+   S = 4,
+   {ok,CPU} = exec_impl(?NOP,#cpu{a=A,b=B,t=T,s=S}),
+   assert([{a,A},{b,B},{t,T},{s,S}],CPU).
 
 plus_test() ->
    plus_test_impl(16#0000,1,       2,       0,3),
@@ -601,4 +601,27 @@ dup_test() ->
    ?assertEqual(1,CPU#cpu.t),
    ?assertEqual(1,CPU#cpu.s),
    ?assertEqual([2,3,4,5,6,7,8,9],CPU#cpu.ds).
+
+assert ([],_CPU) ->
+   ok;
+
+assert([{a,X}|T],CPU) ->
+   ?assertEqual(X,CPU#cpu.a),
+   assert(T,CPU);
+
+assert([{b,X}|T],CPU) ->
+   ?assertEqual(X,CPU#cpu.b),
+   assert(T,CPU);
+
+assert([{s,X}|T],CPU) ->
+   ?assertEqual(X,CPU#cpu.s),
+   assert(T,CPU);
+
+assert([{t,X}|T],CPU) ->
+   ?assertEqual(X,CPU#cpu.t),
+   assert(T,CPU);
+
+assert([_|T],CPU) ->
+   assert(T,CPU).
+
 
