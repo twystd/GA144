@@ -16,6 +16,9 @@
 
 %% @doc Translates a 5 bit value into the equivalent internal op-code
 %%      representation.
+opcode(16#00) ->
+   ?RET;
+
 opcode(16#08) ->
    ?FETCHP;
 
@@ -43,6 +46,9 @@ opcode(X) ->
 
 %% @doc Utility function to translate an op-code into a readable string.
 %%
+to_string(?RET) ->
+   "RET";
+
 to_string(?FETCHP) ->
    "FETCH-P";
 

@@ -1,5 +1,6 @@
 % OPCODE CONSTANTS
 %
+-define(RET,   16#00).
 -define(FETCHP,16#08).
 -define(FETCHB,16#0a).
 -define(STOREB,16#0e).

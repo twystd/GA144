@@ -274,6 +274,19 @@ exec(CPU,[]) ->
 exec(CPU,[H|T]) ->
    exec_impl(H,CPU#cpu{ i=T }).
 
+% 16#00  ;   ret
+exec_impl(?RET,CPU) ->
+   P      = CPU#cpu.r,
+   {R,RS} = pop(CPU#cpu.rs),     
+   CPUX   = CPU#cpu{ p  = P,
+                     r  = R,
+                     rs = RS,
+                     i  = []
+                   }, 
+   trace(?RET,CPUX),
+   {ok,CPUX};
+
+
 % 16#08  @p  fetch P
 exec_impl(?FETCHP,CPU) ->
    P    = CPU#cpu.p,     
@@ -549,8 +562,8 @@ channel_write_wait(CPU) ->
 push(DS,S) ->
    lists:droplast([S|DS]).
 
-pop([D0,D1,D2,D3,D4,D5,D6,D7]) ->
-   {D0,[D1,D2,D3,D4,D5,D6,D7,D0]}.
+pop([W0,W1,W2,W3,W4,W5,W6,W7]) ->
+   {W0,[W1,W2,W3,W4,W5,W6,W7,W0]}.
 
 % UTILITY FUNCTIONS
 % 
@@ -559,6 +572,14 @@ trace(OpCode,CPU) ->
    trace:trace(f18A,OpCode,CPU).
    
 % EUNIT TESTS
+
+ret_test() ->
+   P  = 1,
+   R  = 2,
+   RS = [3,4,5,6,7,8,9,10],
+   I  = [ ?NOP,?NOP,?NOP,?NOP ],
+   {ok,CPU} = exec_impl(?RET,#cpu{p=P,r=R,rs=RS,i=I}),
+   assert([{p,R},{r,3},{rs,[4,5,6,7,8,9,10,3]},{i,[]}],CPU).
 
 nop_test() ->
    A = 1,
@@ -589,9 +610,7 @@ plus_test_impl(P,T,S,C,R) ->
                                     s=S,
                                     ds=DS,
                                     carry=C }),
-   ?assertEqual(R,  CPU#cpu.t),
-   ?assertEqual(3,  CPU#cpu.s),
-   ?assertEqual(DSX,CPU#cpu.ds).
+   assert([{t,R},{s,3},{ds,DSX}],CPU).
 
 dup_test() ->
    {ok,CPU} = exec_impl(?DUP,#cpu{t=1,
@@ -604,6 +623,18 @@ dup_test() ->
 
 assert ([],_CPU) ->
    ok;
+
+assert([{p,X}|T],CPU) ->
+   ?assertEqual(X,CPU#cpu.p),
+   assert(T,CPU);
+
+assert([{r,X}|T],CPU) ->
+   ?assertEqual(X,CPU#cpu.r),
+   assert(T,CPU);
+
+assert([{i,X}|T],CPU) ->
+   ?assertEqual(X,CPU#cpu.i),
+   assert(T,CPU);
 
 assert([{a,X}|T],CPU) ->
    ?assertEqual(X,CPU#cpu.a),
@@ -619,6 +650,14 @@ assert([{s,X}|T],CPU) ->
 
 assert([{t,X}|T],CPU) ->
    ?assertEqual(X,CPU#cpu.t),
+   assert(T,CPU);
+
+assert([{rs,X}|T],CPU) ->
+   ?assertEqual(X,CPU#cpu.rs),
+   assert(T,CPU);
+
+assert([{ds,X}|T],CPU) ->
+   ?assertEqual(X,CPU#cpu.ds),
    assert(T,CPU);
 
 assert([_|T],CPU) ->

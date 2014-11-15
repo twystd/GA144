@@ -75,6 +75,9 @@ extract(Trace,ID) ->
 
 %% @doc Extracts the CPU trace information relevant to an opcode. 
 %%
+trace(f18A,?RET,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,{ret,{p,CPU#cpu.p},{r,CPU#cpu.r},{rs,CPU#cpu.rs},{i,CPU#cpu.i}}});
+
 trace(f18A,?FETCHP,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{fetchp,{t,CPU#cpu.t}}});
 
