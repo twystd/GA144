@@ -17,11 +17,11 @@ origin
     ;
 
 instruction
-    : label? (WS (opcode|word|constant))+ (WS comment)?
+    : label? (WS (opcode|word|call|constant))+ (WS comment)?
     ;
 
 label
-    : name
+    : NAME
     ;
 
 address
@@ -39,7 +39,8 @@ word
 constant
     : NUMBER
     ;
-name
+
+call
     : NAME
     ;
 

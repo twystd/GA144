@@ -1,5 +1,6 @@
 .DS_Store
 documentation
+archive/hccforth-tutorial
 erlang/ebin
 tla/F18A.toolbox
 tla/channel.toolbox

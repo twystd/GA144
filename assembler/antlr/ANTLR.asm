@@ -1,8 +1,5 @@
-# ANTLR TEST GRAMMAR
+calc1 0 org
 
-antlr 0   org      # ORIGIN: 0
-
-start .
-      right @p
-      678 !b
-end   .            # line comment
+calc  3 . + dup + ;
+main  1 . + dup calc
+#main  1 . + dup calc !b main;

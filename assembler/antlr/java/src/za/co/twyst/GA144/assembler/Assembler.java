@@ -20,6 +20,7 @@ import za.co.twyst.GA144.assembler.antlr.F18AParser;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.CommentContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.ConstantContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.LabelContext;
+import za.co.twyst.GA144.assembler.antlr.F18AParser.CallContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.OpcodeContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.OriginContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.ProgramContext;
@@ -29,6 +30,7 @@ public class Assembler extends F18ABaseListener {
 	// CONSTANTS
 	
     private static final int     RET    = 0x00;
+    private static final int     CALL   = 0x03;
     private static final int     FETCHP = 0x08;
     private static final int     FETCHB = 0x0a;
     private static final int     STOREB = 0x0e;
@@ -37,6 +39,7 @@ public class Assembler extends F18ABaseListener {
     private static final int     NOP    = 0x1c;
     private static final int     BSTORE = 0x1e;
     
+    private static final int     PAD    = 0x00; // opcode used to pad an instruction after a RET
     private static final int     RIGHT  = 0x01d5;
     private static final Pattern CONSTANT = Pattern.compile("([0-9]+)"); 
 
@@ -50,6 +53,7 @@ public class Assembler extends F18ABaseListener {
 	// INSTANCE VARIABLES
 	
     private final boolean debug;
+    private final int     pad;
     
 	private int   origin;
     private int   location;
@@ -66,6 +70,7 @@ public class Assembler extends F18ABaseListener {
 		File    in    = null;
 		File    out   = null;
 		boolean debug = false;
+		int     pad   = 0x00;
 		int     ix    = 0;
 		
 		while(ix < args.length) {
@@ -84,10 +89,16 @@ public class Assembler extends F18ABaseListener {
 					}
 					break;
                     
-                case "--debug":
+                case "--pad":
                     if (ix < args.length) {
-                        debug = true;
+                        if (args[ix++].equalsIgnoreCase("nop")) {
+                            pad = NOP;
+                        }
                     }
+                    break;
+                    
+                case "--debug":
+                    debug = true;
                     break;
 			}
 		}
@@ -95,12 +106,12 @@ public class Assembler extends F18ABaseListener {
 		// ... validate
 
 		if (in == null) {
-			System.out.println("Usage: java -jar assembler.jar --in <filename> --out <filename>");
+			System.out.println("Usage: java -jar assembler.jar --in <filename> --out <filename> [--pad nop] [--debug]");
 			System.exit(-1);
 		}
 		
 		if (out == null) {
-			System.out.println("Usage: java -jar assembler.jar --in <filename> --out <filename>");
+            System.out.println("Usage: java -jar assembler.jar --in <filename> --out <filename> [--pad nop] [--debug]");
 			System.exit(-1);
 		}
 
@@ -116,7 +127,7 @@ public class Assembler extends F18ABaseListener {
 		
 		// ... parse
 
-        Assembler assembler = new Assembler(debug);
+        Assembler assembler = new Assembler(pad,debug);
 
 		try {
             assembler.assemble(in,out);
@@ -140,10 +151,12 @@ public class Assembler extends F18ABaseListener {
 	// CONSTRUCTOR
     
     protected Assembler() {
+        this.pad   = PAD;
         this.debug = false;
     }
 	
-	protected Assembler(boolean debug) {
+	protected Assembler(int pad,boolean debug) {
+	    this.pad   = pad;
 	    this.debug = debug;
 	}
 
@@ -311,7 +324,38 @@ public class Assembler extends F18ABaseListener {
         	}
         }
 	}
-	
+
+    // TODO: CALL address from label table
+    // TODO: CALL unit test for all the different slot combinations
+    @Override
+    public void enterCall(CallContext ctx) {
+        TerminalNode node;
+        
+        if ((node = ctx.NAME()) != null) {
+            if (debug) {
+                System.out.println("OPCODE:   call " + node.getText());
+            }
+
+            // ... encode CALL
+            
+            int opcode  = CALL;
+            int address = 0x0000;
+            int rsh     = RSHIFT[slot];
+            int mask    = MASK[slot];
+                
+            ram[location] |= (((opcode << 13) >>> rsh) ^ XOR) & mask;
+            
+            if (slot == 0) {
+                ram[location] |= 0x01C00 & XOR;
+                ram[location] |= (address & 0x03ff);
+            }
+
+            
+            location = ++P;
+            slot     = 0;
+        }
+    }
+
 	// INTERNAL
 	
 	private void encode(int opcode) {
@@ -335,13 +379,14 @@ public class Assembler extends F18ABaseListener {
 	    
 	    if (slot == 0) {
 	    	location = ++P;
-	    } else {
-	    	// ... pad with 'nop' after a 'ret'
+	    	return;
+	    } 
+	    
+	    // ... pad after a RET
 
-	    	if (opcode == RET) {
-		    	while(slot != 0) {
-		    		encode(NOP);
-		    	}
+	    if (opcode == RET) {
+	        while(slot != 0) {
+	            encode(pad);
 		    } 
 	    }
 	}
