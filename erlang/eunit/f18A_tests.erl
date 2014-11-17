@@ -19,8 +19,9 @@
 -define(FETCHP,    [reset,{fetchp,{t,16#1d5}}]).
 -define(FETCHB,    [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}}]).
 -define(STOREB,    [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}}]).
+-define(READ,      [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}},nop]).
 
--define(READ,      [reset,read,{read,678},eof]).
+-define(READX,     [reset,read,{read,678},eof]).
 -define(WRITE,     [reset,{write,678},{write,ok},eof]).
 -define(READ_STOP, [reset,nop,read,stop]).
 -define(WRITE_STOP,[reset,nop,{write,123},stop]).
@@ -213,9 +214,10 @@ read_go_test() ->
    M = setup("-- READ TEST/GO"),
    util:unregister(n000),
 
-   F18A = f18A:create(n001,n000,[read]),
+   F18A = f18A:create(n001,n000,[16#04b02,16#001d5]),
 
-   f18A:reset(F18A),
+   f18A:breakpoint(F18A,2),
+   f18A:reset     (F18A),
 
    spawn(fun() ->
             f18A:go   (F18A,wait),
@@ -231,7 +233,6 @@ read_go_test() ->
    check(waitall([{n000,stopped},{n001,stopped}]),
          [ { ?READ,n001 }
          ]).
-
 
 read_step_test() ->
    M = setup("-- READ TEST/STEP"),
@@ -254,7 +255,7 @@ read_step_test() ->
                        end)),
    
    check(waitall([{n000,stopped},{n001,stopped}]),
-         [ { ?READ,n001 }
+         [ { ?READX,n001 }
          ]).
 
 write_go_test() ->
