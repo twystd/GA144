@@ -17,7 +17,7 @@
 -define(NOP4,      [reset,nop,nop,nop,nop]).
 -define(NOP5,      [reset,nop,nop,nop,nop,nop]).
 -define(FETCHP,    [reset,{fetchp,{t,16#1d5}}]).
--define(FETCHB,    [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}}]).
+-define(FETCHB,    [reset,{fetchp,{t,2}},{bstore,{b,2}},{fetchb,{t,678}}]).
 -define(STOREB,    [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}}]).
 -define(READ,      [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}},nop]).
 
@@ -163,24 +163,14 @@ fetchp_test() ->
 
 fetchb_test() ->
    M    = setup("-- FETCH-B TEST"),
-   F18A = f18A:create(n001,n000,[ 16#04b02,16#001d5 ]),
+   F18A = f18A:create(n001,n000,[ 16#04b02,16#00002,16#002a6 ]),
 
    f18A:reset(F18A),
-
-   register(n000,spawn(fun() ->
-                          n001 ! { n000,write,678 },
-                          wait({n001,read,ok}),
-                          M    ! { n000,stopped }
-                       end)),
-
-   spawn(fun() ->
-            f18A:step (F18A,wait),
-            f18A:step (F18A,wait),
-   	      f18A:step (F18A,wait),
-            M ! { n001,stopped }
-	 end),
-
-   check(waitall([{n000,stopped},{n001,stopped}]),
+   f18A:step (F18A,wait),
+   f18A:step (F18A,wait),
+   f18A:step (F18A,wait),
+  
+   check(trace:stop(),
          [ { ?FETCHB,n001 }
          ]).
 
