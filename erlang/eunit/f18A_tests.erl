@@ -20,8 +20,8 @@
 -define(FETCHB,    [reset,{fetchp,{t,2}},{bstore,{b,2}},{fetchb,{t,678}}]).
 -define(STOREB,    [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}}]).
 -define(READ,      [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}},nop]).
+-define(WRITE,     [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}},nop,nop,nop]).
 
--define(WRITE,     [reset,{write,678},{write,ok},eof]).
 -define(READ_STOP, [reset,nop,read,stop]).
 -define(WRITE_STOP,[reset,nop,{write,123},stop]).
 -define(READWRITE1,[reset,read,{read,135},nop,nop,nop,eof]).
@@ -161,7 +161,7 @@ fetchp_test() ->
          ]).
 
 fetchb_test() ->
-   M    = setup("-- FETCH-B TEST"),
+   setup("-- FETCH-B TEST"),
    F18A = f18A:create(n001,n000,[ 16#04b02,16#00002,16#002a6 ]),
 
    f18A:reset(F18A),
@@ -173,6 +173,7 @@ fetchb_test() ->
          [ { ?FETCHB,n001 }
          ]).
 
+% TODO - REIMPLEMENT AS A WRITE-TO-MEMORY
 storeb_test() ->
    M    = setup("-- STORE-B TEST"),
    F18A = f18A:create(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
@@ -227,7 +228,6 @@ read_step_test() ->
    M = setup("-- READ TEST/STEP"),
    util:unregister(n000),
 
-%   F18A = f18A:create(n001,n000,[read]),
    F18A = f18A:create(n001,n000,[16#04b02,16#001d5]),
 
    f18A:reset(F18A),
@@ -255,7 +255,10 @@ write_go_test() ->
    util:unregister(n000),
    util:unregister(n001),
 
-   F18A = f18A:create(n001,n000,[{write,678}]),
+   F18A = f18A:create(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
+   
+   f18A:breakpoint(F18A,4),
+   f18A:reset     (F18A),
    
    register(n000,spawn(fun() ->
                           wait({ n001,write,678 }),
@@ -264,7 +267,6 @@ write_go_test() ->
                        end)),
 
    spawn(fun() ->
-            f18A:reset(F18A),
             f18A:go   (F18A,wait),
             M ! { n001,stopped }
          end),
@@ -278,7 +280,7 @@ write_step_test() ->
    util:unregister(n000),
    util:unregister(n001),
 
-   F18A = f18A:create(n001,n000,[{write,678}]),
+   F18A = f18A:create(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
    
    register(n000,spawn(fun() ->
                           wait({ n001,write,678 }),
@@ -288,6 +290,12 @@ write_step_test() ->
 
    spawn(fun() ->
             f18A:reset(F18A),
+            f18A:step (F18A,wait),
+            f18A:step (F18A,wait),
+            f18A:step (F18A,wait),
+            f18A:step (F18A,wait),
+            f18A:step (F18A,wait),
+            f18A:step (F18A,wait),
             f18A:step (F18A,wait),
             f18A:step (F18A,wait),
             M ! { n001,stopped }
@@ -468,7 +476,7 @@ writeread_step_test() ->
           { ?WRITEREAD2,n002 } 
         ]).
 
-%% UTILILITY FUNCTIONS
+%% UTILITY FUNCTIONS
 
 setup(TestName) ->
    log:info(?TAG,TestName),
