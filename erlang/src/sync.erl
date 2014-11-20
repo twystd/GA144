@@ -27,7 +27,7 @@ stop(_) ->
    ok.
 
 hook(Module,Fun) ->
-   sync !  {hook,{Module,Fun}},
+   sync ! {hook,{Module,Fun}},
    ok.
 
 is_registered() ->

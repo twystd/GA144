@@ -323,12 +323,17 @@ exec_impl(?STOREB,CPU) ->
    log:info(?TAG,"STORE-B"),     
    B = CPU#cpu.b,     
    T = CPU#cpu.t,
-   write(CPU,B,T),
-   CPUX = CPU#cpu{ t = T
-                 },
+   case write(CPU,B,T) of 
+	ok ->
+  	    CPUX = CPU#cpu{ t = T
+            	          },
 
-   trace(?STOREB,CPUX),
-   {ok,CPUX};
+	       trace(?STOREB,CPUX),
+   	       {ok,CPUX};
+
+	Other ->
+            Other
+	end;
 
 % 16#14  +   plus
 exec_impl(?PLUS,CPU) ->

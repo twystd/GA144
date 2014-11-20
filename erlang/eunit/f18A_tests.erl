@@ -21,9 +21,9 @@
 -define(STOREB,    [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}}]).
 -define(READ,      [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}},nop]).
 -define(WRITE,     [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}},nop,nop,nop]).
--define(READ_STOP,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},stop]).
+-define(READ_STOP, [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},stop]).
+-define(WRITE_STOP,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,stop]).
 
--define(WRITE_STOP,[reset,nop,{write,123},stop]).
 -define(READWRITE1,[reset,read,{read,135},nop,nop,nop,eof]).
 -define(READWRITE2,[reset,nop,nop,{write,135},{write,ok},nop,eof]).
 -define(WRITEREAD1,[reset,nop,nop,read,{read,135},nop,eof]).
@@ -348,7 +348,7 @@ write_stop_go_test() ->
                         util:unregister(n000)
                         end)),
                                  
-   F18A = f18A:create(n001,n000,[nop,{write,123},nop,nop,nop]),
+   F18A = f18A:create(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
    f18A:reset(F18A),
    f18A:go   (F18A), 
    f18A:stop (F18A,wait),
@@ -367,12 +367,17 @@ write_stop_step_test() ->
                         util:unregister(n000)
                         end)),
                                  
-   F18A = f18A:create(n001,n000,[nop,{write,123},nop,nop,nop]),
+   F18A = f18A:create(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
+
    f18A:reset(F18A),
    f18A:step (F18A), 
    f18A:step (F18A), 
    f18A:step (F18A), 
    f18A:step (F18A), 
+   f18A:step (F18A),
+   f18A:step (F18A),
+   f18A:step (F18A),
+   f18A:step (F18A),
    f18A:step (F18A),
    f18A:stop (F18A,wait),
 
