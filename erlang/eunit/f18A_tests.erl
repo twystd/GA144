@@ -23,9 +23,9 @@
 -define(WRITE,     [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}},nop,nop,nop]).
 -define(READ_STOP, [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},stop]).
 -define(WRITE_STOP,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,stop]).
+-define(READWRITE1,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}},nop,nop,nop,nop,nop]).
+-define(READWRITE2,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}},nop,nop,nop]).
 
--define(READWRITE1,[reset,read,{read,135},nop,nop,nop,eof]).
--define(READWRITE2,[reset,nop,nop,{write,135},{write,ok},nop,eof]).
 -define(WRITEREAD1,[reset,nop,nop,read,{read,135},nop,eof]).
 -define(WRITEREAD2,[reset,{write,135},{write,ok},nop,nop,nop,eof]).
 
@@ -389,14 +389,16 @@ readwrite_go_test() ->
    M = setup("-- READ-WRITE TEST/GO"),
 
    spawn(fun() ->
-      F18A = f18A:create(n001,n002,[read,nop,nop,nop]),
+      F18A = f18A:create(n001,n002,[16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2 ]),
+      f18A:breakpoint(F18A,3),
       f18A:reset(F18A),
       f18A:go   (F18A,wait),
       M ! { n001,stopped }
       end),
 
    spawn(fun() ->
-      F18A = f18A:create(n002,n001,[nop,nop,{write,135},nop]),
+      F18A = f18A:create(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
+      f18A:breakpoint(F18A,4),
       f18A:reset(F18A),
       f18A:go   (F18A,wait),
       M ! { n002,stopped }
@@ -411,8 +413,11 @@ readwrite_step_test() ->
    M = setup("-- READ-WRITE TEST/STEP"),
 
    spawn(fun() ->
-      F18A = f18A:create(n001,n002,[read,nop,nop,nop]),
+      F18A = f18A:create(n001,n002,[16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2 ]),
       f18A:reset(F18A),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
@@ -422,8 +427,11 @@ readwrite_step_test() ->
       end),
 
    spawn(fun() ->
-      F18A = f18A:create(n002,n001,[nop,nop,{write,135},nop]),
+      F18A = f18A:create(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
       f18A:reset(F18A),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),

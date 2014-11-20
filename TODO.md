@@ -7,6 +7,7 @@ erlang
 2.  Check what write to ROM does on the simulator/emulator
 3.  Convert ROM/RAM from lists to arrays
 4.  Convert FETCH B test to write to RAM instead of port.
+5.  Implement step(F18A,N).
 
 
 Haskell
