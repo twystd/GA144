@@ -289,23 +289,34 @@ exec_impl(?RET,CPU) ->
 
 % 16#08  @p  fetch P
 exec_impl(?FETCHP,CPU) ->
-   P    = CPU#cpu.p,     
-   CPUX = CPU#cpu{ p = P + 1,
-                   t = read(CPU,P)
-                 }, 
-   trace(?FETCHP,CPUX),
-   {ok,CPUX};
+   P = CPU#cpu.p,     
+   case read(CPU,P) of
+        {ok,T} ->
+   	   CPUX = CPU#cpu{ p = P + 1,
+                           t = T
+                 	 }, 
+   	   trace(?FETCHP,CPUX),
+   	   {ok,CPUX};
+    
+        Other ->
+            Other
+	end;
 
 % 16#0a  @b  fetch B
 exec_impl(?FETCHB,CPU) ->
    log:info(?TAG,"FETCH-B"),     
    B = CPU#cpu.b,     
-   T = read(CPU,B),
-   CPUX = CPU#cpu{ t = T
-                 },
+   case read(CPU,B) of
+        {ok,T} ->
+    	    CPUX = CPU#cpu{ t = T
+                          },
 
-   trace(?FETCHB,CPUX),
-   {ok,CPUX};
+   	    trace(?FETCHB,CPUX),
+   	    {ok,CPUX};
+
+        Other ->
+            Other
+	end;
 
 % 16#0e  !b  store B
 exec_impl(?STOREB,CPU) ->
@@ -377,7 +388,13 @@ exec_impl(nop,CPU) ->
 exec_impl(read,CPU) ->
    log:info   (?TAG,"READ"),
    trace:trace(f18A,{ CPU#cpu.id,read}),     
-   channel_read(CPU);
+   case channel_read(CPU) of
+        {ok,Word} ->
+           {ok,Word};
+        _else ->
+           ?debugMsg("** OOOOOOOOPS/Y"),
+           error
+   	end;
 
 % INTERIM STUFF - REMOVE
 exec_impl({write,Word},CPU) ->
@@ -407,11 +424,14 @@ load_next(CPU) ->
              load_next_impl(read(CPU,P))
         end.
 
+load_next_impl({ok,Word}) ->
+   { ok,decode(Word) };
+
 load_next_impl(eof) ->
    eof;
 
-load_next_impl(Word) ->
-   { ok,decode(Word) }.
+load_next_impl(_) ->
+   error.
 
 % OPCODE DECODER
 %
@@ -428,19 +448,18 @@ decode(Word) ->
    [ Word ].
 
 % READ
-%
 
 read(CPU,Addr) when Addr < 16#40 ->
    read_mem(CPU#cpu.ram,Addr);
 
 read(CPU,Addr) when Addr < 16#80 ->
-   read_mem(CPU#cpu.ram,Addr-16#40);
+   read_mem(CPU#cpu.ram,Addr band 16#3f);
 
 read(CPU,Addr) when Addr < 16#C0 ->
-   read_mem(CPU#cpu.rom,Addr-16#80);
+   read_mem(CPU#cpu.rom,Addr band 16#3f);
 
 read(CPU,Addr) when Addr < 16#100 ->
-   read_mem(CPU#cpu.rom,Addr-16#C0);
+   read_mem(CPU#cpu.rom,Addr band 16#3f);
 
 read(CPU,?RIGHT) ->
    Ch = CPU#cpu.channel,
@@ -450,7 +469,7 @@ read(CPU,Addr) when Addr < 16#200 ->
    read_mem(CPU#cpu.io,Addr-16#100).
 
 read_mem(Mem,Addr) when Addr < length(Mem) ->
-   lists:nth(Addr+1,Mem);
+   {ok,lists:nth(Addr+1,Mem)};
 
 read_mem(_Mem,_Addr) ->
    eof.
@@ -460,21 +479,40 @@ read_channel(CPU,Ch) ->
    receive
       {Ch,write,Word} -> 
          Ch ! { ID,read,ok },
-         Word;
+         {ok,Word};
 
       step ->
          read_channel(CPU,Ch);
 
       {stop,PID} ->
          {stop,PID}
-
    end.
 
 % WRITE
 
+write(CPU,Addr,Word) when Addr < 16#40 ->
+   write_mem(CPU#cpu.ram,Addr,Word);
+
+write(CPU,Addr,Word) when Addr < 16#80 ->
+   write_mem(CPU#cpu.ram,Addr band 16#3f,Word);
+
+% TODO - CHECK WHAT HAPPENS ON SIMULATOR/EMULATOR
+write(CPU,Addr,Word) when Addr < 16#C0 ->
+   ignore; 
+
+% TODO - CHECK WHAT HAPPENS ON SIMULATOR/EMULATOR
+write(CPU,Addr,Word) when Addr < 16#100 ->
+   ignore; 
+
 write(CPU,?RIGHT,Word) ->
    Ch = CPU#cpu.channel,
    write_channel(CPU,Ch,Word).
+
+write_mem(Mem,Addr,Word) when Addr < length(Mem) ->
+   oops;
+
+write_mem(Mem,Addr,Word) when Addr < length(Mem) ->
+   eof.
 
 write_channel(CPU,Ch,Word) ->
    ID = CPU#cpu.id,

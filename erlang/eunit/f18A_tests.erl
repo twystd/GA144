@@ -21,8 +21,8 @@
 -define(STOREB,    [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}}]).
 -define(READ,      [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}},nop]).
 -define(WRITE,     [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}},nop,nop,nop]).
+-define(READ_STOP,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},stop]).
 
--define(READ_STOP, [reset,nop,read,stop]).
 -define(WRITE_STOP,[reset,nop,{write,123},stop]).
 -define(READWRITE1,[reset,read,{read,135},nop,nop,nop,eof]).
 -define(READWRITE2,[reset,nop,nop,{write,135},{write,ok},nop,eof]).
@@ -173,7 +173,7 @@ fetchb_test() ->
          [ { ?FETCHB,n001 }
          ]).
 
-% TODO - REIMPLEMENT AS A WRITE-TO-MEMORY
+% TODO - REIMPLEMENT AS A WRITE-TO-MEMORY WHEN ROM/RAM REIMPLEMENTED AS array
 storeb_test() ->
    M    = setup("-- STORE-B TEST"),
    F18A = f18A:create(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
@@ -307,7 +307,8 @@ write_step_test() ->
 
 read_stop_go_test() ->
    setup("-- READ STOP TEST/GO"),
-   F18A = f18A:create(n001,n000,[nop,read,nop,nop,nop]),
+   F18A = f18A:create(n001,n000,[16#04b02,16#001d5]),
+
    f18A:reset(F18A),
    f18A:go   (F18A),
    f18A:stop (F18A,wait),
@@ -317,12 +318,19 @@ read_stop_go_test() ->
          ]).
 
 read_stop_step_test() ->
-   log:info(?TAG,"-- READ STOP TEST/STEP"),
-   trace:stop (),
-   trace:start(),
-   F18A = f18A:create(n001,n000,[nop,read,nop,nop,nop]),
+   setup("-- READ STOP TEST/STEP"),
+   F18A = f18A:create(n001,n000,[16#04b02,16#001d5]),
+
    f18A:reset(F18A),
-   f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A), f18A:step (F18A),
+   f18A:step (F18A), 
+   f18A:step (F18A), 
+   f18A:step (F18A), 
+   f18A:step (F18A), 
+   f18A:step (F18A), 
+   f18A:step (F18A), 
+   f18A:step (F18A), 
+   f18A:step (F18A), 
+   f18A:step (F18A),
    f18A:stop (F18A,wait),
 
    check(waitall([]),
@@ -485,6 +493,7 @@ setup(TestName) ->
    self().
 
 check(_Trace,[]) ->
+   ?debugMsg("--OK"),
    ok;
 
 check(Trace,[{Expected,ID}|T]) ->
