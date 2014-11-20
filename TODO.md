@@ -8,6 +8,7 @@ erlang
 3.  Convert ROM/RAM from lists to arrays
 4.  Convert FETCH B test to write to RAM instead of port.
 5.  Implement step(F18A,N).
+6.  Check overflow and extended arithmetic on simulator/emulator
 
 
 Assembler
