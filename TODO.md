@@ -10,6 +10,17 @@ erlang
 5.  Implement step(F18A,N).
 
 
+Assembler
+---------
+1. Use I register 
+
+Disassembler
+------------
+
+TLA+
+----
+1. Assembler (?)
+
 Haskell
 -------
 1. Yampa ? (http://keera.co.uk)
