@@ -7,6 +7,11 @@
 % DEFINES
 
 -define(TAG,"F18A").
+-define(FETCHP_RIGHT,{fetchp,{t,16#1d5}}).
+-define(FETCHP_678,  {fetchp,{t,678}}).
+-define(FETCHB_678,  {fetchb,{t,678}}).
+-define(BSTORE_RIGHT,{bstore,{b,16#1d5}}).
+-define(STOREB_RIGHT,{storeb,{b,16#1d5},{t,678}}).
 
 -define(GO,        [reset,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop]).
 -define(STEP,      [reset,nop,nop,nop,nop,nop,nop]).
@@ -16,17 +21,17 @@
 -define(NOP3,      [reset,nop,nop,nop]).
 -define(NOP4,      [reset,nop,nop,nop,nop]).
 -define(NOP5,      [reset,nop,nop,nop,nop,nop]).
--define(FETCHP,    [reset,{fetchp,{t,16#1d5}}]).
--define(FETCHB,    [reset,{fetchp,{t,2}},{bstore,{b,2}},{fetchb,{t,678}}]).
--define(STOREB,    [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}}]).
--define(READ,      [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}},nop]).
--define(WRITE,     [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}},nop,nop,nop]).
--define(READ_STOP, [reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},stop]).
--define(WRITE_STOP,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,stop]).
--define(READWRITE1,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}},nop,nop,nop,nop,nop]).
--define(READWRITE2,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}},nop,nop,nop]).
--define(WRITEREAD1,[reset,nop,nop,nop,nop,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}},nop]).
--define(WRITEREAD2,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}},nop,nop,nop]).
+-define(FETCHP,    [reset,?FETCHP_RIGHT]).
+-define(FETCHB,    [reset,{fetchp,{t,2}},{bstore,{b,2}},?FETCHB_678]).
+-define(STOREB,    [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHP_678,nop,?STOREB_RIGHT]).
+-define(READ,      [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHB_678,nop]).
+-define(WRITE,     [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHP_678,nop,?STOREB_RIGHT,nop,nop,nop]).
+-define(READ_STOP, [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,stop]).
+-define(WRITE_STOP,[reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHP_678,nop,stop]).
+-define(READWRITE1,[reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHB_678,nop,nop,nop,nop,nop]).
+-define(READWRITE2,[reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHP_678,nop,?STOREB_RIGHT,nop,nop,nop]).
+-define(WRITEREAD1,[reset,nop,nop,nop,nop,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHB_678,nop]).
+-define(WRITEREAD2,[reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHP_678,nop,?STOREB_RIGHT,nop,nop,nop]).
 
 
 % EUNIT TESTS
@@ -518,7 +523,7 @@ check(_Trace,[]) ->
    ok;
 
 check(Trace,[{Expected,ID}|T]) ->
-   assertEqual(ok,verify:compare(Expected,trace:extract(Trace,ID),noprint)),
+   ?assertEqual(ok,verify:compare(Expected,trace:extract(Trace,ID),noprint)),
    check(Trace,T).
 
 waitall([]) ->

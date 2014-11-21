@@ -383,30 +383,6 @@ exec_impl(?BSTORE,CPU) ->
    trace(?BSTORE,CPUX),
    {ok,CPUX};
 
-% INTERIM STUFF - REMOVE
-exec_impl(nop,CPU) ->
-   log:info(?TAG,"NOP"),     
-   trace:trace(f18A,{ CPU#cpu.id,nop }),     
-   {ok,CPU};
-
-% INTERIM STUFF - REMOVE
-exec_impl(read,CPU) ->
-   log:info   (?TAG,"READ"),
-   trace:trace(f18A,{ CPU#cpu.id,read}),     
-   case channel_read(CPU) of
-        {ok,Word} ->
-           {ok,Word};
-        _else ->
-           ?debugMsg("** OOOOOOOOPS/Y"),
-           error
-   	end;
-
-% INTERIM STUFF - REMOVE
-exec_impl({write,Word},CPU) ->
-   log:info   (?TAG,"WRITE"),
-   trace:trace(f18A,{ CPU#cpu.id,{write,Word}}),     
-   channel_write(CPU,Word);
-  
 exec_impl({error,Reason},_CPU) ->
    log:error(?TAG,"INVALID OPERATION ~p~n",[Reason]),
    {error,Reason};
