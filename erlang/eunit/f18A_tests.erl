@@ -25,9 +25,11 @@
 -define(WRITE_STOP,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,stop]).
 -define(READWRITE1,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}},nop,nop,nop,nop,nop]).
 -define(READWRITE2,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}},nop,nop,nop]).
+-define(WRITEREAD1,[reset,nop,nop,nop,nop,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchb,{t,678}},nop]).
+-define(WRITEREAD2,[reset,{fetchp,{t,16#1d5}},{bstore,{b,16#1d5}},{fetchp,{t,678}},nop,{storeb,{b,16#1d5},{t,678}},nop]).
 
--define(WRITEREAD1,[reset,nop,nop,read,{read,135},nop,eof]).
--define(WRITEREAD2,[reset,{write,135},{write,ok},nop,nop,nop,eof]).
+-define(WRITEREAD1X,[reset,nop,nop,read,{read,135},nop,eof]).
+-define(WRITEREAD2X,[reset,{write,135},{write,ok},nop,nop,nop,eof]).
 
 % EUNIT TESTS
 
@@ -463,16 +465,20 @@ writeread_go_test() ->
       end),
       
    check(waitall([{n001,stopped},{n002,stopped}]),
-        [ { ?WRITEREAD1,n001 },
-          { ?WRITEREAD2,n002 }
+        [ { ?WRITEREAD1X,n001 },
+          { ?WRITEREAD2X,n002 }
         ]).
 
 writeread_step_test() ->
    M = setup("-- WRITE-READ TEST/STEP"),
 
    spawn(fun() ->
-      F18A = f18A:create(n001,n002,[nop,nop,read,nop]),
+%     F18A = f18A:create(n001,n002,[nop,nop,read,nop]),
+      F18A = f18A:create(n001,n002,[16#2c9b2,16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2 ]),
       f18A:reset(F18A),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
+      f18A:step (F18A,wait),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
@@ -482,8 +488,10 @@ writeread_step_test() ->
       end),
 
    spawn(fun() ->
-      F18A = f18A:create(n002,n001,[{write,135},nop,nop,nop]),
+%     F18A = f18A:create(n002,n001,[{write,135},nop,nop,nop]),
+      F18A = f18A:create(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2,16#2c9b2,16#2c9b2 ]),
       f18A:reset(F18A),
+      f18A:step (F18A,wait),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
@@ -493,7 +501,7 @@ writeread_step_test() ->
       end),
       
    check(waitall([{n001,stopped},{n002,stopped}]),
-        [ { ?WRITEREAD1,n001 }, 
+        [ { ?WRITEREAD1,n001 },
           { ?WRITEREAD2,n002 } 
         ]).
 
