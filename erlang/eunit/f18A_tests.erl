@@ -179,11 +179,10 @@ fetchb_test() ->
          ]).
 
 storeb_test() ->
-   M    = setup("-- STORE-B TEST"),
+   setup("-- STORE-B TEST"),
    F18A = f18A:create(n001,n000,[ 16#04b12,16#00004,16#002a6,16#089b2,16#00000 ]),
 
    f18A:reset(F18A),
-
    f18A:step (F18A,wait),
    f18A:step (F18A,wait),
    f18A:step (F18A,wait),
