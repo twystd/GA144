@@ -478,21 +478,21 @@ write(CPU,Addr,Word) when Addr < 16#80 ->
    write_mem(CPU#cpu.ram,Addr band 16#3f,Word);
 
 % TODO - CHECK WHAT HAPPENS ON SIMULATOR/EMULATOR
-write(CPU,Addr,Word) when Addr < 16#C0 ->
+write(_CPU,Addr,_Word) when Addr < 16#C0 ->
    ignore; 
 
 % TODO - CHECK WHAT HAPPENS ON SIMULATOR/EMULATOR
-write(CPU,Addr,Word) when Addr < 16#100 ->
+write(_CPU,Addr,_Word) when Addr < 16#100 ->
    ignore; 
 
 write(CPU,?RIGHT,Word) ->
    Ch = CPU#cpu.channel,
    write_channel(CPU,Ch,Word).
 
-write_mem(Mem,Addr,Word) when Addr < length(Mem) ->
+write_mem(Mem,Addr,_Word) when Addr < length(Mem) ->
    oops;
 
-write_mem(Mem,Addr,Word) when Addr < length(Mem) ->
+write_mem(Mem,Addr,_Word) when Addr < length(Mem) ->
    eof.
 
 write_channel(CPU,Ch,Word) ->
@@ -524,57 +524,57 @@ write_wait(CPU) ->
    end.
 
 	
-% CHANNEL READ
-
-channel_read(CPU) ->
-   ID = CPU#cpu.id,
-   Ch = CPU#cpu.channel,
-   receive
-      {Ch,write,Word} -> 
-         trace:trace(f18A,{ CPU#cpu.id,{read,Word}}),     
-         Ch ! { ID,read,ok },
-         {ok,CPU};
-
-      step ->
-         channel_read(CPU);
-
-      {stop,PID} ->
-         {stop,PID}
-
-   end.
+%% CHANNEL READ
+%
+% channel_read(CPU) ->
+%    ID = CPU#cpu.id,
+%    Ch = CPU#cpu.channel,
+%    receive
+%       {Ch,write,Word} -> 
+%          trace:trace(f18A,{ CPU#cpu.id,{read,Word}}),     
+%          Ch ! { ID,read,ok },
+%          {ok,CPU};
+% 
+%       step ->
+%          channel_read(CPU);
+% 
+%       {stop,PID} ->
+%          {stop,PID}
+% 
+%    end.
    
 
-% CHANNEL WRITE
-
-channel_write(CPU,Word) ->
-   ID = CPU#cpu.id,
-   Ch = CPU#cpu.channel,
-   try
-      Ch ! { ID,write,Word },
-      channel_write_wait(CPU)
-   catch
-      error:badarg ->
-         log:error(?TAG,"~p:WRITE to invalid node ~p",[ID,Ch]),   
-         {error,invalid_peer};
-
-      C:X ->
-         log:error(?TAG,"~p:WRITE ~p failed ~p:~p",[ID,Ch,C,X]),   
-         {error,{C,X}}
-   end.
-   
-channel_write_wait(CPU) ->
-   Ch = CPU#cpu.channel,
-   receive
-      { Ch,read,ok } -> 
-         trace:trace(f18A,{ CPU#cpu.id,{write,ok}}),     
-         {ok,CPU};
-
-      step ->
-         channel_write_wait(CPU);
-
-      {stop,PID} ->
-         {stop,PID}
-   end.
+%% CHANNEL WRITE
+% 
+% channel_write(CPU,Word) ->
+%    ID = CPU#cpu.id,
+%    Ch = CPU#cpu.channel,
+%    try
+%       Ch ! { ID,write,Word },
+%       channel_write_wait(CPU)
+%    catch
+%       error:badarg ->
+%          log:error(?TAG,"~p:WRITE to invalid node ~p",[ID,Ch]),   
+%          {error,invalid_peer};
+% 
+%       C:X ->
+%          log:error(?TAG,"~p:WRITE ~p failed ~p:~p",[ID,Ch,C,X]),   
+%          {error,{C,X}}
+%    end.
+%    
+% channel_write_wait(CPU) ->
+%    Ch = CPU#cpu.channel,
+%    receive
+%       { Ch,read,ok } -> 
+%          trace:trace(f18A,{ CPU#cpu.id,{write,ok}}),     
+%          {ok,CPU};
+% 
+%       step ->
+%          channel_write_wait(CPU);
+% 
+%       {stop,PID} ->
+%          {stop,PID}
+%    end.
 
 % STACK HANDLING
 
