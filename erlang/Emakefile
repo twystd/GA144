@@ -1,2 +1,2 @@
-{ 'src/*',   [report,verbose,{i,"include"},{outdir,"ebin"}] }.
-{ 'eunit//*',[report,verbose,{i,"include"},{outdir,"ebin"}] }.
+{ 'src/*',  [report,verbose,{i,"include"},{outdir,"ebin"}] }.
+{ 'eunit/*',[report,verbose,{i,"include"},{outdir,"ebin"}] }.

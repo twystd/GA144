@@ -2,8 +2,8 @@
 
 -record(cpu,{ id,
               channel,
-              rom,
-              ram,
+              rom = array:new(64),
+              ram = array:new(64),
               io,
               p,
               r,

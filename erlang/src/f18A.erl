@@ -28,10 +28,11 @@
 %% @doc Initialises an F18A node and starts the internal instruction 
 %%      execution process.
 create(ID,Channel,Program) ->
+   RAM = array:from_list(Program),
    start(ID,#cpu{ id      = ID,
                   channel = Channel,
-                  rom     = Program,
-                  ram     = Program,
+                  rom     = array:new(64),
+                  ram     = RAM,
                   io      = [],
                   p       = 0,
                   a       = 0,
@@ -324,16 +325,15 @@ exec_impl(?STOREB,CPU) ->
    B = CPU#cpu.b,     
    T = CPU#cpu.t,
    case write(CPU,B,T) of 
-	ok ->
-  	    CPUX = CPU#cpu{ t = T
-            	          },
+        {ok,RAM} ->
+  	         CPUX = CPU#cpu{ ram = RAM,
+                            t   = T },
+	         trace(?STOREB,CPUX),
+   	      {ok,CPUX};
 
-	       trace(?STOREB,CPUX),
-   	       {ok,CPUX};
-
-	Other ->
+	     Other ->
             Other
-	end;
+  	     end;
 
 % 16#14  +   plus
 exec_impl(?PLUS,CPU) ->
@@ -449,10 +449,13 @@ read(CPU,?RIGHT) ->
 read(CPU,Addr) when Addr < 16#200 ->
    read_mem(CPU#cpu.io,Addr-16#100).
 
-read_mem(Mem,Addr) when Addr < length(Mem) ->
-   {ok,lists:nth(Addr+1,Mem)};
+read_mem(Mem,Addr) ->
+   read_mem(Mem,Addr,array:size(Mem)).
 
-read_mem(_Mem,_Addr) ->
+read_mem(Mem,Addr,N) when Addr < N ->
+   { ok,array:get(Addr,Mem) };
+
+read_mem(_Mem,_Addr,_N) ->
    eof.
 
 read_channel(CPU,Ch) ->
@@ -489,10 +492,14 @@ write(CPU,?RIGHT,Word) ->
    Ch = CPU#cpu.channel,
    write_channel(CPU,Ch,Word).
 
-write_mem(Mem,Addr,_Word) when Addr < length(Mem) ->
-   oops;
+write_mem(Mem,Addr,Word) ->
+   write_mem(Mem,Addr,Word,array:size(Mem)).
 
-write_mem(Mem,Addr,_Word) when Addr < length(Mem) ->
+write_mem(Mem,Addr,Word,N) when Addr < N ->
+   trace:trace(f18A,{n001,{write,Addr,Word}}),     
+   { ok,array:set(Addr,Word,Mem) };
+
+write_mem(_Mem,_Addr,_Word,_N) ->
    eof.
 
 write_channel(CPU,Ch,Word) ->
@@ -514,7 +521,7 @@ write_wait(CPU) ->
    Ch = CPU#cpu.channel,
    receive
       { Ch,read,ok } -> 
-         ok;
+         {ok,CPU#cpu.ram};
 
       step ->
          write_wait(CPU);
@@ -522,59 +529,6 @@ write_wait(CPU) ->
       {stop,PID} ->
          {stop,PID}
    end.
-
-	
-%% CHANNEL READ
-%
-% channel_read(CPU) ->
-%    ID = CPU#cpu.id,
-%    Ch = CPU#cpu.channel,
-%    receive
-%       {Ch,write,Word} -> 
-%          trace:trace(f18A,{ CPU#cpu.id,{read,Word}}),     
-%          Ch ! { ID,read,ok },
-%          {ok,CPU};
-% 
-%       step ->
-%          channel_read(CPU);
-% 
-%       {stop,PID} ->
-%          {stop,PID}
-% 
-%    end.
-   
-
-%% CHANNEL WRITE
-% 
-% channel_write(CPU,Word) ->
-%    ID = CPU#cpu.id,
-%    Ch = CPU#cpu.channel,
-%    try
-%       Ch ! { ID,write,Word },
-%       channel_write_wait(CPU)
-%    catch
-%       error:badarg ->
-%          log:error(?TAG,"~p:WRITE to invalid node ~p",[ID,Ch]),   
-%          {error,invalid_peer};
-% 
-%       C:X ->
-%          log:error(?TAG,"~p:WRITE ~p failed ~p:~p",[ID,Ch,C,X]),   
-%          {error,{C,X}}
-%    end.
-%    
-% channel_write_wait(CPU) ->
-%    Ch = CPU#cpu.channel,
-%    receive
-%       { Ch,read,ok } -> 
-%          trace:trace(f18A,{ CPU#cpu.id,{write,ok}}),     
-%          {ok,CPU};
-% 
-%       step ->
-%          channel_write_wait(CPU);
-% 
-%       {stop,PID} ->
-%          {stop,PID}
-%    end.
 
 % STACK HANDLING
 
@@ -599,6 +553,8 @@ ret_test() ->
    I  = [ ?NOP,?NOP,?NOP,?NOP ],
    {ok,CPU} = exec_impl(?RET,#cpu{p=P,r=R,rs=RS,i=I}),
    assert([{p,R},{r,3},{rs,[4,5,6,7,8,9,10,3]},{i,[]}],CPU).
+
+% TODO STORE-B TEST (for RAM,ROM)
 
 nop_test() ->
    A = 1,

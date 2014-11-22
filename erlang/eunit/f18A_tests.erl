@@ -23,7 +23,7 @@
 -define(NOP5,      [reset,nop,nop,nop,nop,nop]).
 -define(FETCHP,    [reset,?FETCHP_RIGHT]).
 -define(FETCHB,    [reset,{fetchp,{t,2}},{bstore,{b,2}},?FETCHB_678]).
--define(STOREB,    [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHP_678,nop,?STOREB_RIGHT]).
+-define(STOREB,    [reset,{fetchp,{t,4}},{bstore,{b,4}},{fetchp,{t,678}},nop,{write,4,678},{storeb,{b,4},{t,678}}]).
 -define(READ,      [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHB_678,nop]).
 -define(WRITE,     [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHP_678,nop,?STOREB_RIGHT,nop,nop,nop]).
 -define(READ_STOP, [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,stop]).
@@ -178,30 +178,20 @@ fetchb_test() ->
          [ { ?FETCHB,n001 }
          ]).
 
-% TODO - REIMPLEMENT AS A WRITE-TO-MEMORY WHEN ROM/RAM REIMPLEMENTED AS array
 storeb_test() ->
    M    = setup("-- STORE-B TEST"),
-   F18A = f18A:create(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
+   F18A = f18A:create(n001,n000,[ 16#04b12,16#00004,16#002a6,16#089b2,16#00000 ]),
 
    f18A:reset(F18A),
 
-   register(n000,spawn(fun() ->
-                          wait({ n001,write,678 }),
-                          n001 ! { n000,read,ok },
-                          M ! { n000,stopped }
-                       end)),
-   
-   spawn(fun() ->
-            f18A:step (F18A,wait),
-            f18A:step (F18A,wait),
-            f18A:step (F18A,wait),
-            f18A:step (F18A,wait),
-            f18A:step (F18A,wait),
-            f18A:stop (F18A),
-            M ! { n001,stopped }
-	 end),
+   f18A:step (F18A,wait),
+   f18A:step (F18A,wait),
+   f18A:step (F18A,wait),
+   f18A:step (F18A,wait),
+   f18A:step (F18A,wait),
+   f18A:stop (F18A),
 
-   check(waitall([{n000,stopped},{n001,stopped}]),
+   check(trace:stop(),
          [ { ?STOREB,n001 }
          ]).
 
