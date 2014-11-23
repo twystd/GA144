@@ -287,6 +287,14 @@ exec_impl(?RET,CPU) ->
    trace(?RET,CPUX),
    {ok,CPUX};
 
+% 16#02  name ;   jump
+exec_impl({?JUMP,Addr},CPU) ->
+   P    = Addr,
+   CPUX = CPU#cpu{ p  = P
+                 }, 
+   trace(?JUMP,CPUX),
+   {ok,CPUX};
+
 
 % 16#08  @p  fetch P
 exec_impl(?FETCHP,CPU) ->
@@ -416,17 +424,31 @@ load_next_impl(_) ->
 
 % OPCODE DECODER
 %
-decode(Word) when is_integer(Word) ->
+decode(Word) ->
    WordX                   = Word bxor 16#15555,
    <<S0:5,S1:5,S2:5,S3:3>> = <<WordX:18>>,
-   [ opcode:opcode(S0),
-     opcode:opcode(S1),
-     opcode:opcode(S2),
-     opcode:opcode(S3 bsl 2)
-   ];
+   <<Addr0:10>>            = <<Word:10>>,
+   <<Addr1:8>>             = <<Word:8>>,
+   <<Addr2:3>>             = <<Word:3>>,
+   decode(opcode:opcode(S0),
+          opcode:opcode(S1),
+          opcode:opcode(S2),
+          opcode:opcode(S3 bsl 3),
+          Addr0,
+          Addr1,
+          Addr2).
 
-decode(Word) ->
-   [ Word ].
+decode(?JUMP,_,_,_,Addr0,_,_) ->
+   [{?JUMP,Addr0}];
+
+decode(S0,?JUMP,_,_,_,Addr1,_) ->
+   [S0,{?JUMP,Addr1}];
+
+decode(S0,S1,?JUMP,_,_,_,Addr2) ->
+   [S0,S1,{?JUMP,Addr2}];
+
+decode(S0,S1,S2,S3,_,_,_) ->
+   [ S0,S1,S2,S3 ].
 
 % READ
 
@@ -546,6 +568,9 @@ trace(OpCode,CPU) ->
    
 % EUNIT TESTS
 
+decode_test() ->
+   ?assertEqual([{?JUMP,16#03}],decode(16#11403)).
+
 ret_test() ->
    P  = 1,
    R  = 2,
@@ -553,6 +578,11 @@ ret_test() ->
    I  = [ ?NOP,?NOP,?NOP,?NOP ],
    {ok,CPU} = exec_impl(?RET,#cpu{p=P,r=R,rs=RS,i=I}),
    assert([{p,R},{r,3},{rs,[4,5,6,7,8,9,10,3]},{i,[]}],CPU).
+
+jump_test() ->
+   P = 16#0a9,
+   {ok,CPU} = exec_impl({?JUMP,16#03},#cpu{p=P}),
+   assert([{p,16#03}],CPU).
 
 % TODO STORE-B TEST (for RAM,ROM)
 

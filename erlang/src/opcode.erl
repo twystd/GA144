@@ -19,6 +19,9 @@
 opcode(16#00) ->
    ?RET;
 
+opcode(16#02) ->
+   ?JUMP;
+
 opcode(16#08) ->
    ?FETCHP;
 
@@ -48,6 +51,9 @@ opcode(X) ->
 %%
 to_string(?RET) ->
    "RET";
+
+to_string(?JUMP) ->
+   "JUMP";
 
 to_string(?FETCHP) ->
    "FETCH-P";

@@ -78,6 +78,9 @@ extract(Trace,ID) ->
 trace(f18A,?RET,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{ret,{p,CPU#cpu.p},{r,CPU#cpu.r},{rs,CPU#cpu.rs},{i,CPU#cpu.i}}});
 
+trace(f18A,?JUMP,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,{jump,{p,CPU#cpu.p}}});
+
 trace(f18A,?FETCHP,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{fetchp,{t,CPU#cpu.t}}});
 
