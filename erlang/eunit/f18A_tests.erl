@@ -11,7 +11,7 @@
 -define(FETCHP_678,  {fetchp,{t,678}}).
 -define(FETCHB_678,  {fetchb,{t,678}}).
 -define(BSTORE_RIGHT,{bstore,{b,16#1d5}}).
--define(STOREB_RIGHT,{storeb,{b,16#1d5},{t,678}}).
+-define(STOREB_RIGHT,{storeb,{b,16#1d5},{t,0}}).
 
 -define(GO,        [reset,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop]).
 -define(STEP,      [reset,nop,nop,nop,nop,nop,nop]).
@@ -23,7 +23,7 @@
 -define(NOP5,      [reset,nop,nop,nop,nop,nop]).
 -define(FETCHP,    [reset,?FETCHP_RIGHT]).
 -define(FETCHB,    [reset,{fetchp,{t,2}},{bstore,{b,2}},?FETCHB_678]).
--define(STOREB,    [reset,{fetchp,{t,4}},{bstore,{b,4}},{fetchp,{t,678}},nop,{write,4,678},{storeb,{b,4},{t,678}}]).
+-define(STOREB,    [reset,{fetchp,{t,4}},{bstore,{b,4}},{fetchp,{t,678}},nop,{write,4,678},{storeb,{b,4},{t,0}}]).
 -define(READ,      [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHB_678,nop]).
 -define(WRITE,     [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHP_678,nop,?STOREB_RIGHT,nop,nop,nop]).
 -define(READ_STOP, [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,stop]).

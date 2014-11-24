@@ -332,10 +332,14 @@ exec_impl(?STOREB,CPU) ->
    log:info(?TAG,"STORE-B"),     
    B = CPU#cpu.b,     
    T = CPU#cpu.t,
+   S = CPU#cpu.s,
    case write(CPU,B,T) of 
         {ok,RAM} ->
-  	         CPUX = CPU#cpu{ ram = RAM,
-                            t   = T },
+              {SX,DSX} = pop(CPU#cpu.ds),     
+  	      CPUX     = CPU#cpu{ t   = S,
+                                  s   = SX,
+                                  ds  = DSX,
+                                  ram = RAM },
 	         trace(?STOREB,CPUX),
    	      {ok,CPUX};
 
@@ -427,16 +431,13 @@ load_next_impl(_) ->
 decode(Word) ->
    WordX                   = Word bxor 16#15555,
    <<S0:5,S1:5,S2:5,S3:3>> = <<WordX:18>>,
-   <<Addr0:10>>            = <<Word:10>>,
-   <<Addr1:8>>             = <<Word:8>>,
-   <<Addr2:3>>             = <<Word:3>>,
    decode(opcode:opcode(S0),
           opcode:opcode(S1),
           opcode:opcode(S2),
-          opcode:opcode(S3 bsl 3),
-          Addr0,
-          Addr1,
-          Addr2).
+          opcode:opcode(S3 bsl 2),
+          Word band 16#03ff,
+          Word band 16#00ff,
+          Word band 16#0003).
 
 decode(?JUMP,_,_,_,Addr0,_,_) ->
    [{?JUMP,Addr0}];
@@ -584,7 +585,14 @@ jump_test() ->
    {ok,CPU} = exec_impl({?JUMP,16#03},#cpu{p=P}),
    assert([{p,16#03}],CPU).
 
-% TODO STORE-B TEST (for RAM,ROM)
+storeb_test() ->
+   S   = 9,
+   T   = 678,
+   B   = 16#004,
+   RAM = array:new(64,[{default,0}]),
+   DS  = [1,2,3,4,5,6,7,8],
+   {ok,CPU} = exec_impl(?STOREB,#cpu{b=B,t=T,s=S,ds=DS,ram=RAM}),
+   assert([{ram,4,678},{t,S},{s,1},{ds,[2,3,4,5,6,7,8,1]}],CPU).
 
 nop_test() ->
    A = 1,
@@ -663,6 +671,10 @@ assert([{rs,X}|T],CPU) ->
 
 assert([{ds,X}|T],CPU) ->
    ?assertEqual(X,CPU#cpu.ds),
+   assert(T,CPU);
+
+assert([{ram,Addr,Word}|T],CPU) ->
+   ?assertEqual(Word,array:get(Addr,CPU#cpu.ram)),
    assert(T,CPU);
 
 assert([_|T],CPU) ->
