@@ -287,12 +287,26 @@ exec_impl(?RET,CPU) ->
    trace(?RET,CPUX),
    {ok,CPUX};
 
-% 16#02  name ;   jump
+% 16#02  name; jump
 exec_impl({?JUMP,Addr},CPU) ->
-   P    = Addr,
-   CPUX = CPU#cpu{ p  = P
+   CPUX = CPU#cpu{ p = Addr
                  }, 
    trace(?JUMP,CPUX),
+   {ok,CPUX};
+
+
+% 16#03  name  call
+exec_impl({?CALL,Addr},CPU) ->
+   P      = CPU#cpu.p,
+   R      = CPU#cpu.r,
+   RS     = CPU#cpu.rs,
+   {ok,I} = load_next(CPU#cpu{ p = Addr }),
+   CPUX = CPU#cpu{ p  = Addr,
+                   r  = P,
+                   rs = push(RS,R),
+                   i  = I 
+		 }, 
+   trace(?CALL,CPUX),
    {ok,CPUX};
 
 
@@ -584,6 +598,15 @@ jump_test() ->
    P = 16#0a9,
    {ok,CPU} = exec_impl({?JUMP,16#03},#cpu{p=P}),
    assert([{p,16#03}],CPU).
+
+call_test() ->
+   P  = 16#0a9,
+   R  = 16#000,
+   RS = [1,2,3,4,5,6,7,8],
+   RAM = array:from_list([16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
+   I  = [ ?RET,?RET,?RET,?RET ],
+   {ok,CPU} = exec_impl({?CALL,16#03},#cpu{p=P,r=R,rs=RS,i=I,ram=RAM}),
+   assert([{p,16#03},{r,16#0a9},{rs,[0,1,2,3,4,5,6,7]},{i,[?NOP,?NOP,?NOP,?NOP]}],CPU).
 
 storeb_test() ->
    S   = 9,

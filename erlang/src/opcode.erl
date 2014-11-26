@@ -22,6 +22,9 @@ opcode(16#00) ->
 opcode(16#02) ->
    ?JUMP;
 
+opcode(16#03) ->
+   ?CALL;
+
 opcode(16#08) ->
    ?FETCHP;
 
@@ -54,6 +57,9 @@ to_string(?RET) ->
 
 to_string(?JUMP) ->
    "JUMP";
+
+to_string(?CALL) ->
+   "CALL";
 
 to_string(?FETCHP) ->
    "FETCH-P";
