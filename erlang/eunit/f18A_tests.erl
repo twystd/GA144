@@ -13,7 +13,7 @@
 -define(BSTORE_RIGHT,{bstore,{b,16#1d5}}).
 -define(STOREB_RIGHT,{storeb,{b,16#1d5},{t,0}}).
 
--define(GO,        [reset,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop]).
+-define(GO,        [reset,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,eof]).
 -define(STEP,      [reset,nop,nop,nop,nop,nop,nop]).
 -define(BREAKPOINT,[reset,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop,nop]).
 -define(NOP,       [reset,nop]).
@@ -24,8 +24,8 @@
 -define(FETCHP,    [reset,?FETCHP_RIGHT]).
 -define(FETCHB,    [reset,{fetchp,{t,2}},{bstore,{b,2}},?FETCHB_678]).
 -define(STOREB,    [reset,{fetchp,{t,4}},{bstore,{b,4}},{fetchp,{t,678}},nop,{write,4,678},{storeb,{b,4},{t,0}}]).
--define(READ,      [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHB_678,nop]).
--define(WRITE,     [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHP_678,nop,?STOREB_RIGHT,nop,nop,nop]).
+-define(READ,      [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHB_678,nop,eof]).
+-define(WRITE,     [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHP_678,nop,?STOREB_RIGHT,nop,nop,nop,eof]).
 -define(READ_STOP, [reset,?FETCHP_RIGHT,?BSTORE_RIGHT,stop]).
 -define(WRITE_STOP,[reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHP_678,nop,stop]).
 -define(READWRITE1,[reset,?FETCHP_RIGHT,?BSTORE_RIGHT,?FETCHB_678,nop,nop,nop,nop,nop]).
@@ -38,9 +38,7 @@
 
 go_test() ->
    M    = setup("-- GO TEST"),
-   F18A = f18A:create(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
-
-   f18A:breakpoint(F18A,5),
+   F18A = f18A:create(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
 
    spawn(fun() ->
             f18A:reset(F18A),
@@ -55,8 +53,6 @@ go_test() ->
 step_test() ->
    M    = setup("-- STEP TEST"),
    F18A = f18A:create(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
-
-   f18A:breakpoint(F18A,5),
 
    spawn(fun() ->
             f18A:reset(F18A),
@@ -198,10 +194,9 @@ read_go_test() ->
    M = setup("-- READ TEST/GO"),
    util:unregister(n000),
 
-   F18A = f18A:create(n001,n000,[16#04b02,16#001d5,16#2c9b2]),
+   F18A = f18A:create(n001,n000,[16#04b02,16#001d5]),
 
-   f18A:breakpoint(F18A,2),
-   f18A:reset     (F18A),
+   f18A:reset(F18A),
 
    spawn(fun() ->
             f18A:go   (F18A,wait),
@@ -231,6 +226,7 @@ read_step_test() ->
             f18A:step (F18A,wait),
             f18A:step (F18A,wait),
             f18A:step (F18A,wait),
+            f18A:step (F18A,wait),
             M ! { n001,stopped }
          end),
 
@@ -249,10 +245,9 @@ write_go_test() ->
    util:unregister(n000),
    util:unregister(n001),
 
-   F18A = f18A:create(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2,16#2c9b2 ]),
+   F18A = f18A:create(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2]),
    
-   f18A:breakpoint(F18A,4),
-   f18A:reset     (F18A),
+   f18A:reset(F18A),
    
    register(n000,spawn(fun() ->
                           wait({ n001,write,678 }),
@@ -284,6 +279,7 @@ write_step_test() ->
 
    spawn(fun() ->
             f18A:reset(F18A),
+            f18A:step (F18A,wait),
             f18A:step (F18A,wait),
             f18A:step (F18A,wait),
             f18A:step (F18A,wait),
@@ -443,7 +439,7 @@ writeread_go_test() ->
    M = setup("-- WRITE-READ TEST/GO"),
 
    spawn(fun() ->
-      F18A = f18A:create(n001,n002,[16#2c9b2,16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2 ]),
+      F18A = f18A:create(n001,n002,[16#2c9b2,16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2]),
       f18A:breakpoint(F18A,3),
       f18A:reset     (F18A),
       f18A:go        (F18A,wait),
@@ -451,7 +447,7 @@ writeread_go_test() ->
       end),
 
    spawn(fun() ->
-      F18A = f18A:create(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2,16#2c9b2,16#2c9b2 ]),
+      F18A = f18A:create(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2,16#2c9b2]),
       f18A:breakpoint(F18A,4),
       f18A:reset     (F18A),
       f18A:go        (F18A,wait),
