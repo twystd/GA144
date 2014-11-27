@@ -38,7 +38,7 @@
 
 go_test() ->
    M    = setup("-- GO TEST"),
-   F18A = f18A:create(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
+   F18A = f18A:create(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
 
    f18A:breakpoint(F18A,5),
 
@@ -198,7 +198,7 @@ read_go_test() ->
    M = setup("-- READ TEST/GO"),
    util:unregister(n000),
 
-   F18A = f18A:create(n001,n000,[16#04b02,16#001d5]),
+   F18A = f18A:create(n001,n000,[16#04b02,16#001d5,16#2c9b2]),
 
    f18A:breakpoint(F18A,2),
    f18A:reset     (F18A),
@@ -249,7 +249,7 @@ write_go_test() ->
    util:unregister(n000),
    util:unregister(n001),
 
-   F18A = f18A:create(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
+   F18A = f18A:create(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2,16#2c9b2 ]),
    
    f18A:breakpoint(F18A,4),
    f18A:reset     (F18A),
@@ -383,7 +383,7 @@ readwrite_go_test() ->
    M = setup("-- READ-WRITE TEST/GO"),
 
    spawn(fun() ->
-      F18A = f18A:create(n001,n002,[16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2 ]),
+      F18A = f18A:create(n001,n002,[16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2 ]),
       f18A:breakpoint(F18A,3),
       f18A:reset(F18A),
       f18A:go   (F18A,wait),
@@ -391,7 +391,7 @@ readwrite_go_test() ->
       end),
 
    spawn(fun() ->
-      F18A = f18A:create(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
+      F18A = f18A:create(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2,16#2c9b2 ]),
       f18A:breakpoint(F18A,4),
       f18A:reset(F18A),
       f18A:go   (F18A,wait),

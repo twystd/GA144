@@ -235,8 +235,8 @@ go_impl(CPU) ->
       {ok,CPUX} ->
          go_impl(CPUX);
 
-      breakpoint ->
-         {breakpoint,CPU};
+      {breakpoint,CPUX} ->
+         {breakpoint,CPUX};
 
       eof ->
          trace:trace(f18A,{ CPU#cpu.id,eof}),     
@@ -258,17 +258,22 @@ exec(CPU) ->
    exec(CPU,I).
 
 exec(CPU,[]) ->
-   P = CPU#cpu.p,     
-   case load_next(CPU) of
-        {ok,I} ->
-            exec(CPU#cpu{ p = P + 1,
-                          i = I
-                        });
+   P           = CPU#cpu.p,     
+   Breakpoints = CPU#cpu.breakpoints,
+   F           = fun(X) -> P =:= X end,
+   Break       = lists:any(F,Breakpoints),
 
-         breakpoint ->
-           breakpoint;
+   case {load(CPU,P),Break} of
+        {{ok,I},true} ->
+           { breakpoint,CPU#cpu{ p = P + 1,
+                                 i = I
+                               }};
 
-         eof ->
+        {{ok,I},_} ->
+           exec(CPU#cpu{ p = P + 1,
+                         i = I
+                       });
+        {eof,_} ->
             eof
    end;
 
@@ -300,7 +305,7 @@ exec_impl({?CALL,Addr},CPU) ->
    P      = CPU#cpu.p,
    R      = CPU#cpu.r,
    RS     = CPU#cpu.rs,
-   {ok,I} = load_next(CPU#cpu{ p = Addr }),
+   {ok,I} = load(CPU,Addr),
    CPUX = CPU#cpu{ p  = Addr,
                    r  = P,
                    rs = push(RS,R),
@@ -419,25 +424,16 @@ exec_impl(OpCode,CPU) ->
 
 % INSTRUCTION LOADER
 %
-load_next(CPU) ->
-   P           = CPU#cpu.p,     
-   Breakpoints = CPU#cpu.breakpoints,
-   F           = fun(X) -> P =:= X end,
-   case lists:any(F,Breakpoints) of
-        true ->
-             breakpoint;
+load(CPU,P) ->
+   load_impl(read(CPU,P)).
 
-        _else ->
-             load_next_impl(read(CPU,P))
-        end.
-
-load_next_impl({ok,Word}) ->
+load_impl({ok,Word}) ->
    { ok,decode(Word) };
 
-load_next_impl(eof) ->
+load_impl(eof) ->
    eof;
 
-load_next_impl(_) ->
+load_impl(_) ->
    error.
 
 % OPCODE DECODER
