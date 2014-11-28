@@ -375,15 +375,12 @@ exec_impl(?PLUS,CPU) ->
                  (S + T) band 16#3ffff
              end,
 
-   {SX,DSX} = pop(DS),
+   CPUX = pop(ds,CPU),
+   CPUY = CPUX#cpu{ t  = R
+                  },
 
-   CPUX = CPU#cpu{ t  = R,
-                   s  = SX,
-                   ds = DSX
-                 },
-
-   trace(?PLUS,CPUX),     
-   {ok,CPUX};
+   trace(?PLUS,CPUY),     
+   {ok,CPUY};
 
 % 16#18  dup
 exec_impl(?DUP,CPU) ->
@@ -591,25 +588,25 @@ decode_test() ->
    ?assertEqual([{?JUMP,16#03}],decode(16#11403)).
 
 push_test() ->
-   assert([{dsx,{7,[1,2,3,4,5,6,7,0]}}],push(ds,#cpu{s=0,ds={0,array:from_list([1,2,3,4,5,6,7,8])}})),
-   assert([{dsx,{0,[0,2,3,4,5,6,7,8]}}],push(ds,#cpu{s=0,ds={1,array:from_list([1,2,3,4,5,6,7,8])}})),
-   assert([{dsx,{1,[1,0,3,4,5,6,7,8]}}],push(ds,#cpu{s=0,ds={2,array:from_list([1,2,3,4,5,6,7,8])}})),
-   assert([{dsx,{2,[1,2,0,4,5,6,7,8]}}],push(ds,#cpu{s=0,ds={3,array:from_list([1,2,3,4,5,6,7,8])}})),
-   assert([{dsx,{3,[1,2,3,0,5,6,7,8]}}],push(ds,#cpu{s=0,ds={4,array:from_list([1,2,3,4,5,6,7,8])}})),
-   assert([{dsx,{4,[1,2,3,4,0,6,7,8]}}],push(ds,#cpu{s=0,ds={5,array:from_list([1,2,3,4,5,6,7,8])}})),
-   assert([{dsx,{5,[1,2,3,4,5,0,7,8]}}],push(ds,#cpu{s=0,ds={6,array:from_list([1,2,3,4,5,6,7,8])}})),
-   assert([{dsx,{6,[1,2,3,4,5,6,0,8]}}],push(ds,#cpu{s=0,ds={7,array:from_list([1,2,3,4,5,6,7,8])}})).
+   assert([{ds,{7,[1,2,3,4,5,6,7,0]}}],push(ds,#cpu{s=0,ds={0,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{ds,{0,[0,2,3,4,5,6,7,8]}}],push(ds,#cpu{s=0,ds={1,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{ds,{1,[1,0,3,4,5,6,7,8]}}],push(ds,#cpu{s=0,ds={2,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{ds,{2,[1,2,0,4,5,6,7,8]}}],push(ds,#cpu{s=0,ds={3,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{ds,{3,[1,2,3,0,5,6,7,8]}}],push(ds,#cpu{s=0,ds={4,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{ds,{4,[1,2,3,4,0,6,7,8]}}],push(ds,#cpu{s=0,ds={5,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{ds,{5,[1,2,3,4,5,0,7,8]}}],push(ds,#cpu{s=0,ds={6,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{ds,{6,[1,2,3,4,5,6,0,8]}}],push(ds,#cpu{s=0,ds={7,array:from_list([1,2,3,4,5,6,7,8])}})).
 
 pop_test() ->
    Stack = array:from_list([1,2,3,4,5,6,7,8]),
-   assert([{t,0},{s,1},{dsx,{1,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={0,Stack}})),
-   assert([{t,0},{s,2},{dsx,{2,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={1,Stack}})),
-   assert([{t,0},{s,3},{dsx,{3,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={2,Stack}})),
-   assert([{t,0},{s,4},{dsx,{4,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={3,Stack}})),
-   assert([{t,0},{s,5},{dsx,{5,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={4,Stack}})),
-   assert([{t,0},{s,6},{dsx,{6,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={5,Stack}})),
-   assert([{t,0},{s,7},{dsx,{7,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={6,Stack}})),
-   assert([{t,0},{s,8},{dsx,{0,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={7,Stack}})).
+   assert([{t,0},{s,1},{ds,{1,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={0,Stack}})),
+   assert([{t,0},{s,2},{ds,{2,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={1,Stack}})),
+   assert([{t,0},{s,3},{ds,{3,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={2,Stack}})),
+   assert([{t,0},{s,4},{ds,{4,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={3,Stack}})),
+   assert([{t,0},{s,5},{ds,{5,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={4,Stack}})),
+   assert([{t,0},{s,6},{ds,{6,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={5,Stack}})),
+   assert([{t,0},{s,7},{ds,{7,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={6,Stack}})),
+   assert([{t,0},{s,8},{ds,{0,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={7,Stack}})).
 
 ret_test() ->
    P  = 1,
@@ -644,7 +641,7 @@ storeb_test() ->
                                      s=S,
                                      ds=DS,
                                      ram=RAM}),
-   assert([{ram,4,678},{t,S},{s,1},{dsx,{1,[1,2,3,4,5,6,7,8]}}],CPU).
+   assert([{ram,4,678},{t,S},{s,1},{ds,{1,[1,2,3,4,5,6,7,8]}}],CPU).
 
 nop_test() ->
    A = 1,
@@ -668,21 +665,20 @@ plus_test() ->
    plus_test_impl(16#0200,16#3ffff,16#00001,1,1).
 
 plus_test_impl(P,T,S,C,R) ->
-   DS  = [3,4,5,6,7,8,9,10],
-   DSX = [4,5,6,7,8,9,10,3],
+   DS  = {0,array:from_list([3,4,5,6,7,8,9,10])},
    {ok,CPU} = exec_impl(?PLUS,#cpu{ p=P,
                                     t=T,
                                     s=S,
                                     ds=DS,
                                     carry=C }),
-   assert([{t,R},{s,3},{ds,DSX}],CPU).
+   assert([{t,R},{s,3},{ds,{1,[3,4,5,6,7,8,9,10]}}],CPU).
 
 dup_test() ->
    {ok,CPU} = exec_impl(?DUP,#cpu{t=1,
                                   s=2,
                                   ds={0,array:from_list([3,4,5,6,7,8,9,10])}}),
 
-   assert([{t,1},{s,1},{dsx,{7,[3,4,5,6,7,8,9,2]}}],CPU).
+   assert([{t,1},{s,1},{ds,{7,[3,4,5,6,7,8,9,2]}}],CPU).
 
 assert ([],_CPU) ->
    ok;
@@ -719,11 +715,7 @@ assert([{rs,X}|T],CPU) ->
    ?assertEqual(X,CPU#cpu.rs),
    assert(T,CPU);
 
-assert([{ds,X}|T],CPU) ->
-   ?assertEqual(X,CPU#cpu.ds),
-   assert(T,CPU);
-
-assert([{dsx,{SP,Stack}}|T],CPU) ->
+assert([{ds,{SP,Stack}}|T],CPU) ->
    ?assertEqual({SP,array:from_list(Stack)},CPU#cpu.ds),
    assert(T,CPU);
 
