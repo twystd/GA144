@@ -302,11 +302,6 @@ exec_impl({?JUMP,Addr},CPU) ->
 exec_impl({?CALL,Addr},CPU) ->
    P      = CPU#cpu.p,
    {ok,I} = load(CPU,Addr),
-%%   CPUX = CPU#cpu{ p  = Addr,
-%%                   r  = P,
-%%                   rs = push(RS,R),
-%%                   i  = I 
-%%		 }, 
    CPUX = push(rs,CPU),
    CPUY = CPUX#cpu{ p  = Addr,
                     r  = P,
@@ -354,7 +349,7 @@ exec_impl(?STOREB,CPU) ->
    T = CPU#cpu.t,
    case write(CPU,B,T) of 
         {ok,RAM} ->
-  	      CPUX = pop(ds,CPU#cpu{ ram = RAM }),
+  	      CPUX = pop(ds,CPU#cpu{ ram = RAM },CPU#cpu.s),
 	      trace(?STOREB,CPUX),
    	      {ok,CPUX};
 
@@ -375,12 +370,9 @@ exec_impl(?PLUS,CPU) ->
                  (S + T) band 16#3ffff
              end,
 
-   CPUX = pop(ds,CPU),
-   CPUY = CPUX#cpu{ t  = R
-                  },
-
-   trace(?PLUS,CPUY),     
-   {ok,CPUY};
+   CPUX = pop(ds,CPU,R),
+   trace(?PLUS,CPUX),     
+   {ok,CPUX};
 
 % 16#18  dup
 exec_impl(?DUP,CPU) ->
@@ -550,7 +542,7 @@ write_wait(CPU) ->
          {stop,PID}
    end.
 
-% STACK HANDLING
+% PUSH
 
 push(ds,CPU) ->
    T          = CPU#cpu.t,
@@ -566,19 +558,17 @@ push(rs,CPU) ->
    {SP,Stack} = CPU#cpu.rs,
    SPx        = (SP + 7) rem 8, 
    CPU#cpu{ rs = {SPx,array:set(SPx,R,Stack)}
-          };
+          }.
 
-push(DS,S) ->
-   lists:droplast([S|DS]).
+% POP
 
-pop(ds,CPU) ->
-   S          = CPU#cpu.s,
+pop(ds,CPU,T) ->
    {SP,Stack} = CPU#cpu.ds,
    SPx        = (SP + 9) rem 8, 
-   CPU#cpu{ t  = S,
+   CPU#cpu{ t  = T,
             s  = array:get(SP,Stack),
             ds = {SPx,Stack}
-          };
+          }.
 
 pop(rs,CPU) ->
    {SP,Stack} = CPU#cpu.rs,
@@ -608,16 +598,37 @@ push_ds_test() ->
    assert([{ds,{5,[1,2,3,4,5,0,7,8]}}],push(ds,#cpu{s=0,ds={6,array:from_list([1,2,3,4,5,6,7,8])}})),
    assert([{ds,{6,[1,2,3,4,5,6,0,8]}}],push(ds,#cpu{s=0,ds={7,array:from_list([1,2,3,4,5,6,7,8])}})).
 
+push_rs_test() ->
+   assert([{rs,{7,[1,2,3,4,5,6,7,0]}}],push(rs,#cpu{s=0,rs={0,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{rs,{0,[0,2,3,4,5,6,7,8]}}],push(rs,#cpu{s=0,rs={1,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{rs,{1,[1,0,3,4,5,6,7,8]}}],push(rs,#cpu{s=0,rs={2,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{rs,{2,[1,2,0,4,5,6,7,8]}}],push(rs,#cpu{s=0,rs={3,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{rs,{3,[1,2,3,0,5,6,7,8]}}],push(rs,#cpu{s=0,rs={4,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{rs,{4,[1,2,3,4,0,6,7,8]}}],push(rs,#cpu{s=0,rs={5,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{rs,{5,[1,2,3,4,5,0,7,8]}}],push(rs,#cpu{s=0,rs={6,array:from_list([1,2,3,4,5,6,7,8])}})),
+   assert([{rs,{6,[1,2,3,4,5,6,0,8]}}],push(rs,#cpu{s=0,rs={7,array:from_list([1,2,3,4,5,6,7,8])}})).
+
 pop_ds_test() ->
    Stack = array:from_list([1,2,3,4,5,6,7,8]),
-   assert([{t,0},{s,1},{ds,{1,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={0,Stack}})),
-   assert([{t,0},{s,2},{ds,{2,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={1,Stack}})),
-   assert([{t,0},{s,3},{ds,{3,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={2,Stack}})),
-   assert([{t,0},{s,4},{ds,{4,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={3,Stack}})),
-   assert([{t,0},{s,5},{ds,{5,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={4,Stack}})),
-   assert([{t,0},{s,6},{ds,{6,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={5,Stack}})),
-   assert([{t,0},{s,7},{ds,{7,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={6,Stack}})),
-   assert([{t,0},{s,8},{ds,{0,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={7,Stack}})).
+   assert([{t,0},{s,1},{ds,{1,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={0,Stack}},0)),
+   assert([{t,0},{s,2},{ds,{2,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={1,Stack}},0)),
+   assert([{t,0},{s,3},{ds,{3,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={2,Stack}},0)),
+   assert([{t,0},{s,4},{ds,{4,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={3,Stack}},0)),
+   assert([{t,0},{s,5},{ds,{5,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={4,Stack}},0)),
+   assert([{t,0},{s,6},{ds,{6,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={5,Stack}},0)),
+   assert([{t,0},{s,7},{ds,{7,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={6,Stack}},0)),
+   assert([{t,0},{s,8},{ds,{0,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={7,Stack}},0)).
+
+pop_rs_test() ->
+   Stack = array:from_list([1,2,3,4,5,6,7,8]),
+   assert([{r,1},{rs,{1,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={0,Stack}})),
+   assert([{r,2},{rs,{2,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={1,Stack}})),
+   assert([{r,3},{rs,{3,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={2,Stack}})),
+   assert([{r,4},{rs,{4,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={3,Stack}})),
+   assert([{r,5},{rs,{5,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={4,Stack}})),
+   assert([{r,6},{rs,{6,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={5,Stack}})),
+   assert([{r,7},{rs,{7,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={6,Stack}})),
+   assert([{r,8},{rs,{0,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={7,Stack}})).
 
 ret_test() ->
    P  = 1,
