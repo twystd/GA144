@@ -282,15 +282,13 @@ exec(CPU,[H|T]) ->
 
 % 16#00  ;   ret
 exec_impl(?RET,CPU) ->
-   P      = CPU#cpu.r,
-   {R,RS} = pop(CPU#cpu.rs),     
-   CPUX   = CPU#cpu{ p  = P,
-                     r  = R,
-                     rs = RS,
-                     i  = []
-                   }, 
-   trace(?RET,CPUX),
-   {ok,CPUX};
+   P    = CPU#cpu.r,
+   CPUX = pop(rs,CPU),     
+   CPUY = CPUX#cpu{ p  = P,
+                    i  = []
+                  }, 
+   trace(?RET,CPUY),
+   {ok,CPUY};
 
 % 16#02  name; jump
 exec_impl({?JUMP,Addr},CPU) ->
@@ -303,16 +301,19 @@ exec_impl({?JUMP,Addr},CPU) ->
 % 16#03  name  call
 exec_impl({?CALL,Addr},CPU) ->
    P      = CPU#cpu.p,
-   R      = CPU#cpu.r,
-   RS     = CPU#cpu.rs,
    {ok,I} = load(CPU,Addr),
-   CPUX = CPU#cpu{ p  = Addr,
-                   r  = P,
-                   rs = push(RS,R),
-                   i  = I 
-		 }, 
-   trace(?CALL,CPUX),
-   {ok,CPUX};
+%%   CPUX = CPU#cpu{ p  = Addr,
+%%                   r  = P,
+%%                   rs = push(RS,R),
+%%                   i  = I 
+%%		 }, 
+   CPUX = push(rs,CPU),
+   CPUY = CPUX#cpu{ p  = Addr,
+                    r  = P,
+                    i  = I 
+		  }, 
+   trace(?CALL,CPUY),
+   {ok,CPUY};
 
 
 % 16#08  @p  fetch P
@@ -365,7 +366,6 @@ exec_impl(?STOREB,CPU) ->
 exec_impl(?PLUS,CPU) ->
    T  = CPU#cpu.t band 16#3ffff,   
    S  = CPU#cpu.s band 16#3ffff,
-   DS = CPU#cpu.ds,
    C  = CPU#cpu.carry,
    R  = case (CPU#cpu.p band 16#0200) of
  	     16#0200 ->
@@ -561,6 +561,13 @@ push(ds,CPU) ->
             ds = {SPx,array:set(SPx,S,Stack)}
           };
 
+push(rs,CPU) ->
+   R          = CPU#cpu.r,
+   {SP,Stack} = CPU#cpu.rs,
+   SPx        = (SP + 7) rem 8, 
+   CPU#cpu{ rs = {SPx,array:set(SPx,R,Stack)}
+          };
+
 push(DS,S) ->
    lists:droplast([S|DS]).
 
@@ -571,10 +578,14 @@ pop(ds,CPU) ->
    CPU#cpu{ t  = S,
             s  = array:get(SP,Stack),
             ds = {SPx,Stack}
-          }.
+          };
 
-pop([W0,W1,W2,W3,W4,W5,W6,W7]) ->
-   {W0,[W1,W2,W3,W4,W5,W6,W7,W0]}.
+pop(rs,CPU) ->
+   {SP,Stack} = CPU#cpu.rs,
+   SPx        = (SP + 9) rem 8, 
+   CPU#cpu{ r  = array:get(SP,Stack),
+            rs = {SPx,Stack}
+          }.
 
 % UTILITY FUNCTIONS
 % 
@@ -587,7 +598,7 @@ trace(OpCode,CPU) ->
 decode_test() ->
    ?assertEqual([{?JUMP,16#03}],decode(16#11403)).
 
-push_test() ->
+push_ds_test() ->
    assert([{ds,{7,[1,2,3,4,5,6,7,0]}}],push(ds,#cpu{s=0,ds={0,array:from_list([1,2,3,4,5,6,7,8])}})),
    assert([{ds,{0,[0,2,3,4,5,6,7,8]}}],push(ds,#cpu{s=0,ds={1,array:from_list([1,2,3,4,5,6,7,8])}})),
    assert([{ds,{1,[1,0,3,4,5,6,7,8]}}],push(ds,#cpu{s=0,ds={2,array:from_list([1,2,3,4,5,6,7,8])}})),
@@ -597,7 +608,7 @@ push_test() ->
    assert([{ds,{5,[1,2,3,4,5,0,7,8]}}],push(ds,#cpu{s=0,ds={6,array:from_list([1,2,3,4,5,6,7,8])}})),
    assert([{ds,{6,[1,2,3,4,5,6,0,8]}}],push(ds,#cpu{s=0,ds={7,array:from_list([1,2,3,4,5,6,7,8])}})).
 
-pop_test() ->
+pop_ds_test() ->
    Stack = array:from_list([1,2,3,4,5,6,7,8]),
    assert([{t,0},{s,1},{ds,{1,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={0,Stack}})),
    assert([{t,0},{s,2},{ds,{2,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={1,Stack}})),
@@ -611,10 +622,10 @@ pop_test() ->
 ret_test() ->
    P  = 1,
    R  = 2,
-   RS = [3,4,5,6,7,8,9,10],
+   RS = {0,array:from_list([3,4,5,6,7,8,9,10])},
    I  = [ ?NOP,?NOP,?NOP,?NOP ],
    {ok,CPU} = exec_impl(?RET,#cpu{p=P,r=R,rs=RS,i=I}),
-   assert([{p,R},{r,3},{rs,[4,5,6,7,8,9,10,3]},{i,[]}],CPU).
+   assert([{p,R},{r,3},{rs,{1,[3,4,5,6,7,8,9,10]}},{i,[]}],CPU).
 
 jump_test() ->
    P = 16#0a9,
@@ -622,13 +633,13 @@ jump_test() ->
    assert([{p,16#03}],CPU).
 
 call_test() ->
-   P  = 16#0a9,
-   R  = 16#000,
-   RS = [1,2,3,4,5,6,7,8],
+   P   = 16#0a9,
+   R   = 16#000,
+   RS  = {0,array:from_list([1,2,3,4,5,6,7,8])},
    RAM = array:from_list([16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
-   I  = [ ?RET,?RET,?RET,?RET ],
+   I   = [ ?RET,?RET,?RET,?RET ],
    {ok,CPU} = exec_impl({?CALL,16#03},#cpu{p=P,r=R,rs=RS,i=I,ram=RAM}),
-   assert([{p,16#03},{r,16#0a9},{rs,[0,1,2,3,4,5,6,7]},{i,[?NOP,?NOP,?NOP,?NOP]}],CPU).
+   assert([{p,16#03},{r,16#0a9},{rs,{7,[1,2,3,4,5,6,7,0]}},{i,[?NOP,?NOP,?NOP,?NOP]}],CPU).
 
 storeb_test() ->
    S   = 9,
@@ -711,8 +722,8 @@ assert([{t,X}|T],CPU) ->
    ?assertEqual(X,CPU#cpu.t),
    assert(T,CPU);
 
-assert([{rs,X}|T],CPU) ->
-   ?assertEqual(X,CPU#cpu.rs),
+assert([{rs,{SP,Stack}}|T],CPU) ->
+   ?assertEqual({SP,array:from_list(Stack)},CPU#cpu.rs),
    assert(T,CPU);
 
 assert([{ds,{SP,Stack}}|T],CPU) ->
