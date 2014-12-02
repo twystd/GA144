@@ -418,36 +418,42 @@ load_impl(_) ->
 % OPCODE DECODER
 %
 decode(Word) ->
-   WordX                   = Word bxor 16#15555,
-   <<S0:5,S1:5,S2:5,S3:3>> = <<WordX:18>>,
-   decode(opcode:opcode(S0),
-          opcode:opcode(S1),
-          opcode:opcode(S2),
-          opcode:opcode(S3 bsl 2),
-          Word band 16#03ff,
-          Word band 16#00ff,
-          Word band 16#0003).
+   W             = Word bxor 16#15555,
+   <<S0:5,_:13>> = <<W:18>>,
+   decode(opcode:opcode(S0),Word).
 
-decode(?JUMP,_,_,_,Addr0,_,_) ->
-   [{?JUMP,Addr0}];
+decode(?JUMP,Word) ->
+   [{?JUMP,Word band 16#03ff}];
 
-decode(?CALL,_,_,_,Addr0,_,_) ->
-   [{?CALL,Addr0}];
+decode(?CALL,Word) ->
+   [{?CALL,Word band 16#03ff}];
 
-decode(S0,?JUMP,_,_,_,Addr1,_) ->
-   [S0,{?JUMP,Addr1}];
+decode(I0,Word) ->
+   W            = Word bxor 16#15555,
+   <<S1:5,_:8>> = <<W:13>>,
+   decode(I0,opcode:opcode(S1),Word).
 
-decode(S0,?CALL,_,_,_,Addr1,_) ->
-   [S0,{?CALL,Addr1}];
+decode(I0,?JUMP,Word) ->
+   [I0,{?JUMP,Word band 16#0ff}];
 
-decode(S0,S1,?JUMP,_,_,_,Addr2) ->
-   [S0,S1,{?JUMP,Addr2}];
+decode(I0,?CALL,Word) ->
+   [I0,{?CALL,Word band 16#0ff}];
 
-decode(S0,S1,?CALL,_,_,_,Addr2) ->
-   [S0,S1,{?CALL,Addr2}];
+decode(I0,I1,Word) ->
+   W            = Word bxor 16#15555,
+   <<S2:5,_:3>> = <<W:8>>,
+   decode(I0,I1,opcode:opcode(S2),Word).
 
-decode(S0,S1,S2,S3,_,_,_) ->
-   [ S0,S1,S2,S3 ].
+decode(I0,I1,?JUMP,Word) ->
+   [I0,I1,{?JUMP,Word band 16#007}];
+
+decode(I0,I1,?CALL,Word) ->
+   [I0,I1,{?CALL,Word band 16#007}];
+
+decode(I0,I1,I2,Word) ->
+   W        = Word bxor 16#15555,
+   <<S3:3>> = <<W:3>>,
+   [ I0,I1,I2,opcode:opcode(S3 bsl 2) ].
 
 % READ
 
@@ -595,7 +601,35 @@ trace(OpCode,CPU) ->
 % EUNIT TESTS
 
 decode_test() ->
-   ?assertEqual([{?JUMP,16#03}],decode(16#11403)).
+   ?assertEqual([{?JUMP,16#003}],decode(16#11403)),
+   ?assertEqual([{?JUMP,16#000}],decode(16#11400)),
+   ?assertEqual([{?JUMP,16#3ff}],decode(16#117ff)),
+
+   ?assertEqual([?NOP,{?JUMP,16#003}],decode(16#2d703)),
+   ?assertEqual([?NOP,{?JUMP,16#000}],decode(16#2d700)),
+   ?assertEqual([?NOP,{?JUMP,16#0ff}],decode(16#2d7ff)),
+
+   ?assertEqual([?NOP,?NOP,{?JUMP,16#03}],decode(16#2c943)),
+   ?assertEqual([?NOP,?NOP,{?JUMP,16#00}],decode(16#2c940)),
+   ?assertEqual([?NOP,?NOP,{?JUMP,16#07}],decode(16#2c947)),
+
+   ?assertEqual([{?CALL,16#003}],decode(16#13403)),
+   ?assertEqual([{?CALL,16#000}],decode(16#13400)),
+   ?assertEqual([{?CALL,16#3ff}],decode(16#137ff)),
+
+   ?assertEqual([?NOP,{?CALL,16#003}],decode(16#2d603)),
+   ?assertEqual([?NOP,{?CALL,16#000}],decode(16#2d600)),
+   ?assertEqual([?NOP,{?CALL,16#0ff}],decode(16#2d6ff)),
+
+   ?assertEqual([?NOP,?NOP,{?CALL,16#03}],decode(16#2c94b)),
+   ?assertEqual([?NOP,?NOP,{?CALL,16#00}],decode(16#2c948)),
+   ?assertEqual([?NOP,?NOP,{?CALL,16#07}],decode(16#2c94f)),
+
+   ?assertEqual([?NOP,?NOP,?NOP,?NOP],decode(16#2c9b2)),
+   ?assertEqual([?NOP,?NOP,?NOP,?DUP],decode(16#2c9b3)),
+   ?assertEqual([?NOP,?NOP,?DUP,?NOP],decode(16#2c992)),
+   ?assertEqual([?NOP,?DUP,?NOP,?NOP],decode(16#2cdb2)),
+   ?assertEqual([?DUP,?NOP,?NOP,?NOP],decode(16#249b2)).
 
 push_ds_test() ->
    assert([{ds,{7,[1,2,3,4,5,6,7,0]}}],push(ds,#cpu{s=0,ds={0,array:from_list([1,2,3,4,5,6,7,8])}})),
