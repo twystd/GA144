@@ -29,12 +29,13 @@
 %%      execution process.
 create(ID,Channel,Program) ->
    RAM = array:from_list(Program),
+   ROM = array:new(64,[{default,16#13400}]),
    start(ID,#cpu{ id      = ID,
                   channel = Channel,
-                  rom     = array:new(64),
+                  rom     = ROM,
                   ram     = RAM,
                   io      = [],
-                  p       = 0,
+                  p       = 16#0a9,
                   a       = 0,
                   b       = 16#100,
                   i       = [],
@@ -200,7 +201,7 @@ reset_impl(CPU) ->
          reset_impl(CPU)
 
    after 100 ->   
-      {run,CPU#cpu{ p = 0,
+      {run,CPU#cpu{ p = 16#0a9,
                     a = 0,
                     b = 16#100,
                     i = [],
@@ -301,12 +302,11 @@ exec_impl({?JUMP,Addr},CPU) ->
 % 16#03  name  call
 exec_impl({?CALL,Addr},CPU) ->
    P      = CPU#cpu.p,
-   {ok,I} = load(CPU,Addr),
-   CPUX = push(rs,CPU),
-   CPUY = CPUX#cpu{ p  = Addr,
-                    r  = P,
-                    i  = I 
-		  }, 
+   CPUX   = push(rs,CPU),
+   CPUY   = CPUX#cpu{ p  = Addr,
+                      r  = P,
+                      i  = [] 
+	            }, 
    trace(?CALL,CPUY),
    {ok,CPUY};
 
@@ -431,11 +431,20 @@ decode(Word) ->
 decode(?JUMP,_,_,_,Addr0,_,_) ->
    [{?JUMP,Addr0}];
 
+decode(?CALL,_,_,_,Addr0,_,_) ->
+   [{?CALL,Addr0}];
+
 decode(S0,?JUMP,_,_,_,Addr1,_) ->
    [S0,{?JUMP,Addr1}];
 
+decode(S0,?CALL,_,_,_,Addr1,_) ->
+   [S0,{?CALL,Addr1}];
+
 decode(S0,S1,?JUMP,_,_,_,Addr2) ->
    [S0,S1,{?JUMP,Addr2}];
+
+decode(S0,S1,?CALL,_,_,_,Addr2) ->
+   [S0,S1,{?CALL,Addr2}];
 
 decode(S0,S1,S2,S3,_,_,_) ->
    [ S0,S1,S2,S3 ].
@@ -650,7 +659,7 @@ call_test() ->
    RAM = array:from_list([16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
    I   = [ ?RET,?RET,?RET,?RET ],
    {ok,CPU} = exec_impl({?CALL,16#03},#cpu{p=P,r=R,rs=RS,i=I,ram=RAM}),
-   assert([{p,16#03},{r,16#0a9},{rs,{7,[1,2,3,4,5,6,7,0]}},{i,[?NOP,?NOP,?NOP,?NOP]}],CPU).
+   assert([{p,16#03},{r,16#0a9},{rs,{7,[1,2,3,4,5,6,7,0]}},{i,[]}],CPU).
 
 storeb_test() ->
    S   = 9,

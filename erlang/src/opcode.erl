@@ -47,7 +47,7 @@ opcode(16#1e) ->
    ?BSTORE;
 
 opcode(X) ->
-   ?debugFmt("UKNOWN CODE: ~p~n",[X]),
+   ?debugFmt("UNKNOWN CODE: ~p~n",[X]),
    unknown.     
 
 %% @doc Utility function to translate an op-code into a readable string.
