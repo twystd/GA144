@@ -157,46 +157,38 @@ loop({error,CPU}) ->
 loop({run,CPU}) ->
    receive
       reset ->
-         log:info(?TAG,"RESET"),
          trace:trace(f18A,{ CPU#cpu.id,reset}),     
          loop(reset_impl(CPU));
 
       {reset,PID} ->
-         log:info(?TAG,"RESET/W"),
          trace:trace(f18A,{ CPU#cpu.id,reset}),     
          Next = reset_impl(CPU),
          PID ! reset,
          loop(Next);
 
       step ->
-         log:info(?TAG,"STEP"),
          loop(step_impl(CPU));
 
       {step,PID} ->
-         log:info(?TAG,"STEP/W"),
          Next = step_impl(CPU),
          PID ! step,
          loop(Next);
 
       stop ->
-         log:info(?TAG,"STOP"),
          trace:trace(f18A,{ CPU#cpu.id,stop}),     
          unregister (CPU#cpu.id),
          stopped;
 
       {stop,PID} ->
-         log:info(?TAG,"STOP/W"),
          trace:trace(f18A,{ CPU#cpu.id,stop}),     
          unregister(CPU#cpu.id),
          PID ! stopped,
          stopped;
 
       go ->
-         log:info(?TAG,"GO"),
          loop(go_impl(CPU));
 
       {go,PID} ->
-         log:info(?TAG,"GO/W"),
          Next = go_impl(CPU),
          PID ! gone,
          loop(Next);
@@ -323,17 +315,18 @@ exec_impl({?CALL,Addr},CPU) ->
    trace(?CALL,CPUY),
    {ok,CPUY};
 
-
+%% TODO - push data stack
 % 16#08  @p  fetch P
 exec_impl(?FETCHP,CPU) ->
-   P = CPU#cpu.p,     
-   case read(CPU,P) of
+   P    = CPU#cpu.p,     
+   CPUX = push(ds,CPU),
+   case read(CPUX,P) of
         {ok,T} ->
-   	   CPUX = CPU#cpu{ p = P + 1,
-                           t = T
-                 	 }, 
-   	   trace(?FETCHP,CPUX),
-   	   {ok,CPUX};
+   	   CPUY = CPUX#cpu{ p = P + 1,
+                          t = T
+                 	      }, 
+   	   trace(?FETCHP,CPUY),
+   	   {ok,CPUY};
     
         Other ->
             Other
@@ -535,6 +528,7 @@ write(CPU,?RIGHT,Word) ->
 write_mem(Mem,Addr,Word) ->
    write_mem(Mem,Addr,Word,array:size(Mem)).
 
+% TODO - FIX ARRAY SIZE AT 64
 write_mem(Mem,Addr,Word,N) when Addr < N ->
    trace:trace(f18A,{n001,{write,Addr,Word}}),     
    { ok,array:set(Addr,Word,Mem) };
@@ -543,6 +537,9 @@ write_mem(_Mem,_Addr,_Word,_N) ->
    eof.
 
 write_channel(CPU,Ch,Word) ->
+   write_channel(CPU,Ch,Word,util:is_registered(Ch)).
+
+write_channel(CPU,Ch,Word,_) ->
    ID = CPU#cpu.id,
    try
       Ch ! { ID,write,Word },
@@ -557,6 +554,10 @@ write_channel(CPU,Ch,Word) ->
          {error,{C,X}}
    end.
    
+% write_channel(CPU,Ch,Word,_) ->
+%    log:info(?TAG,"(~p:WRITE to unconnected node ~p)",[CPU#cpu.id,Ch]),   
+%    {ok,CPU#cpu.ram}.
+
 write_wait(CPU) ->
    Ch = CPU#cpu.channel,
    receive

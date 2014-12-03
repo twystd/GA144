@@ -2,8 +2,8 @@
 
 % EXPORTS
 
--export([debug/2]).
--export([info/2]).
+-export([debug/2,debug/3]).
+-export([info/2,info/3]).
 -export([warn/2,warn/3]).
 -export([error/2,error/3]).
 
@@ -16,7 +16,15 @@
 debug(Tag,Msg) ->
    ?debugFmt("DEBUG:  ~s  ~s",[Tag,Msg]).
 
+debug(Tag,Fmt,Values) ->
+   Msg = io_lib:format(Fmt,Values),     
+   ?debugFmt("DEBUG:  ~s  ~s",[Tag,Msg]).
+
 info(Tag,Msg) ->
+   ?debugFmt("INFO:   ~s  ~s",[Tag,Msg]).
+
+info(Tag,Fmt,Values) ->
+   Msg = io_lib:format(Fmt,Values),     
    ?debugFmt("INFO:   ~s  ~s",[Tag,Msg]).
 
 warn(Tag,Msg) ->

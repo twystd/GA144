@@ -37,15 +37,48 @@
 
 % EUNIT TESTS
 
+step(F18A,0) ->
+   ok;
+
+step(F18A,N) ->
+   f18A:step(F18A,wait),
+   step(F18A,N-1).
+
+read() ->
+   read([]).
+
+read(L) ->
+   receive
+      {n001,write,X} ->
+         n001 ! { n000,read,ok },
+         read([X|L]);
+
+      _else ->
+         lists:reverse(L)
+   end.
+
 cucumber_test() ->
    setup("-- CUCUMBER TEST"),
    RAM  = array:from_list([16#049f3,16#00003,16#3d555,16#049f3,16#00001,16#13400,16#09703,16#04b12,16#001d5,16#3ffff,16#11403]),
    ROM  = array:new(64,[{default,16#13407}]),
    F18A = f18A:create(n001,n000,ROM,RAM),
 
+   register  (n000,spawn(fun() ->
+                            L = read(),
+                            ?debugFmt("RX: ~p",[L]) 
+                         end)),
+
    f18A:reset(F18A),
-   f18A:step (F18A,wait),
-   f18A:step (F18A,wait),
+   step      (F18A,19),
+   step      (F18A,13),
+   step      (F18A,13),
+   step      (F18A,13),
+   step      (F18A,13),
+   step      (F18A,13),
+
+   n000 ! stop,
+   Trace = trace:stop(),
+%  ?debugFmt("TRACE: ~p",[Trace]),
    ok.
 
 go_test() ->
