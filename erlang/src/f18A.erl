@@ -2,7 +2,7 @@
 
 % EXPORTS
 
--export([create/3]).
+-export([create/3,create/4]).
 -export([reset/1]).
 -export([go/1,go/2]).
 -export([stop/1,stop/2]).
@@ -27,6 +27,19 @@
 
 %% @doc Initialises an F18A node and starts the internal instruction 
 %%      execution process.
+create(ID,Channel,ROM,RAM) ->
+   start(ID,#cpu{ id      = ID,
+                  channel = Channel,
+                  rom     = ROM,
+                  ram     = RAM,
+                  io      = [],
+                  p       = 16#0a9,
+                  a       = 0,
+                  b       = 16#100,
+                  i       = [],
+                  t       = 0
+                }).
+
 create(ID,Channel,Program) ->
    RAM = array:from_list(Program),
    ROM = array:new(64,[{default,16#13400}]),
@@ -594,6 +607,14 @@ pop(rs,CPU) ->
 
 % UTILITY FUNCTIONS
 % 
+trace(?JUMP,CPU) ->
+   log:info   (?TAG,io_lib:format("~s ~p",[opcode:to_string(?JUMP),CPU#cpu.p])),
+   trace:trace(f18A,?JUMP,CPU);
+
+trace(?CALL,CPU) ->
+   log:info   (?TAG,io_lib:format("~s ~p",[opcode:to_string(?CALL),CPU#cpu.p])),
+   trace:trace(f18A,?CALL,CPU);
+
 trace(OpCode,CPU) ->
    log:info   (?TAG,opcode:to_string(OpCode)),     
    trace:trace(f18A,OpCode,CPU).

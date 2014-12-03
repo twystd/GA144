@@ -37,6 +37,17 @@
 
 % EUNIT TESTS
 
+cucumber_test() ->
+   setup("-- CUCUMBER TEST"),
+   RAM  = array:from_list([16#049f3,16#00003,16#3d555,16#049f3,16#00001,16#13400,16#09703,16#04b12,16#001d5,16#3ffff,16#11403]),
+   ROM  = array:new(64,[{default,16#13407}]),
+   F18A = f18A:create(n001,n000,ROM,RAM),
+
+   f18A:reset(F18A),
+   f18A:step (F18A,wait),
+   f18A:step (F18A,wait),
+   ok.
+
 go_test() ->
    M    = setup("-- GO TEST"),
    F18A = f18A:create(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2]),
