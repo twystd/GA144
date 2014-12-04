@@ -1,6 +1,7 @@
 package za.co.twyst.GA144.assembler;
 
 import static org.junit.Assert.*;
+import static za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE.RET;
 
 public class AssemblerTest {
 	// UNIT TESTS 
@@ -11,7 +12,7 @@ public class AssemblerTest {
 	
 	protected void test(TestVector[] vectors,boolean debug) throws Exception {
 		for (TestVector vector: vectors) {
-	        Assembler assembler = new Assembler(0x00,debug);
+	        Assembler assembler = new Assembler(RET,debug);
 	        int[]     ram       = assembler.assemble(vector.src);
             int[]     ref       = vector.ram;
             int[]     mask      = vector.mask;

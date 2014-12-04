@@ -15,6 +15,6 @@ public class TestWRITE extends AssemblerTest {
 	
 	@Test
 	public void testWrite() throws Exception {
-		test(WRITE);
+		test(WRITE,true);
 	}
 }

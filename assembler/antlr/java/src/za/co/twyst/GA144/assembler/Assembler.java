@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,21 +28,26 @@ import za.co.twyst.GA144.assembler.antlr.F18AParser.OpcodeContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.OriginContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.ProgramContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.WordContext;
+import za.co.twyst.GA144.assembler.instructions.Call;
+import za.co.twyst.GA144.assembler.instructions.Constant;
+import za.co.twyst.GA144.assembler.instructions.Right;
+import za.co.twyst.GA144.assembler.instructions.Instruction;
+import za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE;
+import static za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE.BSTORE;
+import static za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE.CALL;
+import static za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE.DUP;
+import static za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE.FETCHB;
+import static za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE.FETCHP;
+import static za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE.JUMP;
+import static za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE.NOP;
+import static za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE.PLUS;
+import static za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE.RET;
+import static za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE.STOREB;
 
 public class Assembler extends F18ABaseListener {
 	// CONSTANTS
 	
-    private static final int     RET    = 0x00;
-    private static final int     CALL   = 0x03;
-    private static final int     FETCHP = 0x08;
-    private static final int     FETCHB = 0x0a;
-    private static final int     STOREB = 0x0e;
-    private static final int     PLUS   = 0x14;
-    private static final int     DUP    = 0x18;
-    private static final int     NOP    = 0x1c;
-    private static final int     BSTORE = 0x1e;
-    
-    private static final int     PAD    = 0x00; // opcode used to pad an instruction after a RET
+    private static final OPCODE  PAD    = RET; // opcode used to pad an instruction after a RET
     private static final int     RIGHT  = 0x01d5;
     private static final Pattern CONSTANT = Pattern.compile("([0-9]+)"); 
 
@@ -47,20 +55,21 @@ public class Assembler extends F18ABaseListener {
     private static final int     XOR    = 0x15555;
     private static final int[]   MASK   = { 0x3e000,0x01f00,0x000f8,0x00007 };
 
-    private static final int[]   SLOT3  = { RET,FETCHP,PLUS,DUP,NOP };
-    private static final int     MAXINT = 262144;
-    
+    private static final OPCODE[]   SLOT3  = { RET,FETCHP,PLUS,DUP,NOP };
+    private static final int        MAXINT = 262144;
+
 	// INSTANCE VARIABLES
 	
     private final boolean debug;
-    private final int     pad;
+    private final OPCODE  pad;
     
 	private int   origin;
     private int   location;
     private int   slot;
     
-	private int   P;
-	private int[] ram = new int[64];
+	private int               P;
+	private int[]             ram          = new int[64];
+	private List<Instruction> instructions = new ArrayList<Instruction>();
 	
 	// ENTRY POINT
 	
@@ -70,7 +79,7 @@ public class Assembler extends F18ABaseListener {
 		File    in    = null;
 		File    out   = null;
 		boolean debug = false;
-		int     pad   = 0x00;
+		OPCODE  pad   = RET;
 		int     ix    = 0;
 		
 		while(ix < args.length) {
@@ -138,8 +147,8 @@ public class Assembler extends F18ABaseListener {
 	
 	// CLASS METHODS
 	
-	private static boolean contains(int[] array,int value) {
-		for (int item: array) {
+	private static boolean contains(OPCODE[] array,OPCODE value) {
+		for (OPCODE item: array) {
 			if (item == value) {
 				return true;
 			}
@@ -155,7 +164,7 @@ public class Assembler extends F18ABaseListener {
         this.debug = false;
     }
 	
-	protected Assembler(int pad,boolean debug) {
+	protected Assembler(OPCODE pad,boolean debug) {
 	    this.pad   = pad;
 	    this.debug = debug;
 	}
@@ -204,6 +213,26 @@ public class Assembler extends F18ABaseListener {
 
 		walker.walk(this,tree); 
 		
+		Iterator<Instruction> ix = instructions.iterator();
+		
+		while(ix.hasNext()) {
+			Instruction instruction = ix.next();
+			
+			if ((instruction instanceof Call) && ix.hasNext()) {
+				Instruction next = ix.next();
+				
+				if (next.opcode == RET) {
+//					encodeJump(((Call) instruction).address);
+					encodeJump(3);
+				} else {
+					encode(instruction);
+					encode(next);
+				}
+			} else { 
+				encode(instruction);
+			}
+		}
+		
 		return ram;
 	}
 	
@@ -249,36 +278,36 @@ public class Assembler extends F18ABaseListener {
 	        switch(node.getText()) {
 	            case "ret":
                 case ";":
-                     encode(RET);
-                     break;
+                	instructions.add(new Instruction(RET));
+                    break;
                      
 			    case "@p":
-			        encode(FETCHP);
+                	instructions.add(new Instruction(FETCHP));
 		        	break;
 			        
 			    case "@b":                  
-			        encode(FETCHB);
+                	instructions.add(new Instruction(FETCHB));
 		        	break;
 			        
 			    case "!b":                  
-			        encode(STOREB);
+                	instructions.add(new Instruction(STOREB));
 		        	break;
                     
                 case "+":                  
-                    encode(PLUS);
+                	instructions.add(new Instruction(PLUS));
                     break;
                     
                 case "dup":                  
-                    encode(DUP);
+                	instructions.add(new Instruction(DUP));
                     break;
 
 			    case "nop":
                 case ".":
-			        encode(NOP);
+            	    instructions.add(new Instruction(NOP));
 			        break;
 
 			    case "b!":
-			        encode(BSTORE);
+                	instructions.add(new Instruction(BSTORE));
 		        	break;
 	        }
 	    }
@@ -295,7 +324,7 @@ public class Assembler extends F18ABaseListener {
 
 	        switch(node.getText()) {
                 case "right":
-                    encode(FETCHP,RIGHT);
+                	instructions.add(new Right());
                     break;
             }
         }
@@ -320,7 +349,7 @@ public class Assembler extends F18ABaseListener {
             		System.err.println("WARNING: invalid constant '" + text + "' (will be truncated to 18 bits)");
             	}
             	
-                encode(FETCHP,constant & 0x3ffff);
+            	instructions.add(new Constant(constant));
         	}
         }
 	}
@@ -336,29 +365,70 @@ public class Assembler extends F18ABaseListener {
                 System.out.println("OPCODE:   call " + node.getText());
             }
 
-            // ... encode CALL
-            
-            int opcode  = CALL;
             int address = 0x0000;
-            int rsh     = RSHIFT[slot];
-            int mask    = MASK[slot];
-                
-            ram[location] |= (((opcode << 13) >>> rsh) ^ XOR) & mask;
-            
-            if (slot == 0) {
-                ram[location] |= 0x01C00 & XOR;
-                ram[location] |= (address & 0x03ff);
-            }
 
-            
-            location = ++P;
-            slot     = 0;
+            instructions.add(new Call(address));
         }
     }
 
 	// INTERNAL
 	
-	private void encode(int opcode) {
+	
+	private void encode(Instruction opcode) {
+		// ... pad current instruction with NOP ?
+		
+	    if (slot == 3) {
+	    	if (!contains(SLOT3, opcode.opcode)) {
+	    		encode(NOP);
+	    	}
+	    }
+
+	    // ... Word ?
+	    
+	    if (opcode instanceof Right) {
+	    	encode(FETCHP,((Right) opcode).word);
+	    	return;
+	    }
+
+	    // ... Constant ?
+	    
+	    if (opcode instanceof Constant) {
+	    	encode(FETCHP,((Constant) opcode).word);
+	    	return;
+	    }
+
+	    // ... Call ?
+	    
+	    if (opcode instanceof Call) {
+	    	encodeCall(((Call) opcode).address);
+	    	return;
+	    }
+	    
+	    // ... encode into current instruction
+	    
+	    int rsh  = RSHIFT[slot];
+	    int mask = MASK[slot];
+	    
+	    ram[location] |= (((opcode.opcode.code << 13) >>> rsh) ^ XOR) & mask;
+	    slot           = (slot + 1) % 4;
+
+	    //  ... 'k, done
+	    
+	    if (slot == 0) {
+	    	location = ++P;
+	    	return;
+	    } 
+	    
+	    // ... pad after a RET
+
+	    if (opcode.opcode == RET) {
+	        while(slot != 0) {
+	            encode(pad);
+		    } 
+	    }
+	}
+
+	private void encode(OPCODE opcode) {
 		// ... pad current instruction with NOP ?
 		
 	    if (slot == 3) {
@@ -372,7 +442,7 @@ public class Assembler extends F18ABaseListener {
 	    int rsh  = RSHIFT[slot];
 	    int mask = MASK[slot];
 	    
-	    ram[location] |= (((opcode << 13) >>> rsh) ^ XOR) & mask;
+	    ram[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
 	    slot           = (slot + 1) % 4;
 
 	    //  ... 'k, done
@@ -391,17 +461,58 @@ public class Assembler extends F18ABaseListener {
 	    }
 	}
 	        
-    private void encode(int opcode,int constant) {
+    private void encode(OPCODE opcode,int constant) {
         int rsh  = RSHIFT[slot];
         int mask = MASK[slot];
 	        
-        ram[location] |= (((opcode << 13) >>> rsh) ^ XOR) & mask;
+        ram[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
         ram[++P]      |= constant;
         slot           = (slot + 1) % 4;
 	                    
         if (slot == 0) {
             location = ++P;
         }
+    }
+    
+    private void encodeJump(int address) {
+    	OPCODE opcode  = JUMP;
+        int    rsh     = RSHIFT[slot];
+        int    mask    = MASK[slot];
+                
+        ram[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
+            
+        if (slot == 0) {
+        	ram[location] |= 0x01C00 & XOR;
+            ram[location] |= (address & 0x03ff);
+        } else if (slot == 1) {
+            ram[location] |= (address & 0x0ff);
+        } else if (slot == 2) {
+            ram[location] |= (address & 0x007);
+        }
+            
+        location = ++P;
+        slot     = 0;
+    }
+
+    private void encodeCall(int address) {
+    	OPCODE opcode  = CALL;
+        int    rsh     = RSHIFT[slot];
+        int    mask    = MASK[slot];
+                
+        ram[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
+            
+        if (slot == 0) {
+        	ram[location] |= 0x01C00 & XOR; 
+            ram[location] |= (address & 0x03ff);
+        } else if (slot == 1) {
+            ram[location] |= (address & 0x0ff);
+        } else if (slot == 2) {
+            ram[location] |= (address & 0x007);
+        }
+
+            
+        location = ++P;
+        slot     = 0;
     }
 
 }
