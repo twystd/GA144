@@ -1,23 +1,23 @@
 package za.co.twyst.GA144.assembler.instructions;
 
-public class Call extends Instruction {
+public class Call extends OpCode {
 	// INSTANCE VARIABLES
 
-	public final int address;
+	public final String label;
 	
 	// CONSTRUCTOR
 	
-	public Call(int address) {
+	public Call(String label) {
 		super(OPCODE.CALL);
 		
-		this.address = address;
+		this.label = label;
 	}
 	                     
 	// *** Object ***
 	
 	@Override
 	public String toString() {
-		return String.format("%s %x",opcode.string,address);
+		return String.format("%s %s",opcode.string,label);
 	}
 
 }

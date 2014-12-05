@@ -1,6 +1,6 @@
 package za.co.twyst.GA144.assembler.instructions;
 
-public class Constant extends Instruction {
+public class Constant extends OpCode {
 	// INSTANCE VARIABLES
 
 	public final int word;

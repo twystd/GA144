@@ -1,6 +1,6 @@
 package za.co.twyst.GA144.assembler.instructions;
 
-public class Right extends Instruction {
+public class Right extends OpCode {
 	// INSTANCE VARIABLES
 
 	public final int word;

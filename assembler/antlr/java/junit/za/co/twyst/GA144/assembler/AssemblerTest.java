@@ -1,7 +1,7 @@
 package za.co.twyst.GA144.assembler;
 
 import static org.junit.Assert.*;
-import static za.co.twyst.GA144.assembler.instructions.Instruction.OPCODE.RET;
+import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.RET;
 
 public class AssemblerTest {
 	// UNIT TESTS 
