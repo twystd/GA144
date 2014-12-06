@@ -53,7 +53,6 @@ public class Assembler extends F18ABaseListener {
 	// CONSTANTS
 	
     private static final OPCODE  PAD    = RET; // opcode used to pad an instruction after a RET
-    private static final int     RIGHT  = 0x01d5;
     private static final Pattern CONSTANT = Pattern.compile("([\\-]?[0-9]+)"); 
 
     private static final int[]   RSHIFT = { 0,5,10,15 };
@@ -200,14 +199,6 @@ public class Assembler extends F18ABaseListener {
     }
 
 	private int[] assemble(ANTLRInputStream input) throws Exception {
-	    // ... initialise
-	    
-        location = 0;
-        slot     = 0;
-        
-        P = 0;
-        Arrays.fill(ram,0);
-
         // ... parse
 
 		F18ALexer         lexer     = new F18ALexer(input);
@@ -218,46 +209,67 @@ public class Assembler extends F18ABaseListener {
 
 		walker.walk(this,tree); 
 		
-//		System.err.println("---");
-//		System.err.println(instructions);
-//		System.err.println("---");
-		
-		Iterator<Instruction> ix     = instructions.iterator();
-		Map<String,Integer>   labels = new HashMap<String, Integer>();
-		
-		while(ix.hasNext()) {
-			Instruction instruction = ix.next();
-			
-			if (instruction instanceof Label) {
-				labels.put(((Label) instruction).name,P);
-				continue;
-			}
-			
-			if (instruction instanceof Call) {
-				String label   = ((Call) instruction).label;
-				int    address = labels.get(label);
-				
-				if (ix.hasNext()) {
-					Instruction next = ix.next();
-				
-					if ((next instanceof OpCode) && ((OpCode) next).opcode == RET) {
-						encodeJump(address);
-					} else {
-						encodeCall(address);
-					
-						if (next instanceof OpCode) {
-							encode((OpCode) next);
-						}
-					} 
-				} else {
-					encodeCall(address);
-				}
-			} else { 
-				if (instruction instanceof OpCode) {
-					encode((OpCode) instruction);
-				}
-			}
+		if (debug) {
+			System.out.println("---");
+			System.out.println(instructions);
+			System.out.println("---");
 		}
+		
+		Map<String,Integer>   labels = new HashMap<String, Integer>();
+		Iterator<Instruction> ix;
+		boolean               resolved;
+		
+		do { Arrays.fill(ram,0);
+		
+		     resolved = true;
+		     location = 0;
+		     slot     = 0;
+		     P        = 0;
+		     ix       = instructions.iterator();
+			    
+		     while(ix.hasNext()) {
+				 Instruction instruction = ix.next();
+				 
+				 if (instruction instanceof Label) {
+					 labels.put(((Label) instruction).name,P);
+					 continue;
+				 }
+			
+				 if (instruction instanceof Call) {
+					 String label   = ((Call) instruction).label;
+					 int    address;
+				
+					 if (!labels.containsKey(label)) {
+						 resolved = false;
+						 address  = 0x3ff;
+					 } else {
+						 address = labels.get(label);
+					 }
+					 
+					 if (ix.hasNext()) {
+						 Instruction next = ix.next();
+				
+						 if ((next instanceof OpCode) && ((OpCode) next).opcode == RET) {
+							 encodeJump(address);
+						 } else {
+							 encodeCall(address);
+
+							 // FIXME: what if next is a call/jump ??
+							 if (next instanceof OpCode) {
+								 encode((OpCode) next);
+							 }
+						 } 
+					 } else {
+						 encodeCall(address);
+					 }
+				 } else { 
+					 if (instruction instanceof OpCode) {
+						 encode((OpCode) instruction);
+					 }
+				 }
+				 
+			 }  
+		} while (!resolved);
 		
 		return ram;
 	}
@@ -381,8 +393,6 @@ public class Assembler extends F18ABaseListener {
         }
 	}
 
-    // TODO: CALL address from label table
-    // TODO: CALL unit test for all the different slot combinations
     @Override
     public void enterCall(CallContext ctx) {
         TerminalNode node;

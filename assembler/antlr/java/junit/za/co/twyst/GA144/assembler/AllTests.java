@@ -6,7 +6,8 @@ import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
 
-@SuiteClasses({ TestNOP.class, 
+@SuiteClasses({ TestCALL.class, 
+                TestNOP.class, 
                 TestFETCHP.class,
                 TestFETCHB.class,
                 TestBSTORE.class,
