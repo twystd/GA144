@@ -7,9 +7,10 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -216,7 +217,7 @@ public class Assembler extends F18ABaseListener {
 		}
 		
 		Map<String,Integer>   labels = new HashMap<String, Integer>();
-		Iterator<Instruction> ix;
+		Queue<Instruction>    queue  = new LinkedList<Instruction>();
 		boolean               resolved;
 		
 		do { Arrays.fill(ram,0);
@@ -225,19 +226,30 @@ public class Assembler extends F18ABaseListener {
 		     location = 0;
 		     slot     = 0;
 		     P        = 0;
-		     ix       = instructions.iterator();
+		     
+		     queue.clear ();
+		     queue.addAll(instructions);
 			    
-		     while(ix.hasNext()) {
-				 Instruction instruction = ix.next();
+		     while(!queue.isEmpty()) {
+				 Instruction instruction = queue.remove();
 				 
 				 if (instruction instanceof Label) {
-					 labels.put(((Label) instruction).name,P);
+                     String label = ((Label) instruction).name;
+
+                     if (labels.containsKey(label)) {
+                         if (labels.get(label) != P) {
+                             resolved = false;
+                         }
+                     }
+                     
+                     labels.put(label,P);
 					 continue;
 				 }
 			
 				 if (instruction instanceof Call) {
-					 String label   = ((Call) instruction).label;
-					 int    address;
+					 String      label = ((Call) instruction).label;
+                     Instruction next  = queue.peek();
+					 int         address;
 				
 					 if (!labels.containsKey(label)) {
 						 resolved = false;
@@ -246,18 +258,12 @@ public class Assembler extends F18ABaseListener {
 						 address = labels.get(label);
 					 }
 					 
-					 if (ix.hasNext()) {
-						 Instruction next = ix.next();
-				
+					 if (next != null) {
 						 if ((next instanceof OpCode) && ((OpCode) next).opcode == RET) {
-							 encodeJump(address);
+						     queue.remove();
+							 encodeJump  (address);
 						 } else {
 							 encodeCall(address);
-
-							 // FIXME: what if next is a call/jump ??
-							 if (next instanceof OpCode) {
-								 encode((OpCode) next);
-							 }
 						 } 
 					 } else {
 						 encodeCall(address);

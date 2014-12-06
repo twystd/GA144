@@ -6,28 +6,36 @@ import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.RET;
 public class AssemblerTest {
 	// UNIT TESTS 
 
+    protected void test(TestVector vector) throws Exception {
+        test(vector,false);
+    }
+
 	protected void test(TestVector[] vectors) throws Exception {
 		test(vectors,false);
 	}
 	
 	protected void test(TestVector[] vectors,boolean debug) throws Exception {
 		for (TestVector vector: vectors) {
-	        Assembler assembler = new Assembler(RET,debug);
-	        int[]     ram       = assembler.assemble(vector.src);
-            int[]     ref       = vector.ram;
-            int[]     mask      = vector.mask;
-            
-            if (debug) {
-    	        for (int i=0; i<vector.ram.length; i++) {
-    	        	System.err.println(String.format("%2d:  %08X  %08X",i,ref[i],ram[i]));
-    	        }
-            }
-
-	        for (int i=0; i<vector.ram.length; i++) {
-	            assertEquals("Invalid RAM[" + i + "]",ref[i] & mask[i],ram[i] & mask[i]);
-	        }
+		    test(vector,debug);
 		}
 	}
+    
+    protected void test(TestVector vector,boolean debug) throws Exception {
+        Assembler assembler = new Assembler(RET,debug);
+        int[]     ram       = assembler.assemble(vector.src);
+        int[]     ref       = vector.ram;
+        int[]     mask      = vector.mask;
+            
+        if (debug) {
+            for (int i=0; i<vector.ram.length; i++) {
+                System.err.println(String.format("%2d:  %08X  %08X",i,ref[i],ram[i]));
+            }
+        }
+
+        for (int i=0; i<vector.ram.length; i++) {
+            assertEquals("Invalid RAM[" + i + "]",ref[i] & mask[i],ram[i] & mask[i]);
+        }
+    }
 
     // INNER CLASSES
     
