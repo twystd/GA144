@@ -297,20 +297,21 @@ exec_impl(?RET,CPU) ->
    {ok,CPUY};
 
 % 16#02  name; jump
-exec_impl({?JUMP,Addr},CPU) ->
-   CPUX = CPU#cpu{ p = Addr
+exec_impl({?JUMP,Addr,Mask},CPU) ->
+   P    = CPU#cpu.p,
+   CPUX = CPU#cpu{ p = ((P band Mask) bor Addr)
                  }, 
    trace(?JUMP,CPUX),
    {ok,CPUX};
 
 
 % 16#03  name  call
-exec_impl({?CALL,Addr},CPU) ->
+exec_impl({?CALL,Addr,Mask},CPU) ->
    P      = CPU#cpu.p,
    CPUX   = push(rs,CPU),
-   CPUY   = CPUX#cpu{ p  = Addr,
-                      r  = P,
-                      i  = [] 
+   CPUY   = CPUX#cpu{ p = ((P band Mask) bor Addr),
+                      r = P,
+                      i = [] 
 	            }, 
    trace(?CALL,CPUY),
    {ok,CPUY};
@@ -429,10 +430,10 @@ decode(Word) ->
    decode(opcode:opcode(S0),Word).
 
 decode(?JUMP,Word) ->
-   [{?JUMP,Word band 16#03ff}];
+   [{?JUMP,Word band 16#03ff,16#0000}];
 
 decode(?CALL,Word) ->
-   [{?CALL,Word band 16#03ff}];
+   [{?CALL,Word band 16#03ff,16#0000}];
 
 decode(I0,Word) ->
    W            = Word bxor 16#15555,
@@ -440,10 +441,10 @@ decode(I0,Word) ->
    decode(I0,opcode:opcode(S1),Word).
 
 decode(I0,?JUMP,Word) ->
-   [I0,{?JUMP,Word band 16#0ff}];
+   [I0,{?JUMP,Word band 16#0ff,16#300}];
 
 decode(I0,?CALL,Word) ->
-   [I0,{?CALL,Word band 16#0ff}];
+   [I0,{?CALL,Word band 16#0ff,16#300}];
 
 decode(I0,I1,Word) ->
    W            = Word bxor 16#15555,
@@ -451,10 +452,10 @@ decode(I0,I1,Word) ->
    decode(I0,I1,opcode:opcode(S2),Word).
 
 decode(I0,I1,?JUMP,Word) ->
-   [I0,I1,{?JUMP,Word band 16#007}];
+   [I0,I1,{?JUMP,Word band 16#007,16#3f8}];
 
 decode(I0,I1,?CALL,Word) ->
-   [I0,I1,{?CALL,Word band 16#007}];
+   [I0,I1,{?CALL,Word band 16#007,16#3f8}];
 
 decode(I0,I1,I2,Word) ->
    W        = Word bxor 16#15555,
@@ -623,29 +624,29 @@ trace(OpCode,CPU) ->
 % EUNIT TESTS
 
 decode_test() ->
-   ?assertEqual([{?JUMP,16#003}],decode(16#11403)),
-   ?assertEqual([{?JUMP,16#000}],decode(16#11400)),
-   ?assertEqual([{?JUMP,16#3ff}],decode(16#117ff)),
+   ?assertEqual([{?JUMP,16#003,16#000}],decode(16#11403)),
+   ?assertEqual([{?JUMP,16#000,16#000}],decode(16#11400)),
+   ?assertEqual([{?JUMP,16#3ff,16#000}],decode(16#117ff)),
 
-   ?assertEqual([?NOP,{?JUMP,16#003}],decode(16#2d703)),
-   ?assertEqual([?NOP,{?JUMP,16#000}],decode(16#2d700)),
-   ?assertEqual([?NOP,{?JUMP,16#0ff}],decode(16#2d7ff)),
+   ?assertEqual([?NOP,{?JUMP,16#003,16#300}],decode(16#2d703)),
+   ?assertEqual([?NOP,{?JUMP,16#000,16#300}],decode(16#2d700)),
+   ?assertEqual([?NOP,{?JUMP,16#0ff,16#300}],decode(16#2d7ff)),
 
-   ?assertEqual([?NOP,?NOP,{?JUMP,16#03}],decode(16#2c943)),
-   ?assertEqual([?NOP,?NOP,{?JUMP,16#00}],decode(16#2c940)),
-   ?assertEqual([?NOP,?NOP,{?JUMP,16#07}],decode(16#2c947)),
+   ?assertEqual([?NOP,?NOP,{?JUMP,16#03,16#3f8}],decode(16#2c943)),
+   ?assertEqual([?NOP,?NOP,{?JUMP,16#00,16#3f8}],decode(16#2c940)),
+   ?assertEqual([?NOP,?NOP,{?JUMP,16#07,16#3f8}],decode(16#2c947)),
 
-   ?assertEqual([{?CALL,16#003}],decode(16#13403)),
-   ?assertEqual([{?CALL,16#000}],decode(16#13400)),
-   ?assertEqual([{?CALL,16#3ff}],decode(16#137ff)),
+   ?assertEqual([{?CALL,16#003,16#000}],decode(16#13403)),
+   ?assertEqual([{?CALL,16#000,16#000}],decode(16#13400)),
+   ?assertEqual([{?CALL,16#3ff,16#000}],decode(16#137ff)),
 
-   ?assertEqual([?NOP,{?CALL,16#003}],decode(16#2d603)),
-   ?assertEqual([?NOP,{?CALL,16#000}],decode(16#2d600)),
-   ?assertEqual([?NOP,{?CALL,16#0ff}],decode(16#2d6ff)),
+   ?assertEqual([?NOP,{?CALL,16#003,16#300}],decode(16#2d603)),
+   ?assertEqual([?NOP,{?CALL,16#000,16#300}],decode(16#2d600)),
+   ?assertEqual([?NOP,{?CALL,16#0ff,16#300}],decode(16#2d6ff)),
 
-   ?assertEqual([?NOP,?NOP,{?CALL,16#03}],decode(16#2c94b)),
-   ?assertEqual([?NOP,?NOP,{?CALL,16#00}],decode(16#2c948)),
-   ?assertEqual([?NOP,?NOP,{?CALL,16#07}],decode(16#2c94f)),
+   ?assertEqual([?NOP,?NOP,{?CALL,16#03,16#3f8}],decode(16#2c94b)),
+   ?assertEqual([?NOP,?NOP,{?CALL,16#00,16#3f8}],decode(16#2c948)),
+   ?assertEqual([?NOP,?NOP,{?CALL,16#07,16#3f8}],decode(16#2c94f)),
 
    ?assertEqual([?NOP,?NOP,?NOP,?NOP],decode(16#2c9b2)),
    ?assertEqual([?NOP,?NOP,?NOP,?DUP],decode(16#2c9b3)),
@@ -705,7 +706,7 @@ ret_test() ->
 
 jump_test() ->
    P = 16#0a9,
-   {ok,CPU} = exec_impl({?JUMP,16#03},#cpu{p=P}),
+   {ok,CPU} = exec_impl({?JUMP,16#03,16#0000},#cpu{p=P}),
    assert([{p,16#03}],CPU).
 
 call_test() ->
@@ -714,7 +715,7 @@ call_test() ->
    RS  = {0,array:from_list([1,2,3,4,5,6,7,8])},
    RAM = array:from_list([16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
    I   = [ ?RET,?RET,?RET,?RET ],
-   {ok,CPU} = exec_impl({?CALL,16#03},#cpu{p=P,r=R,rs=RS,i=I,ram=RAM}),
+   {ok,CPU} = exec_impl({?CALL,16#03,16#0000},#cpu{p=P,r=R,rs=RS,i=I,ram=RAM}),
    assert([{p,16#03},{r,16#0a9},{rs,{7,[1,2,3,4,5,6,7,0]}},{i,[]}],CPU).
 
 storeb_test() ->

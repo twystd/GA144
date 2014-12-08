@@ -38,7 +38,6 @@ import za.co.twyst.GA144.assembler.instructions.Label;
 import za.co.twyst.GA144.assembler.instructions.Right;
 import za.co.twyst.GA144.assembler.instructions.OpCode;
 import za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE;
-
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.BSTORE;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.CALL;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.DUP;
@@ -261,12 +260,12 @@ public class Assembler extends F18ABaseListener {
 					 if (next != null) {
 						 if ((next instanceof OpCode) && ((OpCode) next).opcode == RET) {
 						     queue.remove();
-							 encodeJump  (address);
+							 encodeJump(JUMP,address);
 						 } else {
-							 encodeCall(address);
+							 encodeJump(CALL,address);
 						 } 
 					 } else {
-						 encodeCall(address);
+						 encodeJump(CALL,address);
 					 }
 				 } else { 
 					 if (instruction instanceof OpCode) {
@@ -508,18 +507,36 @@ public class Assembler extends F18ABaseListener {
         }
     }
     
-    private void encodeJump(int address) {
-    	// ... pad ?
+    private void encodeJump(OPCODE opcode,int address) {
+    	// ... validate
     	
-        if ((slot == 3) || ((slot == 2) && (address > 0x007)) || ((slot == 1) && (address > 0x0ff))) {
-	        while (slot != 0) {
-	            encode(NOP);
-		    } 
+    	if ((address < 0) || (address > 0x3ff)) {
+    		throw new IllegalArgumentException("Invalid address for " + opcode.string);
+    	}
+    	
+    	// ... pad ?
+
+    	int jump = address;
+
+        if (slot == 3) {
+        	encode(NOP);
+        } else if (slot == 2) {
+        	if ((P & 0x3f8) != (address & 0x3f8)) {
+        		jump = address & 0x007;
+        		encode(NOP);
+        		encode(NOP);
+        	}
+        } else if (((slot == 1) && (jump > 0x0ff))) {
+        	if ((P & 0x300) != (address & 0x300)) {
+        		jump = address & 0x0ff;
+        		encode(NOP);
+        		encode(NOP);
+        		encode(NOP);
+        	}
         }
 
         // ... encode
         
-    	OPCODE opcode  = JUMP;
         int    rsh     = RSHIFT[slot];
         int    mask    = MASK[slot];
 
@@ -527,53 +544,16 @@ public class Assembler extends F18ABaseListener {
             
         if (slot == 0) {
         	ram[location] |= 0x01C00 & XOR;
-            ram[location] |= (address & 0x03ff);
+            ram[location] |= (jump & 0x03ff);
         } else if (slot == 1) {
-            ram[location] |= (address & 0x0ff);
+            ram[location] |= (jump & 0x0ff);
         } else if (slot == 2) {
-            ram[location] |= (address & 0x007);
+            ram[location] |= (jump & 0x007);
         }
 
         location = ++P;
         slot     = 0;
     }
-
-    private void encodeCall(int address) {
-    	// ... pad ?
-    	
-        if ((slot == 3) || ((slot == 2) && (address > 0x007)) || ((slot == 1) && (address > 0x0ff))) {
-	        while (slot != 0) {
-	            encode(NOP);
-		    } 
-        }
-
-        // ... encode
-        
-    	OPCODE opcode  = CALL;
-        int    rsh     = RSHIFT[slot];
-        int    mask    = MASK[slot];
-
-        if ((slot == 3) || ((slot == 2) && (address > 0x007)) || ((slot == 1) && (address > 0x0ff))) {
-	        while(slot != 0) {
-	            encode(NOP);
-		    } 
-        }
-
-        ram[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
-            
-        if (slot == 0) {
-        	ram[location] |= 0x01C00 & XOR; 
-            ram[location] |= (address & 0x03ff);
-        } else if (slot == 1) {
-            ram[location] |= (address & 0x0ff);
-        } else if (slot == 2) {
-            ram[location] |= (address & 0x007);
-        }
-            
-        location = ++P;
-        slot     = 0;
-    }
-
 }
 
 
