@@ -12,6 +12,7 @@ erlang
 Assembler
 ---------
 1. Use I register 
+2. clojure ? https://www.youtube.com/watch?v=824yVKUPFjU
 
 Disassembler
 ------------
