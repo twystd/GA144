@@ -53,7 +53,7 @@ import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.STOREB;
 public class Assembler extends F18ABaseListener {
 	// CONSTANTS
 	
-    private static final OPCODE  PAD    = RET; // opcode used to pad an instruction after a RET
+    private static final OPCODE  PAD    = RET; 
     private static final Pattern CONSTANT = Pattern.compile("([\\-]?[0-9]+)"); 
 
     private static final int[]   RSHIFT = { 0,5,10,15 };
@@ -66,14 +66,13 @@ public class Assembler extends F18ABaseListener {
 	// INSTANCE VARIABLES
 	
     private final boolean debug;
-    private final OPCODE  pad;
+    private final OPCODE  pad = PAD;  // opcode used to pad an instruction after a RET
     
 	private int   origin;
     private int   location;
     private int   slot;
     
 	private int               P;
-//	private int[]             ram          = new int[64];
 	private List<Instruction> instructions = new ArrayList<Instruction>();
 	
 	// ENTRY POINT
@@ -84,7 +83,6 @@ public class Assembler extends F18ABaseListener {
 		File    in    = null;
 		File    out   = null;
 		boolean debug = false;
-		OPCODE  pad   = RET;
 		int     ix    = 0;
 		
 		while(ix < args.length) {
@@ -102,14 +100,6 @@ public class Assembler extends F18ABaseListener {
 						out = new File(args[ix++]);
 					}
 					break;
-                    
-                case "--pad":
-                    if (ix < args.length) {
-                        if (args[ix++].equalsIgnoreCase("nop")) {
-                            pad = NOP;
-                        }
-                    }
-                    break;
                     
                 case "--debug":
                     debug = true;
@@ -141,7 +131,7 @@ public class Assembler extends F18ABaseListener {
 		
 		// ... parse
 
-        Assembler assembler = new Assembler(pad,debug);
+        Assembler assembler = new Assembler(debug);
 
 		try {
             assembler.assemble(in,out);
@@ -165,18 +155,16 @@ public class Assembler extends F18ABaseListener {
 	// CONSTRUCTOR
     
     protected Assembler() {
-        this.pad   = PAD;
         this.debug = false;
     }
 	
-	protected Assembler(OPCODE pad,boolean debug) {
-	    this.pad   = pad;
+	protected Assembler(boolean debug) {
 	    this.debug = debug;
 	}
 
 	// INSTANCE METHODS
 
-	protected int[] assemble(String src) throws Exception {
+	protected List<Segment> assemble(String src) throws Exception {
         return assemble(new ANTLRInputStream(src));
 	}
 
@@ -200,8 +188,22 @@ public class Assembler extends F18ABaseListener {
             }
         }
     }
+    
+    public int[] ram(List<Segment> segments) {
+    	int[] ram = new int[64];
 
-	private int[] assemble(ANTLRInputStream input) throws Exception {
+    	Arrays.fill(ram,0);
+
+    	for (Segment segment: segments) {
+    		return segment.code;
+    	}
+
+    	return ram;
+    }
+    
+    // IMPLEMENTATION
+
+	private List<Segment> assemble(ANTLRInputStream input) throws Exception {
         // ... parse
 
 		F18ALexer         lexer     = new F18ALexer(input);
@@ -218,10 +220,13 @@ public class Assembler extends F18ABaseListener {
 			System.out.println("---");
 		}
 		
-		Segment               segment = new Segment(0,new int[64]);
-		Map<String,Integer>   labels  = new HashMap<String, Integer>();
-		Queue<Instruction>    queue   = new LinkedList<Instruction>();
-		boolean               resolved;
+		List<Segment>       segments = new ArrayList<Segment>();
+		Segment             segment  = new Segment(0,new int[64]);
+		Map<String,Integer> labels   = new HashMap<String, Integer>();
+		Queue<Instruction>  queue    = new LinkedList<Instruction>();
+		boolean             resolved;
+		
+		segments.add(segment);
 		
 		do { Arrays.fill(segment.code,0);
 		
@@ -279,8 +284,10 @@ public class Assembler extends F18ABaseListener {
 				 
 			 }  
 		} while (!resolved);
+
+		// ... done
 		
-		return segment.code;
+		return segments;
 	}
 	
 	// *** F18ABaseListener ***

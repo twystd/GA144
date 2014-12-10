@@ -1,7 +1,8 @@
 package za.co.twyst.GA144.assembler;
 
 import static org.junit.Assert.*;
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.RET;
+
+import java.util.List;
 
 public class AssemblerTest {
 	// UNIT TESTS 
@@ -21,10 +22,11 @@ public class AssemblerTest {
 	}
     
     protected void test(TestVector vector,boolean debug) throws Exception {
-        Assembler assembler = new Assembler(RET,debug);
-        int[]     ram       = assembler.assemble(vector.src);
-        int[]     ref       = vector.ram;
-        int[]     mask      = vector.mask;
+        Assembler     assembler = new Assembler(debug);
+        List<Segment> segments  = assembler.assemble(vector.src);
+        int[]         ram       = assembler.ram(segments);
+        int[]         ref       = vector.ram;
+        int[]         mask      = vector.mask;
             
         if (debug) {
             for (int i=0; i<vector.ram.length; i++) {
