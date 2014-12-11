@@ -164,7 +164,7 @@ public class Assembler extends F18ABaseListener {
 
 	// INSTANCE METHODS
 
-	protected List<Segment> assemble(String src) throws Exception {
+	protected F18A assemble(String src) throws Exception {
         return assemble(new ANTLRInputStream(src));
 	}
 
@@ -172,38 +172,22 @@ public class Assembler extends F18ABaseListener {
         // ... assemble
         
         try (InputStream istream = new FileInputStream (src)) {
-            assemble(new ANTLRInputStream(istream));
-        }
+            F18A f18A = assemble(new ANTLRInputStream(istream));
         
-        // ... write to file
-        
-        Segment segment = new Segment(0,new int[64]);
-        
-        try (PrintWriter writer = new PrintWriter(bin)) {
-            writer.println(String.format("%-8s org %d","xx",origin));
-            writer.println();
+            try (PrintWriter writer = new PrintWriter(bin)) {
+            	writer.println(String.format("%-8s org %d","xx",origin));
+            	writer.println();
             
-            for (int i=0; i<segment.code.length; i++) {
-                writer.println(String.format("%04X  %04X",i,segment.code[i]));
+            	for (int i=0; i<f18A.RAM.length; i++) {
+            		writer.println(String.format("%04X  %04X",i,f18A.RAM[i]));
+            	}
             }
         }
     }
     
-    public int[] ram(List<Segment> segments) {
-    	int[] ram = new int[64];
-
-    	Arrays.fill(ram,0);
-
-    	for (Segment segment: segments) {
-    		return segment.code;
-    	}
-
-    	return ram;
-    }
-    
     // IMPLEMENTATION
 
-	private List<Segment> assemble(ANTLRInputStream input) throws Exception {
+	private F18A assemble(ANTLRInputStream input) throws Exception {
         // ... parse
 
 		F18ALexer         lexer     = new F18ALexer(input);
@@ -220,15 +204,13 @@ public class Assembler extends F18ABaseListener {
 			System.out.println("---");
 		}
 		
-		List<Segment>       segments = new ArrayList<Segment>();
-		Segment             segment  = new Segment(0,new int[64]);
+		F18A                f18A     = new F18A();
 		Map<String,Integer> labels   = new HashMap<String, Integer>();
 		Queue<Instruction>  queue    = new LinkedList<Instruction>();
 		boolean             resolved;
 		
-		segments.add(segment);
-		
-		do { Arrays.fill(segment.code,0);
+		do { Arrays.fill(f18A.ROM,0);
+		     Arrays.fill(f18A.RAM,0);
 		
 		     resolved = true;
 		     location = 0;
@@ -269,16 +251,16 @@ public class Assembler extends F18ABaseListener {
 					 if (next != null) {
 						 if ((next instanceof OpCode) && ((OpCode) next).opcode == RET) {
 						     queue.remove();
-							 encodeJump(segment,JUMP,address);
+							 encodeJump(f18A,JUMP,address);
 						 } else {
-							 encodeJump(segment,CALL,address);
+							 encodeJump(f18A,CALL,address);
 						 } 
 					 } else {
-						 encodeJump(segment,CALL,address);
+						 encodeJump(f18A,CALL,address);
 					 }
 				 } else { 
 					 if (instruction instanceof OpCode) {
-						 encode(segment,(OpCode) instruction);
+						 encode(f18A,(OpCode) instruction);
 					 }
 				 }
 				 
@@ -287,7 +269,7 @@ public class Assembler extends F18ABaseListener {
 
 		// ... done
 		
-		return segments;
+		return f18A;
 	}
 	
 	// *** F18ABaseListener ***
@@ -425,26 +407,26 @@ public class Assembler extends F18ABaseListener {
 	// INTERNAL
 	
 	
-	private void encode(Segment segment,OpCode opcode) {
+	private void encode(F18A f18A,OpCode opcode) {
 		// ... pad current instruction with NOP ?
 		
 	    if (slot == 3) {
 	    	if (!contains(SLOT3, opcode.opcode)) {
-	    		encode(segment,NOP);
+	    		encode(f18A,NOP);
 	    	}
 	    }
 
 	    // ... Word ?
 	    
 	    if (opcode instanceof Right) {
-	    	encode(segment,FETCHP,((Right) opcode).word);
+	    	encode(f18A,FETCHP,((Right) opcode).word);
 	    	return;
 	    }
 
 	    // ... Constant ?
 	    
 	    if (opcode instanceof Constant) {
-	    	encode(segment,FETCHP,((Constant) opcode).word);
+	    	encode(f18A,FETCHP,((Constant) opcode).word);
 	    	return;
 	    }
 
@@ -453,8 +435,8 @@ public class Assembler extends F18ABaseListener {
 	    int rsh  = RSHIFT[slot];
 	    int mask = MASK[slot];
 	    
-	    segment.code[location] |= (((opcode.opcode.code << 13) >>> rsh) ^ XOR) & mask;
-	    slot                    = (slot + 1) % 4;
+	    f18A.RAM[location] |= (((opcode.opcode.code << 13) >>> rsh) ^ XOR) & mask;
+	    slot                = (slot + 1) % 4;
 
 	    //  ... 'k, done
 	    
@@ -467,17 +449,17 @@ public class Assembler extends F18ABaseListener {
 
 	    if (opcode.opcode == RET) {
 	        while(slot != 0) {
-	            encode(segment,pad);
+	            encode(f18A,pad);
 		    } 
 	    }
 	}
 
-	private void encode(Segment segment,OPCODE opcode) {
+	private void encode(F18A f18A,OPCODE opcode) {
 		// ... pad current instruction with NOP ?
 		
 	    if (slot == 3) {
 	    	if (!contains(SLOT3, opcode)) {
-	    		encode(segment,NOP);
+	    		encode(f18A,NOP);
 	    	}
 	    }
 
@@ -486,8 +468,8 @@ public class Assembler extends F18ABaseListener {
 	    int rsh  = RSHIFT[slot];
 	    int mask = MASK[slot];
 	    
-	    segment.code[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
-	    slot                    = (slot + 1) % 4;
+	    f18A.RAM[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
+	    slot                = (slot + 1) % 4;
 
 	    //  ... 'k, done
 	    
@@ -500,17 +482,17 @@ public class Assembler extends F18ABaseListener {
 
 	    if (opcode == RET) {
 	        while(slot != 0) {
-	            encode(segment,pad);
+	            encode(f18A,pad);
 		    } 
 	    }
 	}
 	        
-    private void encode(Segment segment,OPCODE opcode,int constant) {
+    private void encode(F18A f18A,OPCODE opcode,int constant) {
         int rsh  = RSHIFT[slot];
         int mask = MASK[slot];
 	        
-        segment.code[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
-        segment.code[++P]      |= constant;
+        f18A.RAM[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
+        f18A.RAM[++P]      |= constant;
         slot           = (slot + 1) % 4;
 
         if (slot == 0) {
@@ -518,7 +500,7 @@ public class Assembler extends F18ABaseListener {
         }
     }
     
-    private void encodeJump(Segment segment,OPCODE opcode,int address) {
+    private void encodeJump(F18A f18A,OPCODE opcode,int address) {
     	// ... validate
     	
     	if ((address < 0) || (address > 0x3ff)) {
@@ -530,19 +512,19 @@ public class Assembler extends F18ABaseListener {
     	int jump = address;
 
         if (slot == 3) {
-        	encode(segment,NOP);
+        	encode(f18A,NOP);
         } else if (slot == 2) {
         	if ((P & 0x3f8) != (address & 0x3f8)) {
         		jump = address & 0x007;
-        		encode(segment,NOP);
-        		encode(segment,NOP);
+        		encode(f18A,NOP);
+        		encode(f18A,NOP);
         	}
         } else if (((slot == 1) && (jump > 0x0ff))) {
         	if ((P & 0x300) != (address & 0x300)) {
         		jump = address & 0x0ff;
-        		encode(segment,NOP);
-        		encode(segment,NOP);
-        		encode(segment,NOP);
+        		encode(f18A,NOP);
+        		encode(f18A,NOP);
+        		encode(f18A,NOP);
         	}
         }
 
@@ -551,15 +533,15 @@ public class Assembler extends F18ABaseListener {
         int    rsh     = RSHIFT[slot];
         int    mask    = MASK[slot];
 
-        segment.code[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
+        f18A.RAM[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
             
         if (slot == 0) {
-        	segment.code[location] |= 0x01C00 & XOR;
-            segment.code[location] |= (jump & 0x03ff);
+        	f18A.RAM[location] |= 0x01C00 & XOR;
+        	f18A.RAM[location] |= (jump & 0x03ff);
         } else if (slot == 1) {
-            segment.code[location] |= (jump & 0x0ff);
+        	f18A.RAM[location] |= (jump & 0x0ff);
         } else if (slot == 2) {
-            segment.code[location] |= (jump & 0x007);
+        	f18A.RAM[location] |= (jump & 0x007);
         }
 
         location = ++P;
