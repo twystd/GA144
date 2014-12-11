@@ -3,12 +3,12 @@ grammar F18A;
 program
     : (comment)*
       EOL*
-      (origin EOL)
+      (label? WS origin EOL)
       (line? EOL)+
     ;
 
 origin
-    : label? WS address WS ORG (WS COMMENT)?
+    : address WS ORG (WS COMMENT)?
     ;
 
  line
@@ -17,7 +17,7 @@ origin
     ;
 
 instruction
-    : label? (WS (opcode|word|call|constant))+ (WS comment)?
+    : label? (WS (origin|opcode|word|call|constant))+ (WS comment)?
     ;
 
 label
@@ -68,7 +68,7 @@ WORD
     ;
 
 NUMBER
-    : [\-]?[0-9]+
+    : ([\-]?[0-9]+)|([a-fA-F0-9]+ 'H')
     ;
 
 NAME

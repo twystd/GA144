@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,10 +34,10 @@ import za.co.twyst.GA144.assembler.instructions.Call;
 import za.co.twyst.GA144.assembler.instructions.Constant;
 import za.co.twyst.GA144.assembler.instructions.Instruction;
 import za.co.twyst.GA144.assembler.instructions.Label;
+import za.co.twyst.GA144.assembler.instructions.Origin;
 import za.co.twyst.GA144.assembler.instructions.Right;
 import za.co.twyst.GA144.assembler.instructions.OpCode;
 import za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE;
-
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.BSTORE;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.CALL;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.DUP;
@@ -53,8 +52,9 @@ import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.STOREB;
 public class Assembler extends F18ABaseListener {
 	// CONSTANTS
 	
-    private static final OPCODE  PAD    = RET; 
+    private static final OPCODE  PAD      = RET; 
     private static final Pattern CONSTANT = Pattern.compile("([\\-]?[0-9]+)"); 
+    private static final Pattern HEX      = Pattern.compile("([a-fA-F0-9]+)H"); 
 
     private static final int[]   RSHIFT = { 0,5,10,15 };
     private static final int     XOR    = 0x15555;
@@ -173,13 +173,14 @@ public class Assembler extends F18ABaseListener {
         
         try (InputStream istream = new FileInputStream (src)) {
             F18A f18A = assemble(new ANTLRInputStream(istream));
+            int[] ram = f18A.ram();
         
             try (PrintWriter writer = new PrintWriter(bin)) {
             	writer.println(String.format("%-8s org %d","xx",origin));
             	writer.println();
             
-            	for (int i=0; i<f18A.RAM.length; i++) {
-            		writer.println(String.format("%04X  %04X",i,f18A.RAM[i]));
+            	for (int i=0; i<ram.length; i++) {
+            		writer.println(String.format("%04X  %04X",i,ram[i]));
             	}
             }
         }
@@ -209,8 +210,7 @@ public class Assembler extends F18ABaseListener {
 		Queue<Instruction>  queue    = new LinkedList<Instruction>();
 		boolean             resolved;
 		
-		do { Arrays.fill(f18A.ROM,0);
-		     Arrays.fill(f18A.RAM,0);
+		do { f18A.initialise();
 		
 		     resolved = true;
 		     location = 0;
@@ -222,6 +222,21 @@ public class Assembler extends F18ABaseListener {
 			    
 		     while(!queue.isEmpty()) {
 				 Instruction instruction = queue.remove();
+
+				 // .. ORG ?
+				 
+				 if (instruction instanceof Origin) {
+                     int address = ((Origin) instruction).address;
+
+             		 this.origin   = address;
+            		 this.P        = address;
+            		 this.location = address;
+            		 this.slot     = 0;
+            		 
+					 continue;
+				 }
+
+				 // ... label ?
 				 
 				 if (instruction instanceof Label) {
                      String label = ((Label) instruction).name;
@@ -284,12 +299,14 @@ public class Assembler extends F18ABaseListener {
 
 	@Override
 	public void enterOrigin(OriginContext ctx) {
-		int address = Integer.parseInt(ctx.address().NUMBER().getText());
+		String  address = ctx.address().NUMBER().getText();
+		Matcher matcher;
 		
-		this.origin   = address;
-		this.P        = address;
-		this.location = address;
-		this.slot     = 0;
+		if ((matcher = HEX.matcher(address)).matches()) {
+			instructions.add(new Origin(Integer.parseInt(matcher.group(1),16)));
+		} else {
+			instructions.add(new Origin(Integer.parseInt(address)));
+		}
 	}
 
 	@Override
@@ -434,9 +451,9 @@ public class Assembler extends F18ABaseListener {
 	    
 	    int rsh  = RSHIFT[slot];
 	    int mask = MASK[slot];
-	    
-	    f18A.RAM[location] |= (((opcode.opcode.code << 13) >>> rsh) ^ XOR) & mask;
-	    slot                = (slot + 1) % 4;
+
+	    f18A.or(location,(((opcode.opcode.code << 13) >>> rsh) ^ XOR) & mask);
+	    slot = (slot + 1) % 4;
 
 	    //  ... 'k, done
 	    
@@ -468,8 +485,8 @@ public class Assembler extends F18ABaseListener {
 	    int rsh  = RSHIFT[slot];
 	    int mask = MASK[slot];
 	    
-	    f18A.RAM[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
-	    slot                = (slot + 1) % 4;
+	    f18A.or(location,(((opcode.code << 13) >>> rsh) ^ XOR) & mask);
+	    slot = (slot + 1) % 4;
 
 	    //  ... 'k, done
 	    
@@ -491,9 +508,10 @@ public class Assembler extends F18ABaseListener {
         int rsh  = RSHIFT[slot];
         int mask = MASK[slot];
 	        
-        f18A.RAM[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
-        f18A.RAM[++P]      |= constant;
-        slot           = (slot + 1) % 4;
+        f18A.or   (location,(((opcode.code << 13) >>> rsh) ^ XOR) & mask);
+        f18A.store(++P,constant);
+        
+        slot = (slot + 1) % 4;
 
         if (slot == 0) {
             location = ++P;
@@ -533,15 +551,15 @@ public class Assembler extends F18ABaseListener {
         int    rsh     = RSHIFT[slot];
         int    mask    = MASK[slot];
 
-        f18A.RAM[location] |= (((opcode.code << 13) >>> rsh) ^ XOR) & mask;
+        f18A.or(location,(((opcode.code << 13) >>> rsh) ^ XOR) & mask);
             
         if (slot == 0) {
-        	f18A.RAM[location] |= 0x01C00 & XOR;
-        	f18A.RAM[location] |= (jump & 0x03ff);
+        	f18A.or(location,0x01C00 & XOR);
+        	f18A.or(location,jump & 0x03ff);
         } else if (slot == 1) {
-        	f18A.RAM[location] |= (jump & 0x0ff);
+        	f18A.or(location,jump & 0x0ff);
         } else if (slot == 2) {
-        	f18A.RAM[location] |= (jump & 0x007);
+        	f18A.or(location,jump & 0x007);
         }
 
         location = ++P;

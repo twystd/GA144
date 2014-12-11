@@ -22,7 +22,7 @@ public class AssemblerTest {
     protected void test(TestVector vector,boolean debug) throws Exception {
         Assembler assembler = new Assembler(debug);
         F18A      f18A      = assembler.assemble(vector.src);
-        int[]     ram       = f18A.RAM;
+        int[]     ram       = f18A.ram();
         int[]     ref       = vector.ram;
         int[]     mask      = vector.mask;
             
@@ -40,9 +40,9 @@ public class AssemblerTest {
     // INNER CLASSES
     
     protected static class TestVector {
-        private final String src;
-        private final int[]  ram;
-        private final int[]  mask;
+        protected final String src;
+        protected final int[]  ram;
+        protected final int[]  mask;
         
         protected TestVector(String src,int[] ram,int[] mask) {
             this.src  = src;
