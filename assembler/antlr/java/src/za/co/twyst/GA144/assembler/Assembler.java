@@ -38,6 +38,7 @@ import za.co.twyst.GA144.assembler.instructions.Origin;
 import za.co.twyst.GA144.assembler.instructions.Right;
 import za.co.twyst.GA144.assembler.instructions.OpCode;
 import za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE;
+
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.BSTORE;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.CALL;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.DUP;
