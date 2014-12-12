@@ -175,13 +175,20 @@ public class Assembler extends F18ABaseListener {
         try (InputStream istream = new FileInputStream (src)) {
             F18A f18A = assemble(new ANTLRInputStream(istream));
             int[] ram = f18A.ram();
+            int[] rom = f18A.rom();
         
             try (PrintWriter writer = new PrintWriter(bin)) {
-            	writer.println(String.format("%-8s org %d","xx",origin));
-            	writer.println();
+            	writer.println(String.format("ORG %04x",F18A.RAM_BASE));
             
             	for (int i=0; i<ram.length; i++) {
-            		writer.println(String.format("%04X  %04X",i,ram[i]));
+            		writer.println(String.format("    %05X",ram[i]));
+            	}
+
+            	writer.println();
+            	writer.println(String.format("ORG %04x",F18A.ROM_BASE));
+            
+            	for (int i=0; i<rom.length; i++) {
+            		writer.println(String.format("    %05X",rom[i]));
             	}
             }
         }

@@ -5,6 +5,8 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 public class TestN404 extends AssemblerTest {
+	// CONSTANTS
+	
 	private static final boolean  DEBUG = true;
 	private static final String[] PROG = { "calc1 0 org",
 	                                       "",
