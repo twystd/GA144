@@ -37,7 +37,7 @@
 
 % EUNIT TESTS
 
-step(F18A,0) ->
+step(_F18A,0) ->
    ok;
 
 step(F18A,N) ->
@@ -58,15 +58,21 @@ read(L) ->
    end.
 
 cucumber_test() ->
-   setup("-- CUCUMBER TEST"),
+   {{ram,RAM},{rom,ROM}} = util:read_bin_file("../cucumber/N404.bin"),     
+   ?debugFmt("*** DEBUG: ~p",[RAM]),
+   ?debugFmt("*** DEBUG: ~p",[ROM]),
+   ok.
+
+n404_test() ->
+   M    = setup("-- N404 TEST"),
    RAM  = array:from_list([16#049f3,16#00003,16#3d555,16#049f3,16#00001,16#13400,16#09703,16#04b12,16#001d5,16#3ffff,16#11403]),
    ROM  = array:new(64,[{default,16#13407}]),
    F18A = f18A:create(n001,n000,ROM,RAM),
 
-   register  (n000,spawn(fun() ->
-                            L = read(),
-                            ?debugFmt("RX: ~p",[L]) 
-                         end)),
+   register(n000,spawn(fun() ->
+                          L = read(),
+                          M ! {rx,L}
+                       end)),
 
    f18A:reset(F18A),
    step      (F18A,19),
@@ -75,11 +81,18 @@ cucumber_test() ->
    step      (F18A,13),
    step      (F18A,13),
    step      (F18A,13),
+   f18A:stop(F18A),
 
    n000 ! stop,
-   Trace = trace:stop(),
-%  ?debugFmt("TRACE: ~p",[Trace]),
-   ok.
+
+   RX = receive
+           {rx,L} ->   
+              L
+        end,
+
+   trace:stop  (),
+   ?assertEqual([6,8,10,12,14,16],RX),
+   ?debugMsg   ("--OK").
 
 go_test() ->
    M    = setup("-- GO TEST"),
