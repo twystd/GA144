@@ -58,10 +58,35 @@ read(L) ->
    end.
 
 cucumber_test() ->
-   {{ram,RAM},{rom,ROM}} = util:read_bin_file("../cucumber/N404.bin"),     
-   ?debugFmt("*** DEBUG: ~p",[RAM]),
-   ?debugFmt("*** DEBUG: ~p",[ROM]),
-   ok.
+   M    = setup("-- N404 TEST"),
+   RAM  = util:read_ram("../cucumber/N404.bin"),     
+   ROM  = util:read_rom("../cucumber/N404.bin"),     
+   F18A = f18A:create(n001,n000,ROM,RAM),
+
+   register(n000,spawn(fun() ->
+                          L = read(),
+                          M ! {rx,L}
+                       end)),
+
+   f18A:reset(F18A),
+   step      (F18A,19),
+   step      (F18A,13),
+   step      (F18A,13),
+   step      (F18A,13),
+   step      (F18A,13),
+   step      (F18A,13),
+   f18A:stop(F18A),
+
+   n000 ! stop,
+
+   RX = receive
+           {rx,L} ->   
+              L
+        end,
+
+   trace:stop  (),
+   ?assertEqual([6,8,10,12,14,16],RX),
+   ?debugMsg   ("--OK").
 
 n404_test() ->
    M    = setup("-- N404 TEST"),

@@ -3,7 +3,7 @@
 % EXPORTS
 
 -export([is_registered/1,unregister/1]).
--export([read_bin_file/1]).
+-export([read_ram/1,read_rom/1]).
 
 % INCLUDES
 
@@ -30,29 +30,41 @@ unregister(ID,_) ->
    erlang:unregister(ID).
 
 
+read_ram(FilePath) ->
+   Mem = read_bin_file(FilePath),
+   make_ram(Mem).
+        
+read_rom(FilePath) ->
+   Mem = read_bin_file(FilePath),
+   make_rom(Mem).
+        
 read_bin_file(FilePath) ->
    {ok,File} = file:open(FilePath,[read]),     
-   Mem       = parse_file(File),
-   file:close(File),
+   Lines     = read_bin_file(File,[]),
+   parse(Lines).
 
-   {{ram,make_ram(Mem)},
-    {rom,make_rom(Mem)}
-   }.
-
-parse_file(File) ->
-   parse_file(File,{0,[]}).     
-
-parse_file(File,{Org,Mem}) ->
+read_bin_file(File,Lines) ->
    case file:read_line(File) of     
         {ok,Line} ->
-            parse_file(File,parse_line(Line,{Org,Mem}));       
+            read_bin_file(File,[Line|Lines]);
 
         eof ->
-            lists:reverse(Mem);
+            file:close(File),
+            lists:reverse(Lines);
 
         {error,Reason} ->
+            file:close(File),
             {error,Reason}
         end.       
+
+parse(Lines) ->
+  parse(Lines,{0,[]}).
+
+parse([],{_,Mem}) ->
+   lists:reverse(Mem);
+
+parse([Line|T],{Org,Mem}) ->
+   parse(T,parse_line(Line,{Org,Mem})).
 
 parse_line(Line,{Org,Mem}) ->
    case re:run(Line,"ORG\s+([a-fA-F0-9]{4})",[{capture,all_but_first,list}]) of
