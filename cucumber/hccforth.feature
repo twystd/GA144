@@ -7,3 +7,10 @@ Scenario: Run node 404 program only
      And  Node 404 is stepped 5 times
     Then  Trace should match cucumber/traces/N404.trace 
 
+
+Scenario: Run node 406 program only
+   Given  Node 406 initialised with cucumber/N406.bin
+     And  Node 406 is reset
+     And  Node 406 is stepped 5 times
+    Then  Trace should match cucumber/traces/N406.trace 
+
