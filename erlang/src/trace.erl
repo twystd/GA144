@@ -4,7 +4,7 @@
 %
 -export([start/0,stop/0]).
 -export([trace/2,snapshot/0]).
--export([extract/2]).
+-export([extract/2,extract/3]).
 -export([trace/3]).
 -export([run/0]).
 
@@ -61,6 +61,19 @@ snapshot(_) ->
    [].
 
 extract(Trace,ID) ->
+   F = fun(R,A) ->
+         case R of
+            {ID,X} ->
+               [X | A];
+
+            _else -> 
+               A
+            end
+         end,
+
+   lists:reverse(lists:foldl(F,[],Trace)).
+
+extract(Trace,f18A,ID) ->
    F = fun(R,A) ->
          case R of
             {f18A,{ID,X}} ->

@@ -610,7 +610,7 @@ check(_Trace,[]) ->
    ok;
 
 check(Trace,[{Expected,ID}|T]) ->
-   ?assertEqual(ok,verify:compare(Expected,trace:extract(Trace,ID),noprint)),
+   ?assertEqual(ok,verify:compare(Expected,trace:extract(Trace,f18A,ID),noprint)),
    check(Trace,T).
 
 waitall([]) ->

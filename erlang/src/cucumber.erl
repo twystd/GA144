@@ -1,6 +1,6 @@
 -module(cucumber).
 
--export([run/1]).
+-export([run/2]).
 
 % INCLUDES
 
@@ -16,12 +16,44 @@
                    steps = []
                  }).
 
+-record(step,{ type,
+               description
+             }).
+
+% DEFINES
+
+-define(TAG,"CUCUMBER").
+
+
 % API
 
-run(File) ->
-   Feature = read_feature_file(File),
-   ?debugFmt("*** DEBUG: ~p",[Feature]).
+run(Module,{strings,Lines}) ->
+   Feature = parse(Lines),
+   log:info(?TAG,"Runinng feature '~s'",[Feature#feature.feature]),
+   scenario(Module,Feature#feature.scenarios);
 
+run(Module,{file,File}) ->
+   Feature = read_feature_file(File),
+   log:info(?TAG,"Runinng feature '~s'",[Feature#feature.feature]),
+   scenario(Module,Feature#feature.scenarios).
+
+scenario(_,[]) ->
+    ok;
+
+scenario(Module,[Scenario|T]) ->
+    log:info(?TAG,"Scenario: '~s'",[Scenario#scenario.scenario]),
+    steps(Module,Scenario#scenario.steps),
+    scenario(Module,T).
+
+steps(_,[]) ->
+    ok;
+
+steps(Module,[Step|T]) ->
+    Type = Step#step.type,
+    Description = Step#step.description,
+    log:info(?TAG,"Step: ~-7.5s ~s",[Type,Description]),
+    apply(Module,step,[{Type,Description}]),
+    steps(Module,T).
 
 % INTERNAL
 
@@ -97,15 +129,18 @@ parse_scenario([Line|T],Scenarios) ->
         end.        
 
 parse_step("Given",Description) ->
-    { given,Description };
+    #step{type=given,
+          description=Description 
+         };
 
 parse_step("And",Description) ->
-    { 'and',Description };
+    #step{type='and',
+          description=Description 
+         };
 
 parse_step("Then",Description) ->
-    { then,Description }.
+    #step{type=then,
+          description=Description 
+         }.
 
 % EUNIT
-
-feature_test() ->
-   run("../cucumber/hccforth.feature").        
