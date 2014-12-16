@@ -9,6 +9,7 @@ public class OpCode extends Instruction {
     	                 FETCHP(0x08,"@p",  "fetch-p"),
     	                 FETCHB(0x0a,"@b",  "fetch-b"),
     	                 STOREB(0x0e,"!b",   "store-b"),
+                         SHL   (0x11,"2*",   "left-shift"),
     	                 PLUS  (0x14,"+",    "plus"),
     	                 DUP   (0x18,"dup",  "dup"),
     	                 NOP   (0x1c,".",    "nop"),

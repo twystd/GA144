@@ -5,6 +5,11 @@ import static org.junit.Assert.*;
 public class AssemblerTest {
 	// UNIT TESTS 
 
+    protected void test(String program,int[] assembly,int[] mask,boolean debug) throws Exception {
+        test(new TestVector(program,assembly,mask),
+             debug);
+    }
+
     protected void test(TestVector vector) throws Exception {
         test(vector,false);
     }

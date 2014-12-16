@@ -15,7 +15,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	            TestRIGHT.class,
 	            TestREAD.class,
 	            TestWRITE.class,
-	            TestN404.class
+	            TestN404.class,
+	            TestFileAssembler.class
 	          })
 
 public class AllTests {

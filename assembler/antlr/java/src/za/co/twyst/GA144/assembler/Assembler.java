@@ -34,11 +34,11 @@ import za.co.twyst.GA144.assembler.instructions.Call;
 import za.co.twyst.GA144.assembler.instructions.Constant;
 import za.co.twyst.GA144.assembler.instructions.Instruction;
 import za.co.twyst.GA144.assembler.instructions.Label;
+import za.co.twyst.GA144.assembler.instructions.Left;
 import za.co.twyst.GA144.assembler.instructions.Origin;
 import za.co.twyst.GA144.assembler.instructions.Right;
 import za.co.twyst.GA144.assembler.instructions.OpCode;
 import za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE;
-
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.BSTORE;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.CALL;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.DUP;
@@ -46,6 +46,7 @@ import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.FETCHB;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.FETCHP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.JUMP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.NOP;
+import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.SHL;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.PLUS;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.RET;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.STOREB;
@@ -69,7 +70,6 @@ public class Assembler extends F18ABaseListener {
     private final boolean debug;
     private final OPCODE  pad = PAD;  // opcode used to pad an instruction after a RET
     
-	private int   origin;
     private int   location;
     private int   slot;
     
@@ -218,6 +218,22 @@ public class Assembler extends F18ABaseListener {
 		Queue<Instruction>  queue    = new LinkedList<Instruction>();
 		boolean             resolved;
 		
+		// ... create initial label list
+		
+		for (Instruction instruction: instructions) {
+            if (instruction instanceof Label) {
+                String label = ((Label) instruction).name;
+
+                if (labels.containsKey(label)) {
+                    throw new Exception("Duplicate label: '" + label + "'");
+                }
+                
+                labels.put(label,0x3ff);
+            }
+		}
+		
+		// ... assemble
+		
 		do { f18A.initialise();
 		
 		     resolved = true;
@@ -236,7 +252,6 @@ public class Assembler extends F18ABaseListener {
 				 if (instruction instanceof Origin) {
                      int address = ((Origin) instruction).address;
 
-             		 this.origin   = address;
             		 this.P        = address;
             		 this.location = address;
             		 this.slot     = 0;
@@ -265,11 +280,10 @@ public class Assembler extends F18ABaseListener {
 					 int         address;
 				
 					 if (!labels.containsKey(label)) {
-						 resolved = false;
-						 address  = 0x3ff;
-					 } else {
-						 address = labels.get(label);
+						 throw new Exception("Unknown label '" + label + "'");
 					 }
+
+					 address = labels.get(label);
 					 
 					 if (next != null) {
 						 if ((next instanceof OpCode) && ((OpCode) next).opcode == RET) {
@@ -355,6 +369,10 @@ public class Assembler extends F18ABaseListener {
                 	instructions.add(new OpCode(STOREB));
 		        	break;
                     
+                case "2*":                  
+                    instructions.add(new OpCode(SHL));
+                    break;
+                    
                 case "+":                  
                 	instructions.add(new OpCode(PLUS));
                     break;
@@ -388,6 +406,13 @@ public class Assembler extends F18ABaseListener {
                 case "right":
                 	instructions.add(new Right());
                     break;
+                    
+                case "left":
+                    instructions.add(new Left());
+                    break;
+                    
+                default:
+                    System.err.println("WARNING: unrecognised word '" + node.getText() + "'");
             }
         }
 	}

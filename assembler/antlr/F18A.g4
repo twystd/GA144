@@ -56,15 +56,17 @@ OPCODE
     : 'ret' | ';'
     | '@p'
     | '@b'
+    | '2*'
     | '+'
     | 'dup'
     | 'nop' | '.'
-    | 'b!'
     | '!b'
+    | 'b!'
     ;
 
 WORD
     : 'right'
+    | 'left'
     ;
 
 NUMBER

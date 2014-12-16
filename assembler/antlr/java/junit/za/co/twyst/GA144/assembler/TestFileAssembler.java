@@ -1,17 +1,16 @@
 package za.co.twyst.GA144.assembler;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestFileAssembler extends AssemblerTest {
@@ -19,24 +18,37 @@ public class TestFileAssembler extends AssemblerTest {
 	
 	private static final boolean DEBUG   = true;
 	private static final File    BASEDIR = new File("./runtime");
-    private static final File    ASM     = new File(BASEDIR,"asm/N404.asm");
-    private static final File    BIN     = new File(BASEDIR,"bin/N404.bin");
-    private static final File    REF     = new File(BASEDIR,"ref/N404.ref");
+    private static final File    ASM     = new File(BASEDIR,"asm");
+    private static final File    BIN     = new File(BASEDIR,"bin");
+    private static final File    REF     = new File(BASEDIR,"ref");
 
 	// UNIT TESTS 
 	
+    @Ignore
 	@Test
 	public void testN404() throws Exception {
-        Assembler assembler = new Assembler(DEBUG);
-        
-        BIN.delete ();
-        assertFalse("Failed to remove '" + BIN.getPath() + "'",BIN.exists());
-        
-        assembler.assemble(ASM,BIN);
-
-        fc(BIN,REF);
+	    verify("N404",DEBUG);
 	}
-	
+    
+    @Test
+    public void testN406() throws Exception {
+        verify("N406",DEBUG);
+    }
+
+    private void verify(String filename,boolean debug) throws Exception {
+        Assembler assembler = new Assembler(debug);
+        File      asm       = new File(ASM,filename + ".asm");
+        File      bin       = new File(BIN,filename + ".bin");
+        File      ref       = new File(REF,filename + ".ref");
+        
+        bin.delete ();
+        assertFalse("Failed to remove '" + bin.getPath() + "'",bin.exists());
+        
+        assembler.assemble(asm,bin);
+
+        fc(bin,ref);
+    }
+
 	// UTILITY FUNCTIONS
 	
 	private void fc(File fbin,File fref) throws Exception {
