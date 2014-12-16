@@ -364,6 +364,15 @@ exec_impl(?STOREB,CPU) ->
             Other
        end;
 
+% 16#11  2*   shl
+exec_impl(?SHL,CPU) ->
+   T    = CPU#cpu.t band 16#3ffff,   
+   CPUX = CPU#cpu{t = ((T bsl 1) band 16#3ffff)
+                 },
+   trace(?SHL,CPUX),     
+   {ok,CPUX};
+
+
 % 16#14  +   plus
 exec_impl(?PLUS,CPU) ->
    T  = CPU#cpu.t band 16#3ffff,   
@@ -730,6 +739,14 @@ storeb_test() ->
                                      ds=DS,
                                      ram=RAM}),
    assert([{ram,4,678},{t,S},{s,1},{ds,{1,[1,2,3,4,5,6,7,8]}}],CPU).
+
+shl_test() ->
+   {ok,CPU1}  = exec_impl(?SHL,#cpu{t=16#00001}), assert([{t,16#00002}],CPU1),
+   {ok,CPU2}  = exec_impl(?SHL,#cpu{t=16#00002}), assert([{t,16#00004}],CPU2),
+   {ok,CPU3}  = exec_impl(?SHL,#cpu{t=16#00004}), assert([{t,16#00008}],CPU3),
+   {ok,CPU4}  = exec_impl(?SHL,#cpu{t=16#00008}), assert([{t,16#00010}],CPU4),
+   {ok,CPU17} = exec_impl(?SHL,#cpu{t=16#10000}), assert([{t,16#20000}],CPU17),
+   {ok,CPU18} = exec_impl(?SHL,#cpu{t=16#20000}), assert([{t,16#00000}],CPU18).
 
 nop_test() ->
    A = 1,
