@@ -52,7 +52,7 @@ steps(Module,[Step|T]) ->
     Type = Step#step.type,
     Description = Step#step.description,
     log:info(?TAG,"Step: ~-7.5s ~s",[Type,Description]),
-    apply(Module,step,[{Type,Description}]),
+    apply(Module,step,[Type,Description]),
     steps(Module,T).
 
 % INTERNAL

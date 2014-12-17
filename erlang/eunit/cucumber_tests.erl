@@ -2,7 +2,7 @@
 
 % EXPORTS
 
--export([step/1]).
+-export([step/2]).
 
 % INCLUDES
 
@@ -29,28 +29,28 @@
 
 % CUCUMBER
 
-step({given,"Node 404 is initialised"}) ->
+step(given,"Node 404 is initialised") ->
     trace:trace(scenario1,n404_initialise);
 
-step({'and',"Node 404 is reset"}) ->
+step('and',"Node 404 is reset") ->
     trace:trace(scenario1,n404_reset);
 
-step({'and',"Node 404 is stepped 5 times"}) ->
+step('and',"Node 404 is stepped 5 times") ->
     trace:trace(scenario1,n404_step);
 
-step({then,"Trace should match N404.trace"}) ->
+step(then,"Trace should match N404.trace") ->
     trace:trace(scenario1,n404_verify);
 
-step({given,"Node 406 is initialised"}) ->
+step(given,"Node 406 is initialised") ->
     trace:trace(scenario2,n406_initialise);
 
-step({'and',"Node 406 is reset"}) ->
+step('and',"Node 406 is reset") ->
     trace:trace(scenario2,n406_reset);
 
-step({'and',"Node 406 is stepped 5 times"}) ->
+step('and',"Node 406 is stepped 5 times") ->
     trace:trace(scenario2,n406_step);
 
-step({then,"Trace should match N406.trace"}) ->
+step(then,"Trace should match N406.trace") ->
     trace:trace(scenario2,n406_verify).
 
 % EUNIT TESTS
@@ -59,7 +59,7 @@ feature_test() ->
    log:info(?TAG,"FEATURE TEST"),
    trace:stop (),
    trace:start(),
-   cucumber:run(cucumber_tests,{strings,?FEATURE}),
+   cucumber:run(f18A_cucumber,{strings,?FEATURE}),
 
    Trace = trace:stop(),
    T1    = trace:extract(Trace,scenario1),
