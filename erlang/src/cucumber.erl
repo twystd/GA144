@@ -28,32 +28,37 @@
 % API
 
 run(Module,{strings,Lines}) ->
-   Feature = parse(Lines),
-   log:info(?TAG,"Runinng feature '~s'",[Feature#feature.feature]),
-   scenario(Module,Feature#feature.scenarios);
+   feature(Module,parse(Lines));
 
 run(Module,{file,File}) ->
-   Feature = read_feature_file(File),
+   feature(Module,read_feature_file(File)).
+
+feature(Module,Feature) ->
    log:info(?TAG,"Runinng feature '~s'",[Feature#feature.feature]),
-   scenario(Module,Feature#feature.scenarios).
+   Context = scenario(Module,
+                      apply(Module,setup,[]),
+                      Feature#feature.scenarios),
+   apply(Module,teardown,[Context]).
 
-scenario(_,[]) ->
-    ok;
+scenario(_,Context,[]) ->
+    Context;
 
-scenario(Module,[Scenario|T]) ->
+scenario(Module,Context,[Scenario|T]) ->
     log:info(?TAG,"Scenario: '~s'",[Scenario#scenario.scenario]),
-    steps(Module,Scenario#scenario.steps),
-    scenario(Module,T).
+    scenario(Module,
+             steps(Module,Context,Scenario#scenario.steps),
+             T).
 
-steps(_,[]) ->
-    ok;
+steps(_,Context,[]) ->
+    Context;
 
-steps(Module,[Step|T]) ->
+steps(Module,Context,[Step|T]) ->
     Type = Step#step.type,
     Description = Step#step.description,
     log:info(?TAG,"Step: ~-7.5s ~s",[Type,Description]),
-    apply(Module,step,[Type,Description]),
-    steps(Module,T).
+    steps(Module,
+          apply(Module,step,[Context,Type,Description]),
+          T).
 
 % INTERNAL
 
