@@ -16,9 +16,11 @@
                   "",
                   "Scenario: N406", 
                   "   Given  Node 406 is initialised from ../cucumber/N406.bin",
+                  "     And  Node 000 listening on RIGHT",
                   "     And  Node 406 is reset",
-                  "     And  Node 406 is stepped 5 times",
-                  "    Then  Trace should match N406.trace"
+                  "     And  Node 406 is stepped 19 times",
+                  "    Then  Trace should match N406.trace",
+                  "     And  Node 000 should have received [6,8]"
                 ]).
 
 -record(context,{ node
@@ -36,14 +38,23 @@ teardown(Context) ->
 step(Context,given,Condition) ->
    initialise(Context,re:run(Condition,"^Node ([0-9]{3}) is initialised from (.*)$",[{capture,all_but_first,list}]));
 
+step(Context,'and',"Node 000 listening on RIGHT") ->
+    listen(Context);
+
 step(Context,'and',"Node 406 is reset") ->
     reset(Context);
 
-step(Context,'and',"Node 406 is stepped 5 times") ->
-    step5(Context);
+step(Context,'and',"Node 406 is stepped 19 times") ->
+    step_impl(Context,32);
 
 step(Context,then,"Trace should match N406.trace") ->
-    verify(Context).
+    verify(Context);
+
+step(Context,'and',"Node 000 should have received [6,8]") ->
+    n000 ! stop,
+    ?assertEqual([6,8],receive {rx,L} -> L end),
+    Context.
+
 
 % INTERNAL
 
@@ -54,24 +65,50 @@ initialise(Context,{match,[_Node,_File]}) ->
     F18A = f18A:create(n406,n000,ROM,RAM),
     Context#context{ node = F18A }.
 
-reset(Context) ->
-    trace:trace(scenario2,n406_reset),
-    f18A:reset(Context#context.node),
-    Context.
+listen(Context) ->
+    M = self(),
+    util:unregister(n000),
+    register(n000,spawn(fun() ->
+                           L = read(),
+                           M ! {rx,L}
+                        end)),
 
-step5(Context) ->
-    trace:trace(scenario2,n406_step),
-    F18A = Context#context.node,
-    f18A:step(F18A,wait),
-    f18A:step(F18A,wait),
-    f18A:step(F18A,wait),
-    f18A:step(F18A,wait),
-    f18A:step(F18A,wait),
     Context.
 
 verify(Context) ->
     trace:trace(scenario2,n406_verify),
     Context.
+
+reset(Context) ->
+    trace:trace(scenario2,n406_reset),
+    f18A:reset(Context#context.node),
+    Context.
+
+step_impl(Context,N) ->
+    trace:trace(scenario2,n406_step),
+    F18A = Context#context.node,
+    step_impl(f18A,F18A,N),
+    Context.
+
+step_impl(f18A,_F18A,0) ->
+   ok;
+
+step_impl(f18A,F18A,N) ->
+   f18A:step(F18A,wait),
+   step_impl(f18A,F18A,N-1).
+
+read() ->
+   read([]).
+
+read(L) ->
+   receive
+      {F18A,write,X} ->
+         F18A ! { n000,read,ok },
+         read([X|L]);
+
+      _else ->
+         lists:reverse(L)
+   end.
 
 % EUNIT TESTS
 
@@ -82,9 +119,7 @@ n404_test() ->
    cucumber:run(f18A_cucumber,{strings,?FEATURE}),
 
    Trace = trace:stop(),
-   T     = trace:extract(Trace,f18A,n406),
    T2    = trace:extract(Trace,scenario2),
 
-   ?debugFmt("TRACE: ~p",[T]),
    ?assertEqual([n406_initialise,n406_reset,n406_step,n406_verify],T2).
 
