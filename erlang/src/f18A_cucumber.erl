@@ -4,6 +4,10 @@
 
 -export([setup/0,teardown/1,step/3]).
 
+% EXPORTS for erlang:apply(...)
+
+-export([initialise/3,listen/1,listened/1,reset/1,stepping/2,verify/1]).
+
 % INCLUDES
 
 -include_lib("eunit/include/eunit.hrl").
@@ -11,20 +15,16 @@
 % DEFINES
 
 -define(TAG,"F18A").
--define(HCCFORTH,"../cucumber/hccforth.feature").
+-define(STEPS,[ {given,"^Node ([0-9]{3}) is initialised from (.*)$",initialise },
+                {'and',"Node XXX listening on RIGHT",               listen     },
+                {'and',"Node 404 is reset",                         reset      },
+                {'and',"Node 404 is stepped ([0-9]+) times",        stepping   },
+                {'and',"Node XXX should have received 6,8",         listened   },
+                {then, "Trace should match N404.trace",             verify     }
+              ]).
 
--define(FEATURE,[ "Feature: hcc!forth tutorial - node 404",
-                  "         Runs the code for node 404 from the hcc!forth colorforth tutorial",
-                  "",
-                  "Scenario: N404", 
-                  "   Given  Node 404 is initialised from ../cucumber/N404.bin",
-                  "     And  Node XXX listening on RIGHT",
-                  "     And  Node 404 is reset",
-                  "     And  Node 404 is stepped 19 times",
-                  "    Then  Trace should match N404.trace",
-                  "     And  Node XXX should have received [6,8]"
-                ]).
-
+% RECORDS
+%
 -record(context,{ node
                 }).
 % CUCUMBER
@@ -37,30 +37,33 @@ teardown(Context) ->
     f18A:stop(Context#context.node), 
     ok.
 
-step(Context,given,Condition) ->
-    initialise(Context,re:run(Condition,"^Node ([0-9]{3}) is initialised from (.*)$",[{capture,all_but_first,list}]));
+step(Context,Type,Condition) ->
+    F = fun({T,Step,Function},L) ->
+           case {T,re:run(Condition,Step,[{capture,all_but_first,list}])} of
+               {Type,{match,Args}} -> 
+                   [{Function,Args} | L ];
+                _else ->
+                   L
+           end
+        end,
 
-step(Context,'and',"Node XXX listening on RIGHT") ->
-    listen(Context);
+    case lists:foldl(F,[],?STEPS) of
+         [] ->
+            throw(strings:concat("No matching step implementation for '", Condition,"'"));
 
-step(Context,'and',"Node 404 is reset") ->
-    reset(Context);
+         Steps ->
+            exec(Context,Steps)
+    end.
 
-step(Context,'and',"Node 404 is stepped 19 times") ->
-    step_impl(Context,32);
+exec(Context,[]) ->
+    Context;
 
-step(Context,then,"Trace should match N404.trace") ->
-    verify(Context);
-
-step(Context,'and',"Node XXX should have received [6,8]") ->
-    nxxx ! stop,
-    ?assertEqual([6,8],receive {rx,L} -> L end),
-    Context.
-
+exec(Context,[{Function,Args} | T ]) ->
+    exec(apply(f18A_cucumber,Function,[Context | Args]),T).
 
 % INTERNAL
 
-initialise(Context,{match,[Node,File]}) ->
+initialise(Context,Node,File) ->
     trace:trace(scenario,initialise),
     NodeID = nodeid(Node),
     RAM    = util:read_ram(File),     
@@ -78,6 +81,11 @@ listen(Context) ->
 
     Context.
 
+listened(Context) ->
+    nxxx ! stop,
+    compare([6,8],receive {rx,L} -> L end),
+    Context.
+
 verify(Context) ->
     trace:trace(scenario,verify),
     Context.
@@ -87,18 +95,19 @@ reset(Context) ->
     f18A:reset(Context#context.node),
     Context.
 
-step_impl(Context,N) ->
+stepping(Context,Args) ->
+    N = list_to_integer(Args),
     trace:trace(scenario,step),
     F18A = Context#context.node,
-    step_impl(f18A,F18A,N),
+    stepping(f18A,F18A,N),
     Context.
 
-step_impl(f18A,_F18A,0) ->
+stepping(f18A,_F18A,0) ->
    ok;
 
-step_impl(f18A,F18A,N) ->
+stepping(f18A,F18A,N) ->
    f18A:step(F18A,wait),
-   step_impl(f18A,F18A,N-1).
+   stepping(f18A,F18A,N-1).
 
 read() ->
    read([]).
@@ -118,27 +127,9 @@ read(L) ->
 nodeid(Node) ->
     list_to_atom(string:concat("n",Node)).
 
-% EUNIT TESTS
+compare(Expected,Expected) ->
+    ok;
 
-n404_feature_test() ->
-   log:info(?TAG,"N404 FEATURE TEST"),
-   trace:stop (),
-   trace:start(),
-   cucumber:run(f18A_cucumber,{strings,?FEATURE}),
-
-   Trace = trace:stop(),
-   T2    = trace:extract(Trace,scenario),
-
-   ?assertEqual([initialise,reset,step,verify],T2).
-
-n404_file_test() ->
-   log:info(?TAG,"N404 FILE TEST"),
-   trace:stop (),
-   trace:start(),
-   cucumber:run(f18A_cucumber,{file,?HCCFORTH}),
-
-   Trace = trace:stop(),
-   T2    = trace:extract(Trace,scenario),
-
-   ?assertEqual([initialise,reset,step,verify],T2).
-
+compare(Expected,Actual) ->
+    throw({compare,{expected,Expected},{actual,Actual}}).
+    
