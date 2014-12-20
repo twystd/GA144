@@ -11,16 +11,18 @@
 % DEFINES
 
 -define(TAG,"F18A").
--define(FEATURE,[ "Feature: hcc!forth tutorial - node 406",
-                  "         Runs the code for node 406 from the hcc!forth colorforth tutorial",
+-define(HCCFORTH,"../cucumber/hccforth.feature").
+
+-define(FEATURE,[ "Feature: hcc!forth tutorial - node 404",
+                  "         Runs the code for node 404 from the hcc!forth colorforth tutorial",
                   "",
-                  "Scenario: N406", 
-                  "   Given  Node 406 is initialised from ../cucumber/N406.bin",
-                  "     And  Node 000 listening on RIGHT",
-                  "     And  Node 406 is reset",
-                  "     And  Node 406 is stepped 19 times",
-                  "    Then  Trace should match N406.trace",
-                  "     And  Node 000 should have received [6,8]"
+                  "Scenario: N404", 
+                  "   Given  Node 404 is initialised from ../cucumber/N404.bin",
+                  "     And  Node XXX listening on RIGHT",
+                  "     And  Node 404 is reset",
+                  "     And  Node 404 is stepped 19 times",
+                  "    Then  Trace should match N404.trace",
+                  "     And  Node XXX should have received [6,8]"
                 ]).
 
 -record(context,{ node
@@ -36,39 +38,40 @@ teardown(Context) ->
     ok.
 
 step(Context,given,Condition) ->
-   initialise(Context,re:run(Condition,"^Node ([0-9]{3}) is initialised from (.*)$",[{capture,all_but_first,list}]));
+    initialise(Context,re:run(Condition,"^Node ([0-9]{3}) is initialised from (.*)$",[{capture,all_but_first,list}]));
 
-step(Context,'and',"Node 000 listening on RIGHT") ->
+step(Context,'and',"Node XXX listening on RIGHT") ->
     listen(Context);
 
-step(Context,'and',"Node 406 is reset") ->
+step(Context,'and',"Node 404 is reset") ->
     reset(Context);
 
-step(Context,'and',"Node 406 is stepped 19 times") ->
+step(Context,'and',"Node 404 is stepped 19 times") ->
     step_impl(Context,32);
 
-step(Context,then,"Trace should match N406.trace") ->
+step(Context,then,"Trace should match N404.trace") ->
     verify(Context);
 
-step(Context,'and',"Node 000 should have received [6,8]") ->
-    n000 ! stop,
+step(Context,'and',"Node XXX should have received [6,8]") ->
+    nxxx ! stop,
     ?assertEqual([6,8],receive {rx,L} -> L end),
     Context.
 
 
 % INTERNAL
 
-initialise(Context,{match,[_Node,_File]}) ->
-    trace:trace(scenario2,n406_initialise),
-    RAM  = util:read_ram("../cucumber/N404.bin"),     
-    ROM  = util:read_rom("../cucumber/N404.bin"),     
-    F18A = f18A:create(n406,n000,ROM,RAM),
+initialise(Context,{match,[Node,File]}) ->
+    trace:trace(scenario,initialise),
+    NodeID = nodeid(Node),
+    RAM    = util:read_ram(File),     
+    ROM    = util:read_rom(File),     
+    F18A   = f18A:create(NodeID,nxxx,ROM,RAM),
     Context#context{ node = F18A }.
 
 listen(Context) ->
     M = self(),
-    util:unregister(n000),
-    register(n000,spawn(fun() ->
+    util:unregister(nxxx),
+    register(nxxx,spawn(fun() ->
                            L = read(),
                            M ! {rx,L}
                         end)),
@@ -76,16 +79,16 @@ listen(Context) ->
     Context.
 
 verify(Context) ->
-    trace:trace(scenario2,n406_verify),
+    trace:trace(scenario,verify),
     Context.
 
 reset(Context) ->
-    trace:trace(scenario2,n406_reset),
+    trace:trace(scenario,reset),
     f18A:reset(Context#context.node),
     Context.
 
 step_impl(Context,N) ->
-    trace:trace(scenario2,n406_step),
+    trace:trace(scenario,step),
     F18A = Context#context.node,
     step_impl(f18A,F18A,N),
     Context.
@@ -103,23 +106,39 @@ read() ->
 read(L) ->
    receive
       {F18A,write,X} ->
-         F18A ! { n000,read,ok },
+         F18A ! { nxxx,read,ok },
          read([X|L]);
 
       _else ->
          lists:reverse(L)
    end.
 
+% UTILITY
+
+nodeid(Node) ->
+    list_to_atom(string:concat("n",Node)).
+
 % EUNIT TESTS
 
-n404_test() ->
-   log:info(?TAG,"N404 TEST"),
+n404_feature_test() ->
+   log:info(?TAG,"N404 FEATURE TEST"),
    trace:stop (),
    trace:start(),
    cucumber:run(f18A_cucumber,{strings,?FEATURE}),
 
    Trace = trace:stop(),
-   T2    = trace:extract(Trace,scenario2),
+   T2    = trace:extract(Trace,scenario),
 
-   ?assertEqual([n406_initialise,n406_reset,n406_step,n406_verify],T2).
+   ?assertEqual([initialise,reset,step,verify],T2).
+
+n404_file_test() ->
+   log:info(?TAG,"N404 FILE TEST"),
+   trace:stop (),
+   trace:start(),
+   cucumber:run(f18A_cucumber,{file,?HCCFORTH}),
+
+   Trace = trace:stop(),
+   T2    = trace:extract(Trace,scenario),
+
+   ?assertEqual([initialise,reset,step,verify],T2).
 
