@@ -39,9 +39,13 @@ read_rom(FilePath) ->
    make_rom(Mem).
         
 read_bin_file(FilePath) ->
-   {ok,File} = file:open(FilePath,[read]),     
-   Lines     = read_bin_file(File,[]),
-   parse(Lines).
+   case file:open(FilePath,[read]) of 
+        {ok,File} ->
+            parse(read_bin_file(File,[]));
+       
+        {error,enoent} ->
+           throw({error,string:join(["File not found: '",FilePath,"'"],"")})
+   end.
 
 read_bin_file(File,Lines) ->
    case file:read_line(File) of     

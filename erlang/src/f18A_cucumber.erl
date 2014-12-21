@@ -6,7 +6,7 @@
 
 % EXPORTS for erlang:apply(...)
 
--export([initialise/3,listen/1,listened/1,reset/1,stepping/2,verify/1]).
+-export([initialise/3,listen/2,listened/2,reset/2,stepping/3,verify/1]).
 
 % INCLUDES
 
@@ -16,10 +16,10 @@
 
 -define(TAG,"F18A").
 -define(STEPS,[ {given,"^Node ([0-9]{3}) is initialised from (.*)$",initialise },
-                {'and',"Node XXX listening on RIGHT",               listen     },
-                {'and',"Node 404 is reset",                         reset      },
-                {'and',"Node 404 is stepped ([0-9]+) times",        stepping   },
-                {then, "Node XXX should have received 6,8",         listened   }
+                {'and',"Node XXX listening on (RIGHT|LEFT)",        listen     },
+                {'and',"Node ([0-9]{3}) is reset",                  reset      },
+                {'and',"Node ([0-9]{3}) is stepped ([0-9]+) times", stepping   },
+                {then, "Node XXX should have received (.*)",        listened   }
               ]).
 
 % RECORDS
@@ -48,7 +48,7 @@ step(Context,Type,Condition) ->
 
     case lists:foldl(F,[],?STEPS) of
          [] ->
-            throw(strings:concat("No matching step implementation for '", Condition,"'"));
+            throw({error,string:join(["No matching step implementation for '", Condition,"'"],"")});
 
          Steps ->
             exec(Context,Steps)
@@ -70,7 +70,7 @@ initialise(Context,Node,File) ->
     F18A   = f18A:create(NodeID,nxxx,ROM,RAM),
     Context#context{ node = F18A }.
 
-listen(Context) ->
+listen(Context,_Port) ->
     M = self(),
     util:unregister(nxxx),
     register(nxxx,spawn(fun() ->
@@ -80,34 +80,35 @@ listen(Context) ->
 
     Context.
 
-listened(Context) ->
+listened(Context,List) ->
+    Expected = [ list_to_integer(X) || X <- string:tokens(List,",")],
     trace:trace(scenario,verify),
     nxxx ! stop,
-    compare([6,8],receive {rx,L} -> L end),
+    compare(Expected,receive {rx,L} -> L end),
     Context.
 
 verify(Context) ->
     trace:trace(scenario,verify),
     Context.
 
-reset(Context) ->
+reset(Context,_Node) ->
     trace:trace(scenario,reset),
     f18A:reset(Context#context.node),
     Context.
 
-stepping(Context,Args) ->
-    N = list_to_integer(Args),
+stepping(Context,Node,Count) ->
+    N = list_to_integer(Count),
     trace:trace(scenario,step),
     F18A = Context#context.node,
-    stepping(f18A,F18A,N),
+    stepping(f18A,F18A,Node,N),
     Context.
 
-stepping(f18A,_F18A,0) ->
+stepping(f18A,_F18A,_,0) ->
    ok;
 
-stepping(f18A,F18A,N) ->
+stepping(f18A,F18A,_Node,N) ->
    f18A:step(F18A,wait),
-   stepping(f18A,F18A,N-1).
+   stepping(f18A,F18A,_Node,N-1).
 
 read() ->
    read([]).

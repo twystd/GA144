@@ -45,9 +45,15 @@ scenario(_,Context,[]) ->
 
 scenario(Module,Context,[Scenario|T]) ->
     log:info(?TAG,"Scenario: '~s'",[Scenario#scenario.scenario]),
-    scenario(Module,
-             steps(Module,Context,Scenario#scenario.steps),
-             T).
+    try
+        scenario(Module,
+                 steps(Module,Context,Scenario#scenario.steps),
+                 T)
+    catch
+        {error,X} ->
+            log:error(?TAG,X),
+            throw({error,X})
+    end.
 
 steps(_,Context,[]) ->
     Context;

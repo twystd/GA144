@@ -22,6 +22,7 @@
 
 -define(TAG,  "F18A").
 -define(RIGHT,16#1d5).
+-define(LEFT, 16#175).
 
 % API
 
@@ -316,7 +317,6 @@ exec_impl({?CALL,Addr,Mask},CPU) ->
    trace(?CALL,CPUY),
    {ok,CPUY};
 
-%% TODO - push data stack
 % 16#08  @p  fetch P
 exec_impl(?FETCHP,CPU) ->
    P    = CPU#cpu.p,     
@@ -532,6 +532,10 @@ write(_CPU,Addr,_Word) when Addr < 16#100 ->
    ignore; 
 
 write(CPU,?RIGHT,Word) ->
+   Ch = CPU#cpu.channel,
+   write_channel(CPU,Ch,Word);
+
+write(CPU,?LEFT,Word) ->
    Ch = CPU#cpu.channel,
    write_channel(CPU,Ch,Word).
 

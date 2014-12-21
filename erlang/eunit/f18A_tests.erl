@@ -7,6 +7,8 @@
 % DEFINES
 
 -define(TAG,"F18A").
+-define(HCCFORTH,"../cucumber/hccforth.feature").
+
 -define(CALL0,       {call,{p,0}}).
 -define(FETCHP_RIGHT,{fetchp,{t,16#1d5}}).
 -define(FETCHP_678,  {fetchp,{t,678}}).
@@ -58,6 +60,10 @@ read(L) ->
    end.
 
 cucumber_test() ->
+   cucumber:run(f18A_cucumber,{file,?HCCFORTH}),
+   ok.
+
+cucumber_n404_test() ->
    M    = setup("-- N404 TEST"),
    RAM  = util:read_ram("../cucumber/N404.bin"),     
    ROM  = util:read_rom("../cucumber/N404.bin"),     

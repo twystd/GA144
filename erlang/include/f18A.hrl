@@ -6,7 +6,7 @@
               ram = array:new(64),
               io,
               p,
-	      r  = 0,
+              r  = 0,
               rs = {0,array:new(8,[{default,0}])},
               a,
               b,

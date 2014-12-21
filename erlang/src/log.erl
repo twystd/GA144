@@ -35,7 +35,7 @@ warn(Tag,Fmt,Values) ->
    ?debugFmt("WARN:   ~s  ~s",[Tag,Msg]).
 
 error(Tag,Msg) ->
-   ?debugFmt("ERROR: ~s  ~s",[Tag,Msg]).
+   ?debugFmt("ERROR:  ~s  ~s",[Tag,Msg]).
 
 error(Tag,Fmt,Values) ->
    Msg = io_lib:format(Fmt,Values),     

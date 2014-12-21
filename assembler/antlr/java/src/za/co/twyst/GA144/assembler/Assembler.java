@@ -473,6 +473,11 @@ public class Assembler extends F18ABaseListener {
 	    	return;
 	    }
 
+	    if (opcode instanceof Left) {
+            encode(f18A,FETCHP,((Left) opcode).word);
+            return;
+        }
+
 	    // ... Constant ?
 	    
 	    if (opcode instanceof Constant) {
