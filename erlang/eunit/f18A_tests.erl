@@ -97,7 +97,7 @@ cucumber_n404_test() ->
 n404_test() ->
    M    = setup("-- N404 TEST"),
    RAM  = array:from_list([16#049f3,16#00003,16#3d555,16#049f3,16#00001,16#13400,16#09703,16#04b12,16#001d5,16#3ffff,16#11403]),
-   ROM  = array:new(64,[{default,16#13407}]),
+   ROM  = array:new(64,[{default,16#11407}]),
    F18A = f18A:create(n001,n000,ROM,RAM),
 
    register(n000,spawn(fun() ->
@@ -123,6 +123,37 @@ n404_test() ->
 
    trace:stop  (),
    ?assertEqual([6,8,10,12,14,16],RX),
+   ?debugMsg   ("--OK").
+
+n406_test() ->
+   M    = setup("-- N406 TEST"),
+   RAM  = array:from_list([16#049F3,16#00005,16#36155,16#049F3,16#00001,16#13400,16#09703,16#04B12,16#00175,16#3FFFF,16#11403]),
+   ROM  = array:new(64,[{default,16#11407}]),
+   F18A = f18A:create(n001,n000,ROM,RAM),
+
+   register(n000,spawn(fun() ->
+                          L = read(),
+                          M ! {rx,L}
+                       end)),
+
+   f18A:reset(F18A),
+   step      (F18A,19),
+   step      (F18A,14),
+   step      (F18A,14),
+   step      (F18A,14),
+   step      (F18A,14),
+   step      (F18A,14),
+   f18A:stop(F18A),
+
+   n000 ! stop,
+
+   RX = receive
+           {rx,L} ->   
+              L
+        end,
+
+   trace:stop(),
+   ?assertEqual([15,18,21,24,27,30],RX),
    ?debugMsg   ("--OK").
 
 go_test() ->
