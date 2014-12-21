@@ -88,7 +88,7 @@ to_string(?NOP) ->
 to_string(?BSTORE) ->
    "B-STORE";
 
-to_string(_) ->
+to_string(_X) ->
    "???".     
 
 % EUNIT TESTS

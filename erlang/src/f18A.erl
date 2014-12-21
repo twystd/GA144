@@ -290,39 +290,38 @@ exec(CPU,[]) ->
    end;
 
 exec(CPU,[H|T]) ->
-    {ok,CPUX} = exec_impl(H,CPU#cpu{ i=T }),
-   trace(H,CPUX,CPU#cpu.log),
-    {ok,CPUX}.
+   case exec_impl(H,CPU#cpu{ i=T }) of
+   	{ok,CPUX} ->
+   	    trace(H,CPUX,CPU#cpu.log),
+   	    {ok,CPUX};
+
+        Other ->
+	    Other
+	end.
 
 % 16#00  ;   ret
 exec_impl(?RET,CPU) ->
    P    = CPU#cpu.r,
    CPUX = pop(rs,CPU),     
-   CPUY = CPUX#cpu{ p  = P,
-                    i  = []
-                  }, 
-%  trace(?RET,CPUY),
-   {ok,CPUY};
+   {ok,CPUX#cpu{ p = P,
+                 i = []
+               }}; 
 
 % 16#02  name; jump
 exec_impl({?JUMP,Addr,Mask},CPU) ->
-   P    = CPU#cpu.p,
-   CPUX = CPU#cpu{ p = ((P band Mask) bor Addr)
-                 }, 
-%  trace(?JUMP,CPUX),
-   {ok,CPUX};
+   P = CPU#cpu.p,
+   {ok,CPU#cpu{ p = ((P band Mask) bor Addr)
+              }}; 
 
 
 % 16#03  name  call
 exec_impl({?CALL,Addr,Mask},CPU) ->
-   P      = CPU#cpu.p,
-   CPUX   = push(rs,CPU),
-   CPUY   = CPUX#cpu{ p = ((P band Mask) bor Addr),
-                      r = P,
-                      i = [] 
-	            }, 
-%  trace(?CALL,CPUY),
-   {ok,CPUY};
+   P    = CPU#cpu.p,
+   CPUX = push(rs,CPU),
+   {ok,CPUX#cpu{ p = ((P band Mask) bor Addr),
+                 r = P,
+                 i = [] 
+	       }}; 
 
 % 16#08  @p  fetch P
 exec_impl(?FETCHP,CPU) ->
@@ -330,28 +329,20 @@ exec_impl(?FETCHP,CPU) ->
    CPUX = push(ds,CPU),
    case read(CPUX,P) of
         {ok,T} ->
-   	   CPUY = CPUX#cpu{ p = P + 1,
+   	    {ok,CPUX#cpu{ p = P + 1,
                           t = T
-                 	      }, 
-%  	   trace(?FETCHP,CPUY),
-   	   {ok,CPUY};
-    
+                        }};
         Other ->
             Other
 	end;
 
 % 16#0a  @b  fetch B
 exec_impl(?FETCHB,CPU) ->
-   log:info(?TAG,"FETCH-B"),     
    B = CPU#cpu.b,     
    case read(CPU,B) of
         {ok,T} ->
-    	    CPUX = CPU#cpu{ t = T
-                          },
-
-%  	    trace(?FETCHB,CPUX),
-   	    {ok,CPUX};
-
+   	    {ok,CPU#cpu{ t = T
+                       }};
         Other ->
             Other
 	end;
@@ -362,9 +353,7 @@ exec_impl(?STOREB,CPU) ->
    T = CPU#cpu.t,
    case write(CPU,B,T) of 
         {ok,RAM} ->
-  	      CPUX = pop(ds,CPU#cpu{ ram = RAM },CPU#cpu.s),
-%	      trace(?STOREB,CPUX),
-   	      {ok,CPUX};
+            {ok,pop(ds,CPU#cpu{ ram = RAM },CPU#cpu.s)};
 
         Other ->
             Other
@@ -372,11 +361,9 @@ exec_impl(?STOREB,CPU) ->
 
 % 16#11  2*   shl
 exec_impl(?SHL,CPU) ->
-   T    = CPU#cpu.t band 16#3ffff,   
-   CPUX = CPU#cpu{t = ((T bsl 1) band 16#3ffff)
-                 },
-%  trace(?SHL,CPUX),     
-   {ok,CPUX};
+   T = CPU#cpu.t band 16#3ffff,   
+   {ok,CPU#cpu{t = ((T bsl 1) band 16#3ffff)
+              }};
 
 
 % 16#14  +   plus
@@ -392,28 +379,20 @@ exec_impl(?PLUS,CPU) ->
                  (S + T) band 16#3ffff
              end,
 
-   CPUX = pop(ds,CPU,R),
-%  trace(?PLUS,CPUX),     
-   {ok,CPUX};
+   {ok,pop(ds,CPU,R)};
 
 % 16#18  dup
 exec_impl(?DUP,CPU) ->
-   CPUX = push(ds,CPU),
-%  trace(?DUP,CPUX),     
-   {ok,CPUX};
+   {ok,push(ds,CPU)};
 
 % 16#1c  .   nop
 exec_impl(?NOP,CPU) ->
-%  trace(?NOP,CPU),     
    {ok,CPU};
 
 % 16#1e  b!  b-store
 exec_impl(?BSTORE,CPU) ->
-   B = CPU#cpu.t,     
-   CPUX = CPU#cpu{ b = B
-                 },
-%  trace(?BSTORE,CPUX),
-   {ok,CPUX};
+   {ok,CPU#cpu{ b = CPU#cpu.t     
+              }};
 
 exec_impl({error,Reason},_CPU) ->
    log:error(?TAG,"INVALID OPERATION ~p~n",[Reason]),
@@ -550,7 +529,6 @@ write_mem(Mem,Addr,Word) ->
 
 % TODO - FIX ARRAY SIZE AT 64
 write_mem(Mem,Addr,Word,N) when Addr < N ->
-%   trace:trace(f18A,{n001,{write,Addr,Word}}),     
    { ok,array:set(Addr,Word,Mem) };
 
 write_mem(_Mem,_Addr,_Word,_N) ->
@@ -631,11 +609,11 @@ pop(rs,CPU) ->
 trace(_,_,no) ->
    ok;
 
-trace(?JUMP,CPU,_) ->
+trace({?JUMP,_,_},CPU,_) ->
    log:info   (?TAG,io_lib:format("~s ~p",[opcode:to_string(?JUMP),CPU#cpu.p])),
    trace:trace(f18A,?JUMP,CPU);
 
-trace(?CALL,CPU,_) ->
+trace({?CALL,_,_},CPU,_) ->
    log:info   (?TAG,io_lib:format("~s ~p",[opcode:to_string(?CALL),CPU#cpu.p])),
    trace:trace(f18A,?CALL,CPU);
 
