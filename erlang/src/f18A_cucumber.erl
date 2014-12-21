@@ -19,8 +19,7 @@
                 {'and',"Node XXX listening on RIGHT",               listen     },
                 {'and',"Node 404 is reset",                         reset      },
                 {'and',"Node 404 is stepped ([0-9]+) times",        stepping   },
-                {'and',"Node XXX should have received 6,8",         listened   },
-                {then, "Trace should match N404.trace",             verify     }
+                {then, "Node XXX should have received 6,8",         listened   }
               ]).
 
 % RECORDS
@@ -82,6 +81,7 @@ listen(Context) ->
     Context.
 
 listened(Context) ->
+    trace:trace(scenario,verify),
     nxxx ! stop,
     compare([6,8],receive {rx,L} -> L end),
     Context.

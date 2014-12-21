@@ -17,14 +17,8 @@
                   "     And  Node XXX listening on RIGHT",
                   "     And  Node 404 is reset",
                   "     And  Node 404 is stepped 32 times",
-                  "    Then  Trace should match N404.trace",
-                  "     And  Node XXX should have received 6,8"
+                  "    Then  Node XXX should have received 6,8"
                 ]).
-
-% UTILITY
-
-nodeid(Node) ->
-    list_to_atom(string:concat("n",Node)).
 
 % EUNIT TESTS
 
