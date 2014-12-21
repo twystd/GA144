@@ -56,6 +56,7 @@ scenario(Module,Context,[Scenario|T]) ->
     end.
 
 steps(_,Context,[]) ->
+    log:info(?TAG,"OK"),
     Context;
 
 steps(Module,Context,[Step|T]) ->

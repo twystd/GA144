@@ -2,7 +2,7 @@
 
 % EXPORTS
 
--export([create/3,create/4]).
+-export([create/3,create/4,create/5]).
 -export([reset/1]).
 -export([go/1,go/2]).
 -export([stop/1,stop/2]).
@@ -29,6 +29,9 @@
 %% @doc Initialises an F18A node and starts the internal instruction 
 %%      execution process.
 create(ID,Channel,ROM,RAM) ->
+    create(ID,Channel,ROM,RAM,yes).
+
+create(ID,Channel,ROM,RAM,Log) ->
    start(ID,#cpu{ id      = ID,
                   channel = Channel,
                   rom     = ROM,
@@ -38,7 +41,9 @@ create(ID,Channel,ROM,RAM) ->
                   a       = 0,
                   b       = 16#100,
                   i       = [],
-                  t       = 0
+                  t       = 0,
+
+                  log = Log
                 }).
 
 create(ID,Channel,Program) ->
@@ -285,7 +290,9 @@ exec(CPU,[]) ->
    end;
 
 exec(CPU,[H|T]) ->
-   exec_impl(H,CPU#cpu{ i=T }).
+    {ok,CPUX} = exec_impl(H,CPU#cpu{ i=T }),
+   trace(H,CPUX,CPU#cpu.log),
+    {ok,CPUX}.
 
 % 16#00  ;   ret
 exec_impl(?RET,CPU) ->
@@ -294,7 +301,7 @@ exec_impl(?RET,CPU) ->
    CPUY = CPUX#cpu{ p  = P,
                     i  = []
                   }, 
-   trace(?RET,CPUY),
+%  trace(?RET,CPUY),
    {ok,CPUY};
 
 % 16#02  name; jump
@@ -302,7 +309,7 @@ exec_impl({?JUMP,Addr,Mask},CPU) ->
    P    = CPU#cpu.p,
    CPUX = CPU#cpu{ p = ((P band Mask) bor Addr)
                  }, 
-   trace(?JUMP,CPUX),
+%  trace(?JUMP,CPUX),
    {ok,CPUX};
 
 
@@ -314,7 +321,7 @@ exec_impl({?CALL,Addr,Mask},CPU) ->
                       r = P,
                       i = [] 
 	            }, 
-   trace(?CALL,CPUY),
+%  trace(?CALL,CPUY),
    {ok,CPUY};
 
 % 16#08  @p  fetch P
@@ -326,7 +333,7 @@ exec_impl(?FETCHP,CPU) ->
    	   CPUY = CPUX#cpu{ p = P + 1,
                           t = T
                  	      }, 
-   	   trace(?FETCHP,CPUY),
+%  	   trace(?FETCHP,CPUY),
    	   {ok,CPUY};
     
         Other ->
@@ -342,7 +349,7 @@ exec_impl(?FETCHB,CPU) ->
     	    CPUX = CPU#cpu{ t = T
                           },
 
-   	    trace(?FETCHB,CPUX),
+%  	    trace(?FETCHB,CPUX),
    	    {ok,CPUX};
 
         Other ->
@@ -351,13 +358,12 @@ exec_impl(?FETCHB,CPU) ->
 
 % 16#0e  !b  store B
 exec_impl(?STOREB,CPU) ->
-   log:info(?TAG,"STORE-B"),     
    B = CPU#cpu.b,     
    T = CPU#cpu.t,
    case write(CPU,B,T) of 
         {ok,RAM} ->
   	      CPUX = pop(ds,CPU#cpu{ ram = RAM },CPU#cpu.s),
-	      trace(?STOREB,CPUX),
+%	      trace(?STOREB,CPUX),
    	      {ok,CPUX};
 
         Other ->
@@ -369,7 +375,7 @@ exec_impl(?SHL,CPU) ->
    T    = CPU#cpu.t band 16#3ffff,   
    CPUX = CPU#cpu{t = ((T bsl 1) band 16#3ffff)
                  },
-   trace(?SHL,CPUX),     
+%  trace(?SHL,CPUX),     
    {ok,CPUX};
 
 
@@ -387,18 +393,18 @@ exec_impl(?PLUS,CPU) ->
              end,
 
    CPUX = pop(ds,CPU,R),
-   trace(?PLUS,CPUX),     
+%  trace(?PLUS,CPUX),     
    {ok,CPUX};
 
 % 16#18  dup
 exec_impl(?DUP,CPU) ->
    CPUX = push(ds,CPU),
-   trace(?DUP,CPUX),     
+%  trace(?DUP,CPUX),     
    {ok,CPUX};
 
 % 16#1c  .   nop
 exec_impl(?NOP,CPU) ->
-   trace(?NOP,CPU),     
+%  trace(?NOP,CPU),     
    {ok,CPU};
 
 % 16#1e  b!  b-store
@@ -406,7 +412,7 @@ exec_impl(?BSTORE,CPU) ->
    B = CPU#cpu.t,     
    CPUX = CPU#cpu{ b = B
                  },
-   trace(?BSTORE,CPUX),
+%  trace(?BSTORE,CPUX),
    {ok,CPUX};
 
 exec_impl({error,Reason},_CPU) ->
@@ -544,7 +550,7 @@ write_mem(Mem,Addr,Word) ->
 
 % TODO - FIX ARRAY SIZE AT 64
 write_mem(Mem,Addr,Word,N) when Addr < N ->
-   trace:trace(f18A,{n001,{write,Addr,Word}}),     
+%   trace:trace(f18A,{n001,{write,Addr,Word}}),     
    { ok,array:set(Addr,Word,Mem) };
 
 write_mem(_Mem,_Addr,_Word,_N) ->
@@ -622,15 +628,18 @@ pop(rs,CPU) ->
 
 % UTILITY FUNCTIONS
 % 
-trace(?JUMP,CPU) ->
+trace(_,_,no) ->
+   ok;
+
+trace(?JUMP,CPU,_) ->
    log:info   (?TAG,io_lib:format("~s ~p",[opcode:to_string(?JUMP),CPU#cpu.p])),
    trace:trace(f18A,?JUMP,CPU);
 
-trace(?CALL,CPU) ->
+trace(?CALL,CPU,_) ->
    log:info   (?TAG,io_lib:format("~s ~p",[opcode:to_string(?CALL),CPU#cpu.p])),
    trace:trace(f18A,?CALL,CPU);
 
-trace(OpCode,CPU) ->
+trace(OpCode,CPU,_) ->
    log:info   (?TAG,opcode:to_string(OpCode)),     
    trace:trace(f18A,OpCode,CPU).
    

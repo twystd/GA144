@@ -15,6 +15,9 @@
               s  = 0,
               ds = {0,array:new(8,[{default,0}])},
               carry = 0,
-              breakpoints = []
+
+              breakpoints = [],
+              log         = yes,
+              trace       = yes
             }).
 
