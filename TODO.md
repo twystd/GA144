@@ -3,6 +3,7 @@ TODO
 
 erlang
 ------
+0.  FIX UNIT TESTS FOR REVISED write
 1.  Open/close channels automatically on attach,detach ?
 2.  Check what write to ROM does on the simulator/emulator
 3.  Fixed size arrays for ROM/RAM
