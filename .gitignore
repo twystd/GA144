@@ -7,5 +7,7 @@ tla/channel.toolbox
 assembler/antlr/antlr-4.4-complete.jar
 assembler/antlr/java/bin
 assembler/antlr/java/gen
-assembler/antlr/java/runtime
+assembler/antlr/java/runtime/ANTLR.asm
+assembler/antlr/java/runtime/ANTLR.bin
+assembler/antlr/java/runtime/bin
 assembler/antlr/java/ANTLR.bin

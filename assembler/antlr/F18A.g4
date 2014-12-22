@@ -61,12 +61,15 @@ OPCODE
     | 'dup'
     | 'nop' | '.'
     | '!b'
+    | '!'
     | 'b!'
+    | 'a!'
     ;
 
 WORD
     : 'right'
     | 'left'
+    | 'down'
     ;
 
 NUMBER
@@ -74,7 +77,7 @@ NUMBER
     ;
 
 NAME
-    : [a-zA-Z] [a-zA-Z0-9]*
+    : [a-zA-Z] [a-zA-Z0-9!@]*
     ;
 
 COMMENT

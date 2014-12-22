@@ -32,6 +32,7 @@ import za.co.twyst.GA144.assembler.antlr.F18AParser.ProgramContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.WordContext;
 import za.co.twyst.GA144.assembler.instructions.Call;
 import za.co.twyst.GA144.assembler.instructions.Constant;
+import za.co.twyst.GA144.assembler.instructions.Down;
 import za.co.twyst.GA144.assembler.instructions.Instruction;
 import za.co.twyst.GA144.assembler.instructions.Label;
 import za.co.twyst.GA144.assembler.instructions.Left;
@@ -39,6 +40,8 @@ import za.co.twyst.GA144.assembler.instructions.Origin;
 import za.co.twyst.GA144.assembler.instructions.Right;
 import za.co.twyst.GA144.assembler.instructions.OpCode;
 import za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE;
+
+import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.ASTORE;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.BSTORE;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.CALL;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.DUP;
@@ -50,6 +53,7 @@ import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.SHL;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.PLUS;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.RET;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.STOREB;
+import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.STORE;
 
 public class Assembler extends F18ABaseListener {
 	// CONSTANTS
@@ -246,6 +250,8 @@ public class Assembler extends F18ABaseListener {
 			    
 		     while(!queue.isEmpty()) {
 				 Instruction instruction = queue.remove();
+				 
+				 System.err.println(instruction);
 
 				 // .. ORG ?
 				 
@@ -369,6 +375,10 @@ public class Assembler extends F18ABaseListener {
                 	instructions.add(new OpCode(STOREB));
 		        	break;
                     
+                case "!":                  
+                    instructions.add(new OpCode(STORE));
+                    break;
+                    
                 case "2*":                  
                     instructions.add(new OpCode(SHL));
                     break;
@@ -389,6 +399,10 @@ public class Assembler extends F18ABaseListener {
 			    case "b!":
                 	instructions.add(new OpCode(BSTORE));
 		        	break;
+
+                case "a!":
+                    instructions.add(new OpCode(ASTORE));
+                    break;
 	        }
 	    }
 	}
@@ -409,6 +423,10 @@ public class Assembler extends F18ABaseListener {
                     
                 case "left":
                     instructions.add(new Left());
+                    break;
+                    
+                case "down":
+                    instructions.add(new Down());
                     break;
                     
                 default:
@@ -475,6 +493,11 @@ public class Assembler extends F18ABaseListener {
 
 	    if (opcode instanceof Left) {
             encode(f18A,FETCHP,((Left) opcode).word);
+            return;
+        }
+
+        if (opcode instanceof Down) {
+            encode(f18A,FETCHP,((Down) opcode).word);
             return;
         }
 

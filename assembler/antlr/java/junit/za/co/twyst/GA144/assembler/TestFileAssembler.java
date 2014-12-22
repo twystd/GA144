@@ -30,9 +30,15 @@ public class TestFileAssembler extends AssemblerTest {
 	    verify("N404",DEBUG);
 	}
     
+    @Ignore
     @Test
     public void testN406() throws Exception {
         verify("N406",DEBUG);
+    }
+
+    @Test
+    public void testN405() throws Exception {
+        verify("N405",DEBUG);
     }
 
     private void verify(String filename,boolean debug) throws Exception {
