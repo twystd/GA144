@@ -21,3 +21,8 @@
               trace       = yes
             }).
 
+-record(channels,{ left,
+                   right,
+                   up,
+                   down
+                 }).

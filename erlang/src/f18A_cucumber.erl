@@ -65,10 +65,10 @@ exec(Context,[{Function,Args} | T ]) ->
 
 initialise(Context,Node,File) ->
     trace:trace(scenario,initialise),
-    NodeID = nodeid(Node),
-    RAM    = util:read_ram(File),     
-    ROM    = util:read_rom(File),     
-    F18A   = f18A:create(NodeID,nxxx,ROM,RAM,no),
+    NodeID   = nodeid(Node),
+    RAM      = util:read_ram(File),     
+    ROM      = util:read_rom(File),     
+    F18A     = f18A:create(NodeID,{nxxx,nxxx,nxxx,nxxx},ROM,RAM,no),
     Context#context{ node = F18A
                    }.
 

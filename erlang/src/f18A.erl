@@ -2,7 +2,7 @@
 
 % EXPORTS
 
--export([create/3,create/4,create/5]).
+-export([createx/3,create/4,create/5]).
 -export([reset/1]).
 -export([go/1,go/2]).
 -export([stop/1,stop/2]).
@@ -23,17 +23,23 @@
 -define(TAG,  "F18A").
 -define(RIGHT,16#1d5).
 -define(LEFT, 16#175).
+-define(UP,   16#145).
+-define(DOWN, 16#115).
 
 % API
 
 %% @doc Initialises an F18A node and starts the internal instruction 
 %%      execution process.
-create(ID,Channel,ROM,RAM) ->
-    create(ID,Channel,ROM,RAM,yes).
+create(ID,Channels,ROM,RAM) ->
+    create(ID,
+           Channels,
+           ROM,
+           RAM,
+           yes).
 
-create(ID,Channel,ROM,RAM,Log) ->
+create(ID,{Left,Right,Up,Down},ROM,RAM,Log) ->
    start(ID,#cpu{ id      = ID,
-                  channel = Channel,
+                  channel = #channels{left=Left, right=Right,up=Up,down=Down},
                   rom     = ROM,
                   ram     = RAM,
                   io      = [],
@@ -46,11 +52,15 @@ create(ID,Channel,ROM,RAM,Log) ->
                   log = Log
                 }).
 
-create(ID,Channel,Program) ->
+% TODO - REMOVE ONCE ALL THE UNIT TEST HAVE BEEN UPDATED
+createx(ID,Channel,Program) ->
+   create(ID,{Channel,Channel,Channel,Channel},Program).
+
+create(ID,{Left,Right,Up,Down},Program) ->
    RAM = array:from_list(Program),
    ROM = array:new(64,[{default,16#13400}]),
    start(ID,#cpu{ id      = ID,
-                  channel = Channel,
+                  channel = #channels{left=Left, right=Right,up=Up,down=Down},
                   rom     = ROM,
                   ram     = RAM,
                   io      = [],
@@ -471,8 +481,16 @@ read(CPU,Addr) when Addr < 16#100 ->
    read_mem(CPU#cpu.rom,Addr band 16#3f);
 
 read(CPU,?RIGHT) ->
-   Ch = CPU#cpu.channel,
-   read_channel(CPU,Ch);
+   read_channel(CPU,CPU#cpu.channel#channels.right);
+
+read(CPU,?LEFT) ->
+   read_channel(CPU,CPU#cpu.channel#channels.left);
+
+read(CPU,?UP) ->
+   read_channel(CPU,CPU#cpu.channel#channels.up);
+
+read(CPU,?DOWN) ->
+   read_channel(CPU,CPU#cpu.channel#channels.down);
 
 read(CPU,Addr) when Addr < 16#200 ->
    read_mem(CPU#cpu.io,Addr-16#100).
@@ -517,12 +535,24 @@ write(_CPU,Addr,_Word) when Addr < 16#100 ->
    ignore; 
 
 write(CPU,?RIGHT,Word) ->
-   Ch = CPU#cpu.channel,
-   write_channel(CPU,Ch,Word);
+   write_channel(CPU,
+                 CPU#cpu.channel#channels.right,
+                 Word);
 
 write(CPU,?LEFT,Word) ->
-   Ch = CPU#cpu.channel,
-   write_channel(CPU,Ch,Word).
+   write_channel(CPU,
+                 CPU#cpu.channel#channels.left,
+                 Word);
+
+write(CPU,?UP,Word) ->
+   write_channel(CPU,
+                 CPU#cpu.channel#channels.up,
+                 Word);
+
+write(CPU,?DOWN,Word) ->
+   write_channel(CPU,
+                 CPU#cpu.channel#channels.down,
+                 Word).
 
 write_mem(Mem,Addr,Word) ->
    write_mem(Mem,Addr,Word,array:size(Mem)).
@@ -541,7 +571,7 @@ write_channel(CPU,Ch,Word,_) ->
    ID = CPU#cpu.id,
    try
       Ch ! { ID,write,Word },
-      write_wait(CPU)
+      write_wait(CPU,Ch)
    catch
       error:badarg ->
          log:error(?TAG,"~p:WRITE to invalid node ~p",[ID,Ch]),   
@@ -556,14 +586,13 @@ write_channel(CPU,Ch,Word,_) ->
 %    log:info(?TAG,"(~p:WRITE to unconnected node ~p)",[CPU#cpu.id,Ch]),   
 %    {ok,CPU#cpu.ram}.
 
-write_wait(CPU) ->
-   Ch = CPU#cpu.channel,
+write_wait(CPU,Channel) ->
    receive
-      { Ch,read,ok } -> 
+      { Channel,read,ok } -> 
          {ok,CPU#cpu.ram};
 
       step ->
-         write_wait(CPU);
+         write_wait(CPU,Channel);
 
       {stop,PID} ->
          {stop,PID}
