@@ -11,3 +11,4 @@
 -define(DUP,   16#18).
 -define(NOP,   16#1c).
 -define(BSTORE,16#1e).
+-define(ASTORE,16#1f).

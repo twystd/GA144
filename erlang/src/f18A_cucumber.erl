@@ -68,7 +68,7 @@ initialise(Context,Node,File) ->
     NodeID   = nodeid(Node),
     RAM      = util:read_ram(File),     
     ROM      = util:read_rom(File),     
-    F18A     = f18A:create(NodeID,{nxxx,nxxx,nxxx,nxxx},ROM,RAM,no),
+    F18A     = f18A:create(NodeID,{nxxx,nxxx,nxxx,nxxx},ROM,RAM,yes),
     Context#context{ node = F18A
                    }.
 

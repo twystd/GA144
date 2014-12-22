@@ -404,6 +404,14 @@ exec_impl(?BSTORE,CPU) ->
    {ok,CPU#cpu{ b = CPU#cpu.t     
               }};
 
+% 16#1f  a!  a-store
+exec_impl(?ASTORE,CPU) ->
+   S = CPU#cpu.s,
+   T = CPU#cpu.t,
+   X = pop(ds,CPU,S),
+   {ok,X#cpu{ a = T
+            }};
+
 exec_impl({error,Reason},_CPU) ->
    log:error(?TAG,"INVALID OPERATION ~p~n",[Reason]),
    {error,Reason};
@@ -798,12 +806,36 @@ plus_test_impl(P,T,S,C,R) ->
                                     carry=C }),
    assert([{t,R},{s,3},{ds,{1,[3,4,5,6,7,8,9,10]}}],CPU).
 
-dup_test() ->
-   {ok,CPU} = exec_impl(?DUP,#cpu{t=1,
-                                  s=2,
-                                  ds={0,array:from_list([3,4,5,6,7,8,9,10])}}),
 
-   assert([{t,1},{s,1},{ds,{7,[3,4,5,6,7,8,9,2]}}],CPU).
+-define(TEST_DUP,{?DUP,
+                  [{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                  [{t,1},{s,1},{ds,7,[3,4,5,6,7,8,9,2 ]}]
+                 }).
+
+-define(TEST_ASTORE,{?ASTORE,
+                     [{a,0},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{a,1},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]
+                    }).
+
+dup_test()    -> test_opcode(?TEST_DUP).
+astore_test() -> test_opcode(?TEST_ASTORE).
+
+test_opcode({OpCode,Initial,Final}) ->
+   test_opcode(OpCode,Initial,Final).
+
+test_opcode(OpCode,Initial,Final) ->
+   I      = test_setup(#cpu{},Initial),
+   F      = test_setup(#cpu{},Final),
+   {ok,X} = exec_impl(OpCode,I), 
+   ?assertEqual(F,X).
+
+test_setup(CPU,[])           -> CPU;
+test_setup(CPU,[{a,X}   |T]) -> test_setup(CPU#cpu{a=X},T);
+test_setup(CPU,[{t,X}   |T]) -> test_setup(CPU#cpu{t=X},T);
+test_setup(CPU,[{s,X}   |T]) -> test_setup(CPU#cpu{s=X},T);
+test_setup(CPU,[{ds,X,Y}|T]) -> test_setup(CPU#cpu{ds={X,array:from_list(Y)}},T).
+
+
 
 assert ([],_CPU) ->
    ok;

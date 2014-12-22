@@ -15,3 +15,10 @@ Scenario: Run node 406 program only
    And    Node 406 is stepped 33 times
    Then   Node XXX should have received 15,18
 
+   # Scenario: Run node 405 program only
+   #    Given  Node 405 is initialised from ../cucumber/N405.bin
+   #    And    Node XXX listening on LEFT
+   #    And    Node 405 is reset
+   #    And    Node 405 is stepped 33 times
+   #    Then   Node XXX should have received 15,18
+   # 
