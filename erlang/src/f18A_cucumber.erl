@@ -16,12 +16,12 @@
 % DEFINES
 
 -define(TAG,"F18A").
--define(STEPS,[ {given,"^Node ([0-9]{3}) is initialised from (.*)$",     initialise },
-                {'and',"Node XXX listening on (RIGHT|LEFT)",             get        },
-                {'and',"Node XXX is writing \\[(.*?)\\] to (RIGHT|LEFT)",put        },
-                {'and',"Node ([0-9]{3}) is reset",                       reset      },
-                {'and',"Node ([0-9]{3}) is stepped ([0-9]+) times",      stepping   },
-                {then, "Node XXX should have received (.*)",             listened   }
+-define(STEPS,[ {given,"^Node ([0-9]{3}) is initialised from (.*)$", initialise },
+                {'and',"Node XXX listening on (RIGHT|LEFT)",         get        },
+                {'and',"Node XXX writes \\[(.*?)\\] to (RIGHT|LEFT)",put        },
+                {'and',"Node ([0-9]{3}) is reset",                   reset      },
+                {'and',"Node ([0-9]{3}) is stepped ([0-9]+) times",  stepping   },
+                {then, "Node XXX should have received (.*)",         listened   }
               ]).
 
 % RECORDS
@@ -141,7 +141,6 @@ write(Node,[]) ->
    ok;
 
 write(Node,[Word|T]) ->
-   timer:sleep(100),
    n405 ! {nxxx,write,Word},
    receive
       {n405,read,ok} ->

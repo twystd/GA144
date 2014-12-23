@@ -17,8 +17,8 @@ Feature: HCC!Forth
 
 Scenario: Run node 405 program only
    Given  Node 405 is initialised from ../cucumber/N405.bin
-   And    Node XXX is writing [6,8,10,12,14] to RIGHT
    And    Node 405 is reset
+   And    Node XXX writes [6,8,10,12,14] to RIGHT
    And    Node 405 is stepped 11 times
    Then   Node XXX should have received 15,18
 

@@ -203,10 +203,11 @@ reset_impl(CPU) ->
 
    after 100 ->   
       {run,CPU#cpu{ p = 16#0a9,
+                    i = [],
                     a = 0,
                     b = 16#100,
-                    i = [],
-                    t = 0
+                    t = 0,
+                    s = 0
                   }}
    end.         
 
@@ -499,7 +500,6 @@ read_channel(CPU,Ch) ->
    ID = CPU#cpu.id,   
    receive
       {Ch,write,Word} -> 
-         ?debugFmt("**** READ/1 ~p",[Word]),
          Ch ! { ID,read,ok },
          {ok,Word};
 
