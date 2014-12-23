@@ -401,8 +401,11 @@ exec_impl(?NOP,CPU) ->
 
 % 16#1e  b!  b-store
 exec_impl(?BSTORE,CPU) ->
-   {ok,CPU#cpu{ b = CPU#cpu.t     
-              }};
+   S = CPU#cpu.s,
+   T = CPU#cpu.t,
+   X = pop(ds,CPU,S),
+   {ok,X#cpu{ b = T
+            }};
 
 % 16#1f  a!  a-store
 exec_impl(?ASTORE,CPU) ->
@@ -647,15 +650,15 @@ trace(_,_,no) ->
    ok;
 
 trace({?JUMP,_,_},CPU,_) ->
-   log:info   (?TAG,io_lib:format("~s ~p",[opcode:to_string(?JUMP),CPU#cpu.p])),
+   log:debug  (?TAG,io_lib:format("~s ~p",[opcode:to_string(?JUMP),CPU#cpu.p])),
    trace:trace(f18A,?JUMP,CPU);
 
 trace({?CALL,_,_},CPU,_) ->
-   log:info   (?TAG,io_lib:format("~s ~p",[opcode:to_string(?CALL),CPU#cpu.p])),
+   log:debug  (?TAG,io_lib:format("~s ~p",[opcode:to_string(?CALL),CPU#cpu.p])),
    trace:trace(f18A,?CALL,CPU);
 
 trace(OpCode,CPU,_) ->
-   log:info   (?TAG,opcode:to_string(OpCode)),     
+   log:debug  (?TAG,opcode:to_string(OpCode)),     
    trace:trace(f18A,OpCode,CPU).
    
 % EUNIT TESTS
@@ -768,22 +771,6 @@ storeb_test() ->
                                      ram=RAM}),
    assert([{ram,4,678},{t,S},{s,1},{ds,{1,[1,2,3,4,5,6,7,8]}}],CPU).
 
-shl_test() ->
-   {ok,CPU1}  = exec_impl(?SHL,#cpu{t=16#00001}), assert([{t,16#00002}],CPU1),
-   {ok,CPU2}  = exec_impl(?SHL,#cpu{t=16#00002}), assert([{t,16#00004}],CPU2),
-   {ok,CPU3}  = exec_impl(?SHL,#cpu{t=16#00004}), assert([{t,16#00008}],CPU3),
-   {ok,CPU4}  = exec_impl(?SHL,#cpu{t=16#00008}), assert([{t,16#00010}],CPU4),
-   {ok,CPU17} = exec_impl(?SHL,#cpu{t=16#10000}), assert([{t,16#20000}],CPU17),
-   {ok,CPU18} = exec_impl(?SHL,#cpu{t=16#20000}), assert([{t,16#00000}],CPU18).
-
-nop_test() ->
-   A = 1,
-   B = 2,
-   T = 3,
-   S = 4,
-   {ok,CPU} = exec_impl(?NOP,#cpu{a=A,b=B,t=T,s=S}),
-   assert([{a,A},{b,B},{t,T},{s,S}],CPU).
-
 plus_test() ->
    plus_test_impl(16#0000,1,       2,       0,3),
    plus_test_impl(16#0000,16#3ffff,16#3fffe,0,16#3fffd),
@@ -807,35 +794,75 @@ plus_test_impl(P,T,S,C,R) ->
    assert([{t,R},{s,3},{ds,{1,[3,4,5,6,7,8,9,10]}}],CPU).
 
 
--define(TEST_DUP,{?DUP,
-                  [{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
-                  [{t,1},{s,1},{ds,7,[3,4,5,6,7,8,9,2 ]}]
-                 }).
+-define(TEST_SHL,[ {?SHL,[{t,16#00001}],[{t,16#00002}]},
+                   {?SHL,[{t,16#00002}],[{t,16#00004}]},
+                   {?SHL,[{t,16#00004}],[{t,16#00008}]},
+                   {?SHL,[{t,16#00008}],[{t,16#00010}]},
+                   {?SHL,[{t,16#10000}],[{t,16#20000}]},
+                   {?SHL,[{t,16#20000}],[{t,16#00000}]}
+                 ]).
 
--define(TEST_ASTORE,{?ASTORE,
-                     [{a,0},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
-                     [{a,1},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]
-                    }).
+-define(TEST_DUP,[ {?DUP,
+                    [{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                    [{t,1},{s,1},{ds,7,[3,4,5,6,7,8,9,2 ]}]
+                   } ]).
 
+-define(TEST_NOP,[ {?NOP,
+                    [],
+                    []
+                   } ]).
+
+-define(TEST_BSTORE,[ {?BSTORE,
+                       [{b,0},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                       [{b,1},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]
+                      }]).
+
+-define(TEST_ASTORE,[ {?ASTORE,
+                       [{a,0},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                       [{a,1},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]
+                      }]).
+
+shl_test()    -> test_opcode(?TEST_SHL).
 dup_test()    -> test_opcode(?TEST_DUP).
+nop_test()    -> test_opcode(?TEST_NOP).
+bstore_test() -> test_opcode(?TEST_BSTORE).
 astore_test() -> test_opcode(?TEST_ASTORE).
 
-test_opcode({OpCode,Initial,Final}) ->
-   test_opcode(OpCode,Initial,Final).
+test_opcode([]) ->
+   ok;
+
+test_opcode([{OpCode,Initial,Final} | T]) ->
+   test_opcode(OpCode,Initial,Final),
+   test_opcode(T).
 
 test_opcode(OpCode,Initial,Final) ->
-   I      = test_setup(#cpu{},Initial),
-   F      = test_setup(#cpu{},Final),
+   CPU    = test_cpu(),
+   I      = test_init(CPU,Initial),
+   F      = test_init(CPU,Final),
    {ok,X} = exec_impl(OpCode,I), 
-   ?assertEqual(F,X).
+   test_verify(F,X).
 
-test_setup(CPU,[])           -> CPU;
-test_setup(CPU,[{a,X}   |T]) -> test_setup(CPU#cpu{a=X},T);
-test_setup(CPU,[{t,X}   |T]) -> test_setup(CPU#cpu{t=X},T);
-test_setup(CPU,[{s,X}   |T]) -> test_setup(CPU#cpu{s=X},T);
-test_setup(CPU,[{ds,X,Y}|T]) -> test_setup(CPU#cpu{ds={X,array:from_list(Y)}},T).
+-define(RND,   random:uniform(16#40000) - 1).
+-define(RND(N),random:uniform(N+1) - 1).
 
+test_cpu() ->
+   random:seed(now()),
+   #cpu{ a  = ?RND,
+         b  = ?RND,
+         t  = ?RND,
+         s  = ?RND,
+         ds = {?RND(8),[?RND,?RND,?RND,?RND,?RND,?RND,?RND,?RND]}
+       }.
 
+test_init(CPU,[])           -> CPU;
+test_init(CPU,[{a,X}   |T]) -> test_init(CPU#cpu{a=X},T);
+test_init(CPU,[{b,X}   |T]) -> test_init(CPU#cpu{b=X},T);
+test_init(CPU,[{t,X}   |T]) -> test_init(CPU#cpu{t=X},T);
+test_init(CPU,[{s,X}   |T]) -> test_init(CPU#cpu{s=X},T);
+test_init(CPU,[{ds,X,Y}|T]) -> test_init(CPU#cpu{ds={X,array:from_list(Y)}},T).
+
+test_verify(Expected,Actual) ->
+   ?assertEqual(Expected,Actual).
 
 assert ([],_CPU) ->
    ok;
