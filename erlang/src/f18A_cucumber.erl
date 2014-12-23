@@ -6,7 +6,7 @@
 
 % EXPORTS for erlang:apply(...)
 
--export([initialise/3,listen/2,listened/2,reset/2,stepping/3,verify/1]).
+-export([initialise/3,get/2,put/3,listened/2,reset/2,stepping/3,verify/1]).
 
 % INCLUDES
 
@@ -16,11 +16,12 @@
 % DEFINES
 
 -define(TAG,"F18A").
--define(STEPS,[ {given,"^Node ([0-9]{3}) is initialised from (.*)$",initialise },
-                {'and',"Node XXX listening on (RIGHT|LEFT)",        listen     },
-                {'and',"Node ([0-9]{3}) is reset",                  reset      },
-                {'and',"Node ([0-9]{3}) is stepped ([0-9]+) times", stepping   },
-                {then, "Node XXX should have received (.*)",        listened   }
+-define(STEPS,[ {given,"^Node ([0-9]{3}) is initialised from (.*)$",     initialise },
+                {'and',"Node XXX listening on (RIGHT|LEFT)",             get        },
+                {'and',"Node XXX is writing \\[(.*?)\\] to (RIGHT|LEFT)",put        },
+                {'and',"Node ([0-9]{3}) is reset",                       reset      },
+                {'and',"Node ([0-9]{3}) is stepped ([0-9]+) times",      stepping   },
+                {then, "Node XXX should have received (.*)",             listened   }
               ]).
 
 % RECORDS
@@ -72,11 +73,22 @@ initialise(Context,Node,File) ->
     Context#context{ node = F18A
                    }.
 
-listen(Context,_Port) ->
+get(Context,_Port) ->
     M = self(),
     util:unregister(nxxx),
     register(nxxx,spawn(fun() ->
                            L = read(),
+                           M ! {rx,L}
+                        end)),
+
+    Context.
+
+put(Context,List,Port) ->
+    Data = [ list_to_integer(X) || X <- string:tokens(List,",")],
+    M    = self(),
+    util:unregister(nxxx),
+    register(nxxx,spawn(fun() ->
+                           L = write(Port,Data),
                            M ! {rx,L}
                         end)),
 
@@ -124,6 +136,21 @@ read(L) ->
       _else ->
          lists:reverse(L)
    end.
+
+write(Node,[]) ->
+   ok;
+
+write(Node,[Word|T]) ->
+   timer:sleep(100),
+   n405 ! {nxxx,write,Word},
+   receive
+      {n405,read,ok} ->
+         write(Node,T);
+      
+      _else ->
+         ok
+   end.
+   
 
 % UTILITY
 

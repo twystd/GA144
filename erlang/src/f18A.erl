@@ -194,7 +194,6 @@ loop({run,CPU}) ->
          Breakpoints = [ Address|CPU#cpu.breakpoints],          
          loop({run,CPU#cpu{ breakpoints = Breakpoints
                           }})
-
       end.
 
 reset_impl(CPU) ->
@@ -497,9 +496,10 @@ read_mem(_Mem,_Addr,_N) ->
    eof.
 
 read_channel(CPU,Ch) ->
-   ID = CPU#cpu.id,
+   ID = CPU#cpu.id,   
    receive
       {Ch,write,Word} -> 
+         ?debugFmt("**** READ/1 ~p",[Word]),
          Ch ! { ID,read,ok },
          {ok,Word};
 
