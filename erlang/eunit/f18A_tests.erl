@@ -161,7 +161,7 @@ n406_test() ->
 
 go_test() ->
    M    = setup("-- GO TEST"),
-   F18A = f18A:createx(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2]),
+   F18A = createx(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2]),
 
    spawn(fun() ->
             f18A:reset(F18A),
@@ -175,7 +175,7 @@ go_test() ->
 
 step_test() ->
    M    = setup("-- STEP TEST"),
-   F18A = f18A:createx(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
+   F18A = createx(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
 
    spawn(fun() ->
             f18A:reset(F18A),
@@ -199,7 +199,7 @@ step_test() ->
 
 breakpoint_test() ->
    M    = setup("-- BREAKPOINT TEST"),
-   F18A = f18A:createx(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
+   F18A = createx(n001,n000,[16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
 
    f18A:breakpoint(F18A,3),
 
@@ -215,7 +215,7 @@ breakpoint_test() ->
 
 nop_test() ->
    setup("-- NOP TEST"),
-   F18A = f18A:createx(n001,n000,[ 16#2d555 ]),
+   F18A = createx(n001,n000,[ 16#2d555 ]),
 
    f18A:reset(F18A),
    f18A:step (F18A,wait),
@@ -227,7 +227,7 @@ nop_test() ->
 
 nop2_test() ->
    setup("-- NOP:2 TEST"),
-   F18A = f18A:createx(n001,n000,[ 16#2c955 ]),
+   F18A = createx(n001,n000,[ 16#2c955 ]),
 
    f18A:reset(F18A),
    f18A:step (F18A,wait),
@@ -240,7 +240,7 @@ nop2_test() ->
 
 nop3_test() ->
    setup("-- NOP:3 TEST"),
-   F18A = f18A:createx(n001,n000,[ 16#2c9b5 ]),
+   F18A = createx(n001,n000,[ 16#2c9b5 ]),
 
    f18A:reset(F18A),
    f18A:step (F18A,wait),
@@ -254,7 +254,7 @@ nop3_test() ->
 
 nop4_test() ->
    setup("-- NOP:4 TEST"),
-   F18A = f18A:createx(n001,n000,[ 16#2c9b2 ]),
+   F18A = createx(n001,n000,[ 16#2c9b2 ]),
 
    f18A:reset(F18A),
    f18A:step (F18A,wait),
@@ -269,7 +269,7 @@ nop4_test() ->
 
 nop5_test() ->
    setup("-- NOP:5 TEST"),
-   F18A = f18A:createx(n001,n000,[ 16#2c9b2,16#2d555 ]),
+   F18A = createx(n001,n000,[ 16#2c9b2,16#2d555 ]),
 
    f18A:reset(F18A),
    f18A:step (F18A,wait),
@@ -285,7 +285,7 @@ nop5_test() ->
 
 fetchp_test() ->
    setup("-- FETCH-P TEST"),
-   F18A = f18A:createx(n001,n000,[ 16#04b02,16#001d5 ]),
+   F18A = createx(n001,n000,[ 16#04b02,16#001d5 ]),
 
    f18A:reset(F18A),
    f18A:step (F18A,wait),
@@ -297,7 +297,7 @@ fetchp_test() ->
 
 fetchb_test() ->
    setup("-- FETCH-B TEST"),
-   F18A = f18A:createx(n001,n000,[ 16#04b02,16#00002,16#002a6 ]),
+   F18A = createx(n001,n000,[ 16#04b02,16#00002,16#002a6 ]),
 
    f18A:reset(F18A),
    f18A:step (F18A,wait),
@@ -311,7 +311,7 @@ fetchb_test() ->
 
 storeb_test() ->
    setup("-- STORE-B TEST"),
-   F18A = f18A:createx(n001,n000,[ 16#04b12,16#00004,16#002a6,16#089b2,16#00000 ]),
+   F18A = createx(n001,n000,[ 16#04b12,16#00004,16#002a6,16#089b2,16#00000 ]),
 
    f18A:reset(F18A),
    f18A:step (F18A,wait),
@@ -330,7 +330,7 @@ read_go_test() ->
    M = setup("-- READ TEST/GO"),
    util:unregister(n000),
 
-   F18A = f18A:createx(n001,n000,[16#04b02,16#001d5]),
+   F18A = createx(n001,n000,[16#04b02,16#001d5]),
 
    f18A:reset(F18A),
 
@@ -353,7 +353,7 @@ read_step_test() ->
    M = setup("-- READ TEST/STEP"),
    util:unregister(n000),
 
-   F18A = f18A:createx(n001,n000,[16#04b02,16#001d5]),
+   F18A = createx(n001,n000,[16#04b02,16#001d5]),
 
    f18A:reset(F18A),
 
@@ -382,7 +382,7 @@ write_go_test() ->
    util:unregister(n000),
    util:unregister(n001),
 
-   F18A = f18A:createx(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2]),
+   F18A = createx(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2]),
    
    f18A:reset(F18A),
    
@@ -406,7 +406,7 @@ write_step_test() ->
    util:unregister(n000),
    util:unregister(n001),
 
-   F18A = f18A:createx(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
+   F18A = createx(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
    
    register(n000,spawn(fun() ->
                           wait({ n001,write,678 }),
@@ -435,7 +435,7 @@ write_step_test() ->
 
 read_stop_go_test() ->
    setup("-- READ STOP TEST/GO"),
-   F18A = f18A:createx(n001,n000,[16#04b02,16#001d5]),
+   F18A = createx(n001,n000,[16#04b02,16#001d5]),
 
    f18A:reset(F18A),
    f18A:go   (F18A),
@@ -447,7 +447,7 @@ read_stop_go_test() ->
 
 read_stop_step_test() ->
    setup("-- READ STOP TEST/STEP"),
-   F18A = f18A:createx(n001,n000,[16#04b02,16#001d5]),
+   F18A = createx(n001,n000,[16#04b02,16#001d5]),
 
    f18A:reset(F18A),
    f18A:step (F18A), 
@@ -476,7 +476,7 @@ write_stop_go_test() ->
                         util:unregister(n000)
                         end)),
                                  
-   F18A = f18A:createx(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
+   F18A = createx(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
    f18A:reset(F18A),
    f18A:go   (F18A), 
    f18A:stop (F18A,wait),
@@ -495,7 +495,7 @@ write_stop_step_test() ->
                         util:unregister(n000)
                         end)),
                                  
-   F18A = f18A:createx(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
+   F18A = createx(n001,n000,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
 
    f18A:reset(F18A),
    f18A:step (F18A), 
@@ -517,7 +517,7 @@ readwrite_go_test() ->
    M = setup("-- READ-WRITE TEST/GO"),
 
    spawn(fun() ->
-      F18A = f18A:createx(n001,n002,[16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2 ]),
+      F18A = createx(n001,n002,[16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2 ]),
       f18A:breakpoint(F18A,3),
       f18A:reset(F18A),
       f18A:go   (F18A,wait),
@@ -525,7 +525,7 @@ readwrite_go_test() ->
       end),
 
    spawn(fun() ->
-      F18A = f18A:createx(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2,16#2c9b2 ]),
+      F18A = createx(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2,16#2c9b2 ]),
       f18A:breakpoint(F18A,4),
       f18A:reset(F18A),
       f18A:go   (F18A,wait),
@@ -541,7 +541,7 @@ readwrite_step_test() ->
    M = setup("-- READ-WRITE TEST/STEP"),
 
    spawn(fun() ->
-      F18A = f18A:createx(n001,n002,[16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2 ]),
+      F18A = createx(n001,n002,[16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2 ]),
       f18A:reset(F18A),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
@@ -556,7 +556,7 @@ readwrite_step_test() ->
       end),
 
    spawn(fun() ->
-      F18A = f18A:createx(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
+      F18A = createx(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2 ]),
       f18A:reset(F18A),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
@@ -579,7 +579,7 @@ writeread_go_test() ->
    M = setup("-- WRITE-READ TEST/GO"),
 
    spawn(fun() ->
-      F18A = f18A:createx(n001,n002,[16#2c9b2,16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2]),
+      F18A = createx(n001,n002,[16#2c9b2,16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2]),
       f18A:breakpoint(F18A,3),
       f18A:reset     (F18A),
       f18A:go        (F18A,wait),
@@ -587,7 +587,7 @@ writeread_go_test() ->
       end),
 
    spawn(fun() ->
-      F18A = f18A:createx(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2,16#2c9b2]),
+      F18A = createx(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2,16#2c9b2]),
       f18A:breakpoint(F18A,4),
       f18A:reset     (F18A),
       f18A:go        (F18A,wait),
@@ -603,7 +603,7 @@ writeread_step_test() ->
    M = setup("-- WRITE-READ TEST/STEP"),
 
    spawn(fun() ->
-      F18A = f18A:createx(n001,n002,[16#2c9b2,16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2 ]),
+      F18A = createx(n001,n002,[16#2c9b2,16#04b02,16#001d5,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2 ]),
       f18A:reset(F18A),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
@@ -618,7 +618,7 @@ writeread_step_test() ->
       end),
 
    spawn(fun() ->
-      F18A = f18A:createx(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2,16#2c9b2,16#2c9b2 ]),
+      F18A = createx(n002,n001,[ 16#04b12,16#001d5,16#002a6,16#089b2,16#2c9b2,16#2c9b2 ]),
       f18A:reset(F18A),
       f18A:step (F18A,wait),
       f18A:step (F18A,wait),
@@ -665,3 +665,8 @@ wait(X) ->
       X -> ok
    end.
 
+% TODO - REMOVE ONCE ALL THE UNIT TEST HAVE BEEN UPDATED
+createx(ID,Channel,Program) ->
+   RAM = array:from_list(Program),
+   ROM = array:new(64,[{default,16#13400}]),
+   f18A:create(ID,{Channel,Channel,Channel,Channel},ROM,RAM).

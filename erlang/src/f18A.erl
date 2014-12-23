@@ -2,7 +2,7 @@
 
 % EXPORTS
 
--export([createx/3,create/4,create/5]).
+-export([create/4,create/5]).
 -export([reset/1]).
 -export([go/1,go/2]).
 -export([stop/1,stop/2]).
@@ -50,25 +50,6 @@ create(ID,{Left,Right,Up,Down},ROM,RAM,Log) ->
                   t       = 0,
 
                   log = Log
-                }).
-
-% TODO - REMOVE ONCE ALL THE UNIT TEST HAVE BEEN UPDATED
-createx(ID,Channel,Program) ->
-   create(ID,{Channel,Channel,Channel,Channel},Program).
-
-create(ID,{Left,Right,Up,Down},Program) ->
-   RAM = array:from_list(Program),
-   ROM = array:new(64,[{default,16#13400}]),
-   start(ID,#cpu{ id      = ID,
-                  channel = #channels{left=Left, right=Right,up=Up,down=Down},
-                  rom     = ROM,
-                  ram     = RAM,
-                  io      = [],
-                  p       = 16#0a9,
-                  a       = 0,
-                  b       = 16#100,
-                  i       = [],
-                  t       = 0
                 }).
 
 start(ID,CPU) ->
