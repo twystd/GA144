@@ -321,19 +321,20 @@ exec_impl(?FETCHP,CPU) ->
    case read(CPUX,P) of
         {ok,T} ->
    	    {ok,CPUX#cpu{ p = P + 1,
-                          t = T
-                        }};
+                        t = T
+                      }};
         Other ->
             Other
 	end;
 
 % 16#0a  @b  fetch B
 exec_impl(?FETCHB,CPU) ->
-   B = CPU#cpu.b,     
-   case read(CPU,B) of
+   B    = CPU#cpu.b,     
+   CPUX = push(ds,CPU),
+   case read(CPUX,B) of
         {ok,T} ->
-   	    {ok,CPU#cpu{ t = T
-                       }};
+   	      {ok,CPUX#cpu{ t = T
+                        }};
         Other ->
             Other
 	end;
@@ -343,6 +344,19 @@ exec_impl(?STOREB,CPU) ->
    B = CPU#cpu.b,     
    T = CPU#cpu.t,
    case write(CPU,B,T) of 
+        {ok,RAM} ->
+            {ok,pop(ds,CPU#cpu{ ram = RAM },CPU#cpu.s)};
+
+        Other ->
+            Other
+       end;
+
+
+% 16#0f  !  store
+exec_impl(?STORE,CPU) ->
+   A = CPU#cpu.a,     
+   T = CPU#cpu.t,
+   case write(CPU,A,T) of 
         {ok,RAM} ->
             {ok,pop(ds,CPU#cpu{ ram = RAM },CPU#cpu.s)};
 
@@ -775,6 +789,21 @@ plus_test_impl(P,T,S,C,R) ->
    assert([{t,R},{s,3},{ds,{1,[3,4,5,6,7,8,9,10]}}],CPU).
 
 
+-define(TEST_FETCHP,[{?FETCHP,
+                     [{ram,15,678},{p,15},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{ram,15,678},{p,16},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
+                   ]).
+
+-define(TEST_FETCHB,[{?FETCHB,
+                     [{ram,15,678},{b,15},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{ram,15,678},{b,15},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
+                   ]).
+
+-define(TEST_STORE,[{?STORE,
+                     [{ram,0,0},{a,0},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{ram,0,1},{a,0},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]}
+                   ]).
+
 -define(TEST_SHL,[ {?SHL,[{t,16#00001}],[{t,16#00002}]},
                    {?SHL,[{t,16#00002}],[{t,16#00004}]},
                    {?SHL,[{t,16#00004}],[{t,16#00008}]},
@@ -803,6 +832,12 @@ plus_test_impl(P,T,S,C,R) ->
                        [{a,1},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]
                       }]).
 
+-define(RND,   random:uniform(16#40000) - 1).
+-define(RND(N),random:uniform(N+1) - 1).
+
+fetchp_test() -> test_opcode(?TEST_FETCHP).
+fetchb_test() -> test_opcode(?TEST_FETCHB).
+store_test()  -> test_opcode(?TEST_STORE).
 shl_test()    -> test_opcode(?TEST_SHL).
 dup_test()    -> test_opcode(?TEST_DUP).
 nop_test()    -> test_opcode(?TEST_NOP).
@@ -823,9 +858,6 @@ test_opcode(OpCode,Initial,Final) ->
    {ok,X} = exec_impl(OpCode,I), 
    test_verify(F,X).
 
--define(RND,   random:uniform(16#40000) - 1).
--define(RND(N),random:uniform(N+1) - 1).
-
 test_cpu() ->
    random:seed(now()),
    #cpu{ a  = ?RND,
@@ -835,14 +867,18 @@ test_cpu() ->
          ds = {?RND(8),[?RND,?RND,?RND,?RND,?RND,?RND,?RND,?RND]}
        }.
 
-test_init(CPU,[])           -> CPU;
-test_init(CPU,[{a,X}   |T]) -> test_init(CPU#cpu{a=X},T);
-test_init(CPU,[{b,X}   |T]) -> test_init(CPU#cpu{b=X},T);
-test_init(CPU,[{t,X}   |T]) -> test_init(CPU#cpu{t=X},T);
-test_init(CPU,[{s,X}   |T]) -> test_init(CPU#cpu{s=X},T);
-test_init(CPU,[{ds,X,Y}|T]) -> test_init(CPU#cpu{ds={X,array:from_list(Y)}},T).
+test_init(CPU,[])            -> CPU;
+test_init(CPU,[{p,X}    |T]) -> test_init(CPU#cpu{p=X},T);
+test_init(CPU,[{a,X}    |T]) -> test_init(CPU#cpu{a=X},T);
+test_init(CPU,[{b,X}    |T]) -> test_init(CPU#cpu{b=X},T);
+test_init(CPU,[{t,X}    |T]) -> test_init(CPU#cpu{t=X},T);
+test_init(CPU,[{s,X}    |T]) -> test_init(CPU#cpu{s=X},T);
+test_init(CPU,[{ds,X,Y} |T]) -> test_init(CPU#cpu{ds={X,array:from_list(Y)}},T);
+test_init(CPU,[{ram,A,W}|T]) -> test_init(CPU#cpu{ram=array:set(A,W,CPU#cpu.ram)},T).
 
 test_verify(Expected,Actual) ->
+%  ?debugFmt("EXPECTED: ~p",[Expected]),
+%  ?debugFmt("ACTUAL:   ~p",[Actual]),
    ?assertEqual(Expected,Actual).
 
 assert ([],_CPU) ->

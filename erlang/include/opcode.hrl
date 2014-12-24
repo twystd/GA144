@@ -6,6 +6,7 @@
 -define(FETCHP,16#08).
 -define(FETCHB,16#0a).
 -define(STOREB,16#0e).
+-define(STORE, 16#0f).
 -define(SHL,   16#11).
 -define(PLUS,  16#14).
 -define(DUP,   16#18).

@@ -16,12 +16,12 @@
 % DEFINES
 
 -define(TAG,"F18A").
--define(STEPS,[ {given,"^Node ([0-9]{3}) is initialised from (.*)$", initialise },
-                {'and',"Node XXX listening on (RIGHT|LEFT)",         get        },
-                {'and',"Node XXX writes \\[(.*?)\\] to (RIGHT|LEFT)",put        },
-                {'and',"Node ([0-9]{3}) is reset",                   reset      },
-                {'and',"Node ([0-9]{3}) is stepped ([0-9]+) times",  stepping   },
-                {then, "Node XXX should have received (.*)",         listened   }
+-define(STEPS,[ {given,"^Node ([0-9]{3}) is initialised from (.*)$",         initialise },
+                {'and',"Node XXX listening on (RIGHT|LEFT|UP|DOWN)",         get        },
+                {'and',"Node XXX writes \\[(.*?)\\] to (RIGHT|LEFT|UP|DOWN)",put        },
+                {'and',"Node ([0-9]{3}) is reset",                           reset      },
+                {'and',"Node ([0-9]{3}) is stepped ([0-9]+) times",          stepping   },
+                {then, "Node XXX should have received \\[(.*?)\\]",          listened   }
               ]).
 
 % RECORDS
@@ -31,11 +31,13 @@
 % CUCUMBER
 
 setup() ->
+%   trace:start(),
     #context{ 
             }.
 
 teardown(Context) ->
     f18A:stop(Context#context.node), 
+%   ?debugFmt("** TRACE: ~p",[trace:stop()]),
     ok.
 
 step(Context,Type,Condition) ->
@@ -69,35 +71,42 @@ initialise(Context,Node,File) ->
     NodeID   = nodeid(Node),
     RAM      = util:read_ram(File),     
     ROM      = util:read_rom(File),     
-    F18A     = f18A:create(NodeID,{nxxx,nxxx,nxxx,nxxx},ROM,RAM,yes),
+    F18A     = f18A:create(NodeID,{left,right,up,down},ROM,RAM,no),
     Context#context{ node = F18A
                    }.
 
-get(Context,_Port) ->
-    M = self(),
-    util:unregister(nxxx),
-    register(nxxx,spawn(fun() ->
-                           L = read(),
-                           M ! {rx,L}
-                        end)),
+get(Context,Port) ->
+   Dest = list_to_atom(string:to_lower(Port)),
+   M    = self(),
+   util:unregister(Dest),
+   register(Dest,spawn(fun() ->
+                          L = read(Dest),
+                          M ! {rx,L}
+                       end)),
 
-    Context.
+   Context.
 
 put(Context,List,Port) ->
-    Data = [ list_to_integer(X) || X <- string:tokens(List,",")],
-    M    = self(),
-    util:unregister(nxxx),
-    register(nxxx,spawn(fun() ->
-                           L = write(Port,Data),
-                           M ! {rx,L}
-                        end)),
+   Src  = list_to_atom(string:to_lower(Port)),
+   Dest = Context#context.node,
+   Data = [ list_to_integer(X) || X <- string:tokens(List,",")],
+   M    = self(),
 
-    Context.
+   util:unregister(Src),
+   register(Src,spawn(fun() ->
+                          L = write(Src,Dest,Data),
+                          M ! {rx,L}
+                      end)),
+
+   Context.
 
 listened(Context,List) ->
     Expected = [ list_to_integer(X) || X <- string:tokens(List,",")],
     trace:trace(scenario,verify),
-    nxxx ! stop,
+    stop(left),
+    stop(right),
+    stop(up),
+    stop(down),
     compare(Expected,receive {rx,L} -> L end),
     Context.
 
@@ -124,27 +133,27 @@ stepping(f18A,F18A,_Node,N) ->
    f18A:step(F18A,wait),
    stepping(f18A,F18A,_Node,N-1).
 
-read() ->
-   read([]).
+read(Dest) ->
+   read(Dest,[]).
 
-read(L) ->
+read(Dest,L) ->
    receive
       {F18A,write,X} ->
-         F18A ! { nxxx,read,ok },
-         read([X|L]);
+         F18A ! { Dest,read,ok },
+         read(Dest,[X|L]);
 
       _else ->
          lists:reverse(L)
    end.
 
-write(Node,[]) ->
+write(Src,Node,[]) ->
    ok;
 
-write(Node,[Word|T]) ->
-   n405 ! {nxxx,write,Word},
+write(Src,Dest,[Word|T]) ->
+   Dest ! {Src,write,Word},
    receive
-      {n405,read,ok} ->
-         write(Node,T);
+      {Node,read,ok} ->
+         write(Src,Dest,T);
       
       _else ->
          ok
@@ -162,3 +171,12 @@ compare(Expected,Expected) ->
 compare(Expected,Actual) ->
     throw({compare,{expected,Expected},{actual,Actual}}).
     
+stop(PID) ->
+   stop(PID,util:is_registered(PID)).
+
+stop(PID,true) ->
+   PID ! stop;
+
+stop(_,_) ->
+   ok.
+
