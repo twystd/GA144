@@ -10,10 +10,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
-public class TestFileAssembler extends AssemblerTest {
+public class TestHCCForth extends AssemblerTest {
 	// CONSTANTS
 	
 	private static final boolean DEBUG   = true;
@@ -24,21 +23,24 @@ public class TestFileAssembler extends AssemblerTest {
 
 	// UNIT TESTS 
 	
-    @Ignore
 	@Test
-	public void testN404() throws Exception {
-	    verify("N404",DEBUG);
+	public void test404() throws Exception {
+	    verify("404",DEBUG);
 	}
     
-    @Ignore
     @Test
-    public void testN406() throws Exception {
-        verify("N406",DEBUG);
+    public void test406() throws Exception {
+        verify("406",DEBUG);
     }
 
     @Test
-    public void testN405() throws Exception {
-        verify("N405",DEBUG);
+    public void test405() throws Exception {
+        verify("405",DEBUG);
+    }
+
+    @Test
+    public void test505() throws Exception {
+        verify("505",DEBUG);
     }
 
     private void verify(String filename,boolean debug) throws Exception {

@@ -36,9 +36,16 @@ setup() ->
             }.
 
 teardown(Context) ->
-    f18A:stop(Context#context.node), 
+    teardown(node,Context#context.node),
 %   ?debugFmt("** TRACE: ~p",[trace:stop()]),
     ok.
+
+teardown(node,undefined) ->
+   ok;
+
+teardown(node,Node) ->
+   f18A:stop(Node). 
+
 
 step(Context,Type,Condition) ->
     F = fun({T,Step,Function},L) ->

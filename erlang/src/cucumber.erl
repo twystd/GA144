@@ -9,11 +9,12 @@
 % RECORDS
 
 -record(feature,{ feature,
-                  scenarios = []
+                  scenarios=[]
                 }).
 
 -record(scenario,{ scenario,
-                   steps = []
+                   steps=[],
+                   tags=[]
                  }).
 
 -record(step,{ type,
@@ -44,11 +45,21 @@ scenario(_,Context,[]) ->
     Context;
 
 scenario(Module,Context,[Scenario|T]) ->
-    log:info(?TAG,"Scenario: '~s'",[Scenario#scenario.scenario]),
+    
     try
-        scenario(Module,
-                 steps(Module,Context,Scenario#scenario.steps),
-                 T)
+       Tags = Scenario#scenario.tags,
+       F    = fun(X) -> X =:= ignore end,
+       case lists:any(F,Tags) of
+            true ->
+               log:info(?TAG,"Scenario: '~s' (IGNORED)",[Scenario#scenario.scenario]),
+               scenario(Module,Context,T);
+
+            _else ->
+               log:info(?TAG,"Scenario: '~s'",[Scenario#scenario.scenario]),
+               scenario(Module,
+                        steps(Module,Context,Scenario#scenario.steps),
+                        T)
+      end
     catch
         {error,X} ->
             log:error(?TAG,X),
@@ -101,43 +112,57 @@ parse([Line|T]) ->
         end.        
 
 parse(Feature,Lines) ->
-    Feature#feature{ scenarios = parse_feature(Lines,Feature#feature.scenarios)
+    Feature#feature{ scenarios = parse_feature(Lines,Feature#feature.scenarios,[])
                    }.
 
-parse_feature([],Scenarios) ->
+parse_feature([],Scenarios,_) ->
     lists:reverse(Scenarios);
 
-parse_feature([Line|T],Scenarios) ->
-    case re:run(Line,"^Scenario:\s*(.*)\s*$",[{capture,all_but_first,list}]) of
-        {match,Description} ->           
-            parse_scenario(T,[ #scenario{scenario=Description} | Scenarios]);
+parse_feature([Line|T],Scenarios,Tags) ->
+    case parse_line(Line) of
+        {tag,ignore} ->
+            parse_feature(T,Scenarios,[ignore | Tags]);
+
+        {scenario,Description} ->           
+            parse_scenario(T,
+                           [ #scenario{scenario=Description,
+                                       tags=Tags
+                                      } | Scenarios
+                           ],
+                           []);
 
         _else ->
-            parse_feature(T,Scenarios)
+            parse_feature(T,Scenarios,Tags)
         end.        
 
-parse_scenario([],Scenarios) ->
+parse_scenario([],Scenarios,Tags) ->
     [ #scenario{ scenario = X#scenario.scenario,
-                 steps = lists:reverse(X#scenario.steps)
+                 steps = lists:reverse(X#scenario.steps),
+                 tags = X#scenario.tags
                } || X <- lists:reverse(Scenarios) ];
 
-parse_scenario([Line|T],Scenarios) ->
-    case re:run(Line,"^Scenario:\s*(.*)\s*$",[{capture,all_but_first,list}]) of
-        {match,Description} ->           
-            parse_scenario(T,[ #scenario{scenario=Description} | Scenarios ]);
+parse_scenario([Line|T],Scenarios,Tags) ->
+    case parse_line(Line) of
+        {tag,ignore} ->
+            parse_scenario(T,Scenarios,[ignore | Tags]);
 
-        _else ->
-            case re:run(Line,"^\s*(Given|And|Then)\s+(.*)\s*$",[{capture,all_but_first,list}]) of
-                {match,[Type,Text]} ->           
-                    [Scenario | R ] = Scenarios,
-                    Steps           = Scenario#scenario.steps,
-                    Step            = parse_step(Type,Text),
-                    parse_scenario(T,[ Scenario#scenario { steps=[Step | Steps]
-                                                         } | R]);
+         {scenario,Description} ->           
+             parse_scenario(T,
+                            [ #scenario{scenario=Description,
+                                        tags=Tags} | Scenarios 
+                            ],
+                            []);
 
-                _else ->
-                    parse_scenario(T,Scenarios)
-                end
+         {step,Type,Text} ->
+             [Scenario | R ] = Scenarios,
+              Steps           = Scenario#scenario.steps,
+              Step            = parse_step(Type,Text),
+              parse_scenario(T,
+                             [ Scenario#scenario { steps=[Step | Steps] } | R],
+                             []);
+
+         _else ->
+              parse_scenario(T,Scenarios,Tags)
         end.        
 
 parse_step("Given",Description) ->
@@ -155,4 +180,24 @@ parse_step("Then",Description) ->
           description=Description 
          }.
 
-% EUNIT
+parse_line(Line) ->
+    case re:run(Line,"^\s*Scenario:\s*(.*)\s*$",[{capture,all_but_first,list}]) of
+        {match,Description} ->           
+          {scenario,Description};
+
+        _else ->
+            case re:run(Line,"^\s*(Given|And|Then)\s+(.*)\s*$",[{capture,all_but_first,list}]) of
+               {match,[Type,Text]} ->           
+                  {step,Type,Text};
+
+               _else2 ->
+                  case re:run(Line,"^\s*(@ignore).*$",[{capture,all_but_first,list}]) of
+                     {match,["@ignore"]} ->
+                        {tag,ignore};
+
+                     _else3 ->
+                        unknown
+                  end
+            end
+        end.        
+

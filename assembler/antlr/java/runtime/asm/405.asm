@@ -10,4 +10,3 @@ main     c1@ + c2@ + rs!
 init     rsinit 0 main ;
 
          a9H org init ;
-
