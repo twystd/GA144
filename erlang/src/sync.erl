@@ -112,11 +112,28 @@ files() ->
           Info#file_info.mtime
        end,
 
-   {ok,Src  } = file:list_dir("./src"),
-   {ok,Tests} = file:list_dir("./eunit"),
+   J = fun(X) ->
+          case re:run(X,"^[a-zA-Z0-9_]+\.feature$") of
+               {match,_} -> 
+                       true;
+               _else ->
+                       false
+          end
+       end,
 
-   lists:append([ { X,G(X) } || X <- lists:filter(F,Src)   ],
-                [ { X,H(X) } || X <- lists:filter(F,Tests) ]).
+   K = fun(X) ->
+          {ok,Info} = file:read_file_info(filename:join("../cucumber",X)),
+          Info#file_info.mtime
+       end,
+
+   {ok,Src  }    = file:list_dir("./src"),
+   {ok,Tests}    = file:list_dir("./eunit"),
+   {ok,Features} = file:list_dir("../cucumber"),
+
+   lists:append([[ { X,G(X) } || X <- lists:filter(F,Src)      ],
+                 [ { X,H(X) } || X <- lists:filter(F,Tests)    ],
+                 [ { X,K(X) } || X <- lists:filter(J,Features) ]
+                ]).
 
 hooks(none) ->
    ok;

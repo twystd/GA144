@@ -45,26 +45,24 @@ scenario(_,Context,[]) ->
     Context;
 
 scenario(Module,Context,[Scenario|T]) ->
-    
-    try
-       Tags = Scenario#scenario.tags,
-       F    = fun(X) -> X =:= ignore end,
-       case lists:any(F,Tags) of
-            true ->
-               log:info(?TAG,"Scenario: '~s' (IGNORED)",[Scenario#scenario.scenario]),
-               scenario(Module,Context,T);
+   Tags = Scenario#scenario.tags,
+   F    = fun(X) -> X =:= ignore end,
+   case lists:any(F,Tags) of
+        true ->
+           log:info(?TAG,"Scenario: '~s' (IGNORED)",[Scenario#scenario.scenario]),
+           scenario(Module,Context,T);
 
-            _else ->
-               log:info(?TAG,"Scenario: '~s'",[Scenario#scenario.scenario]),
-               scenario(Module,
-                        steps(Module,Context,Scenario#scenario.steps),
-                        T)
-      end
-    catch
-        {error,X} ->
-            log:error(?TAG,X),
-            throw({error,X})
-    end.
+        _else ->
+           log:info(?TAG,"Scenario: '~s'",[Scenario#scenario.scenario]),
+           try
+               Context2 = steps(Module,Context,Scenario#scenario.steps),
+               scenario(Module,Context2,T)
+           catch
+               {error,X} ->
+               log:error(?TAG,X),
+               throw({error,X})
+            end
+   end.
 
 steps(_,Context,[]) ->
     log:info(?TAG,"OK"),

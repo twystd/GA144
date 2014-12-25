@@ -8,6 +8,7 @@
 -export([stop/1,stop/2]).
 -export([step/1,step/2]).
 -export([breakpoint/2]).
+-export([peek/2]).
 
 % FOR INTERNAL USE ONLY
 -export([run/1]).
@@ -133,6 +134,14 @@ breakpoint(F18A,Address) ->
    F18A ! {breakpoint,Address},
    ok.
 
+%% @doc Returns the internal state of a CPU register.
+%% 
+peek(F18A,Register) ->
+   F18A ! {peek,Register,self()},
+   receive
+      { peek,V} -> V
+   end.
+
 % INTERNAL
 
 run(CPU) ->
@@ -193,8 +202,25 @@ loop({run,CPU}) ->
       {breakpoint,Address} ->
          Breakpoints = [ Address|CPU#cpu.breakpoints],          
          loop({run,CPU#cpu{ breakpoints = Breakpoints
-                          }})
+                          }});
+
+      {peek,Register,PID} ->
+         PID ! {peek,peek_impl(CPU,Register)},
+         loop({run,CPU})
+
       end.
+
+peek_impl(CPU,t) ->
+   CPU#cpu.t;
+
+peek_impl(CPU,s) ->
+   CPU#cpu.s;
+
+peek_impl(CPU,ds) ->
+   CPU#cpu.ds;
+
+peek_impl(_,_) ->
+   unknown.
 
 reset_impl(CPU) ->
    receive

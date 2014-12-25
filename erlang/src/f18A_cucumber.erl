@@ -6,7 +6,7 @@
 
 % EXPORTS for erlang:apply(...)
 
--export([initialise/3,get/2,put/3,listened/2,reset/2,stepping/3,verify/1]).
+-export([initialise/3,get/2,put/3,listened/2,peek/4,reset/2,stepping/3,verify/1]).
 
 % INCLUDES
 
@@ -20,8 +20,10 @@
                 {'and',"Node XXX listening on (RIGHT|LEFT|UP|DOWN)",         get        },
                 {'and',"Node XXX writes \\[(.*?)\\] to (RIGHT|LEFT|UP|DOWN)",put        },
                 {'and',"Node ([0-9]{3}) is reset",                           reset      },
-                {'and',"Node ([0-9]{3}) is stepped ([0-9]+) times",          stepping   },
-                {then, "Node XXX should have received \\[(.*?)\\]",          listened   }
+                {'and',"Node ([0-9]{3}) is stepped ([0-9]+) (?:time|times)", stepping   },
+                {then, "Node XXX should have received \\[(.*?)\\]",          listened   },
+                {then, "Node ([0-9]{3}) (T|S) should be ([0-9]+)",           peek       },
+                {then, "Node ([0-9]{3}) (DS) should be \\[(.*?)\\]",         peek       }
               ]).
 
 % RECORDS
@@ -117,6 +119,25 @@ listened(Context,List) ->
     compare(Expected,receive {rx,L} -> L end),
     Context.
 
+peek(Context,_Node,"T",Word) ->
+    E = list_to_integer(Word),
+    T = f18A:peek(Context#context.node,t),
+    ?assertEqual(E,T),
+    Context;
+
+peek(Context,_Node,"S",Word) ->
+    E = list_to_integer(Word),
+    S = f18A:peek(Context#context.node,s),
+    ?assertEqual(E,S),
+    Context;
+
+peek(Context,_Node,"DS",List) ->
+    Expected = [ list_to_integer(X) || X <- string:tokens(List,",")],
+    {I,DS}   = f18A:peek(Context#context.node,ds),
+    DSX      = rotate(array:to_list(DS),I),
+    compare(Expected,DSX),
+    Context.
+
 verify(Context) ->
     trace:trace(scenario,verify),
     Context.
@@ -153,13 +174,13 @@ read(Dest,L) ->
          lists:reverse(L)
    end.
 
-write(Src,Node,[]) ->
+write(_Src,_Node,[]) ->
    ok;
 
 write(Src,Dest,[Word|T]) ->
    Dest ! {Src,write,Word},
    receive
-      {Node,read,ok} ->
+      {_Node,read,ok} ->
          write(Src,Dest,T);
       
       _else ->
@@ -171,6 +192,10 @@ write(Src,Dest,[Word|T]) ->
 
 nodeid(Node) ->
     list_to_atom(string:concat("n",Node)).
+
+rotate(L, 0) -> L;
+rotate([],_) -> [];
+rotate(L, N) -> {H,T} = lists:split(N,L), lists:append(T,H).
 
 compare(Expected,Expected) ->
     ok;

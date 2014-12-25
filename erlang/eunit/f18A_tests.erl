@@ -68,8 +68,8 @@ cucumber_test() ->
 
 cucumber_n404_test() ->
    M    = setup("-- N404 TEST"),
-   RAM  = util:read_ram("../cucumber/N404.bin"),     
-   ROM  = util:read_rom("../cucumber/N404.bin"),     
+   RAM  = util:read_ram("../cucumber/404.bin"),     
+   ROM  = util:read_rom("../cucumber/404.bin"),     
    F18A = f18A:create(n001,{nxxx,nxxx,nxxx,nxxx},ROM,RAM),
 
    register(nxxx,spawn(fun() ->

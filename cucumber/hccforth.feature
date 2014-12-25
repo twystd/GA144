@@ -1,7 +1,6 @@
 Feature: HCC!Forth
    Runs the demo program from the HCC!Forth ColorForth tutorial
 
-   @ignore   
    Scenario: Run node 404 program only
       Given  Node 404 is initialised from ../cucumber/404.bin
       And    Node XXX listening on RIGHT
@@ -9,7 +8,6 @@ Feature: HCC!Forth
       And    Node 404 is stepped 32 times
       Then   Node XXX should have received [6,8]
 
-   @ignore
    Scenario: Run node 406 program only
       Given  Node 406 is initialised from ../cucumber/406.bin
       And    Node XXX listening on LEFT
@@ -17,7 +15,6 @@ Feature: HCC!Forth
       And    Node 406 is stepped 33 times
       Then   Node XXX should have received [15,18]
 
-   @ignore
    Scenario: Run node 405 program only
       Given  Node 405 is initialised from ../cucumber/405.bin
       And    Node 405 is reset
@@ -35,6 +32,7 @@ Feature: HCC!Forth
       Given  Node 505 is initialised from ../cucumber/505.bin
       And    Node 505 is reset
       And    Node XXX writes [21,26,31,36,41] to DOWN
-      And    Node 505 is stepped 1 time
-      Then   Node 505 DS should be [21,26,31,36,41]
-
+      And    Node 505 is stepped 13 times
+      Then   Node 505 T should be 41
+      Then   Node 505 S should be 36
+      Then   Node 505 DS should be [31,26,21,0,0,0,0,0]
