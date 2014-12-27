@@ -14,11 +14,11 @@
 % API
 
 debug(Tag,Msg) ->
-   ?debugFmt("DEBUG:  ~s  ~s",[Tag,Msg]).
+   ?debugFmt("DEBUG:  ~s  ~s",[Tag,Msg]),
 
 debug(Tag,Fmt,Values) ->
-   Msg = io_lib:format(Fmt,Values),     
-   ?debugFmt("DEBUG:  ~s  ~s",[Tag,Msg]).
+  Msg = io_lib:format(Fmt,Values),     
+  ?debugFmt("DEBUG:  ~s  ~s",[Tag,Msg]).
 
 info(Tag,Msg) ->
    ?debugFmt("INFO:   ~s  ~s",[Tag,Msg]).

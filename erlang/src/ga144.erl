@@ -44,7 +44,6 @@ reset(GA144,[F18A|T]) ->
    f18A:reset(F18A),
    reset(GA144,T).
 
-
 step(GA144) ->
    step(GA144,1).
 
@@ -55,6 +54,7 @@ step(_GA144,0,_) ->
    ok;
 
 step(GA144,N,Step) ->
+%  ?debugFmt("--- STEP ~p",[Step]),
    step_nodes(GA144,GA144#ga144.nodes),
    step(GA144,N-1,Step+1).
 
@@ -64,6 +64,13 @@ step_nodes(_GA144,[]) ->
 step_nodes(GA144,[F18A|T]) ->
    f18A:step(F18A),
    step_nodes(GA144,T).
+
+go(GA144) ->
+   F = fun(F18A) -> f18A:go  (F18A)      end,
+   G = fun(F18A) -> f18A:stop(F18A,wait) end,
+   lists:foreach(F,GA144#ga144.nodes),
+   timer:sleep(10),
+   lists:foreach(G,GA144#ga144.nodes).
 
 % UTILITY
 
@@ -92,6 +99,7 @@ hccforth_test() ->
                  {505,"../cucumber/505.bin"}
                 ]),
    reset(GA144),
-   step (GA144,50),
+%  step (GA144,25),
+   go   (GA144),
    ok.
 

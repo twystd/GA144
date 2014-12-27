@@ -540,6 +540,7 @@ read_channel(CPU,Ch) ->
    ID = CPU#cpu.id,   
    receive
       {Ch,write,Word} -> 
+         ?debugFmt("*** DEBUG/READ OK ~p  ~p",[CPU#cpu.id,Word]),
          Ch ! { ID,read,ok },
          {ok,Word};
 

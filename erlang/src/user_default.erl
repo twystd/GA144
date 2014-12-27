@@ -9,7 +9,7 @@ x() ->
    f18A:test().
 
 xx() ->
-   f18A:dup_test().    
+   ga144:hccforth_test().    
 
 r() ->
    make:all([load]).
