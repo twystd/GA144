@@ -671,15 +671,15 @@ trace(_,_,no) ->
    ok;
 
 trace({?JUMP,_,_},CPU,_) ->
-   log:debug  (?TAG,io_lib:format("~s ~p",[opcode:to_string(?JUMP),CPU#cpu.p])),
+   log:debug  (?TAG,io_lib:format("~p: ~s ~p",[CPU#cpu.id,opcode:to_string(?JUMP),CPU#cpu.p])),
    trace:trace(f18A,?JUMP,CPU);
 
 trace({?CALL,_,_},CPU,_) ->
-   log:debug  (?TAG,io_lib:format("~s ~p",[opcode:to_string(?CALL),CPU#cpu.p])),
+   log:debug  (?TAG,io_lib:format("~p: ~s ~p",[CPU#cpu.id,opcode:to_string(?CALL),CPU#cpu.p])),
    trace:trace(f18A,?CALL,CPU);
 
 trace(OpCode,CPU,_) ->
-   log:debug  (?TAG,opcode:to_string(OpCode)),     
+   log:debug  (?TAG,io_lib:format("~p: ~s",[CPU#cpu.id,opcode:to_string(OpCode)])),
    trace:trace(f18A,OpCode,CPU).
    
 % EUNIT TESTS
@@ -757,14 +757,6 @@ pop_rs_test() ->
    assert([{r,7},{rs,{7,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={6,Stack}})),
    assert([{r,8},{rs,{0,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={7,Stack}})).
 
-ret_test() ->
-   P  = 1,
-   R  = 2,
-   RS = {0,array:from_list([3,4,5,6,7,8,9,10])},
-   I  = [ ?NOP,?NOP,?NOP,?NOP ],
-   {ok,CPU} = exec_impl(?RET,#cpu{p=P,r=R,rs=RS,i=I}),
-   assert([{p,R},{r,3},{rs,{1,[3,4,5,6,7,8,9,10]}},{i,[]}],CPU).
-
 jump_test() ->
    P = 16#0a9,
    {ok,CPU} = exec_impl({?JUMP,16#03,16#0000},#cpu{p=P}),
@@ -814,11 +806,15 @@ plus_test_impl(P,T,S,C,R) ->
                                     carry=C }),
    assert([{t,R},{s,3},{ds,{1,[3,4,5,6,7,8,9,10]}}],CPU).
 
-
+-define(TEST_RET,[{?RET,
+                   [{p,1},{r,2},{rs,0,[3,4,5,6,7,8,9,10]},{i,[?NOP,?NOP,?NOP,?NOP]}],
+                   [{p,2},{r,3},{rs,1,[3,4,5,6,7,8,9,10]},{i,[]}] }
+                 ]).
+                    
 -define(TEST_FETCHP,[{?FETCHP,
-                     [{ram,15,678},{p,15},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
-                     [{ram,15,678},{p,16},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
-                   ]).
+                      [{ram,15,678},{p,15},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{ram,15,678},{p,16},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
+                    ]).
 
 -define(TEST_FETCHB,[{?FETCHB,
                      [{ram,15,678},{b,15},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
@@ -861,6 +857,7 @@ plus_test_impl(P,T,S,C,R) ->
 -define(RND,   random:uniform(16#40000) - 1).
 -define(RND(N),random:uniform(N+1) - 1).
 
+ret_test()    -> test_opcode(?TEST_RET).
 fetchp_test() -> test_opcode(?TEST_FETCHP).
 fetchb_test() -> test_opcode(?TEST_FETCHB).
 store_test()  -> test_opcode(?TEST_STORE).
@@ -895,11 +892,14 @@ test_cpu() ->
 
 test_init(CPU,[])            -> CPU;
 test_init(CPU,[{p,X}    |T]) -> test_init(CPU#cpu{p=X},T);
+test_init(CPU,[{r,X}    |T]) -> test_init(CPU#cpu{r=X},T);
 test_init(CPU,[{a,X}    |T]) -> test_init(CPU#cpu{a=X},T);
 test_init(CPU,[{b,X}    |T]) -> test_init(CPU#cpu{b=X},T);
 test_init(CPU,[{t,X}    |T]) -> test_init(CPU#cpu{t=X},T);
 test_init(CPU,[{s,X}    |T]) -> test_init(CPU#cpu{s=X},T);
+test_init(CPU,[{i,X}    |T]) -> test_init(CPU#cpu{i=X},T);
 test_init(CPU,[{ds,X,Y} |T]) -> test_init(CPU#cpu{ds={X,array:from_list(Y)}},T);
+test_init(CPU,[{rs,X,Y} |T]) -> test_init(CPU#cpu{rs={X,array:from_list(Y)}},T);
 test_init(CPU,[{ram,A,W}|T]) -> test_init(CPU#cpu{ram=array:set(A,W,CPU#cpu.ram)},T).
 
 test_verify(Expected,Actual) ->
