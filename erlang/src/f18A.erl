@@ -80,12 +80,19 @@ step(F18A) ->
 
 step(F18A,wait) ->
    F18A ! { step,self() },
-   step_wait().
+   step_wait(F18A);
 
-step_wait() ->
+step(F18A,PID) ->
+   F18A ! { step,PID }.
+
+step_wait(F18A) ->
+   ID = F18A#cpu.id,
    receive
-      step -> ok;
-      _    -> step_wait()
+      {ID,step} ->
+         ok;
+
+      _ -> 
+         step_wait(F18A)
    end.
 
 
@@ -177,7 +184,7 @@ loop({run,CPU}) ->
 
       {step,PID} ->
          Next = step_impl(CPU),
-         PID ! step,
+         PID ! {CPU#cpu.id,step},
          loop(Next);
 
       stop ->
@@ -540,11 +547,15 @@ read_channel(CPU,Ch) ->
    ID = CPU#cpu.id,   
    receive
       {Ch,write,Word} -> 
-         ?debugFmt("*** DEBUG/READ OK ~p  ~p",[CPU#cpu.id,Word]),
          Ch ! { ID,read,ok },
          {ok,Word};
 
       step ->
+         read_channel(CPU,Ch);
+
+      {step,PID} ->
+   	   trace(read,CPU,CPU#cpu.log),
+         PID ! {ID,step},
          read_channel(CPU,Ch);
 
       {stop,PID} ->
@@ -620,11 +631,17 @@ write_channel(CPU,Ch,Word,_) ->
 %    {ok,CPU#cpu.ram}.
 
 write_wait(CPU,Channel) ->
+   ID = CPU#cpu.id,
    receive
       { Channel,read,ok } -> 
          {ok,CPU#cpu.ram};
 
       step ->
+         write_wait(CPU,Channel);
+
+      {step,PID} ->
+   	   trace(write,CPU,CPU#cpu.log),
+         PID ! {ID,step},
          write_wait(CPU,Channel);
 
       {stop,PID} ->
@@ -678,6 +695,12 @@ trace({?JUMP,_,_},CPU,_) ->
 trace({?CALL,_,_},CPU,_) ->
    log:debug  (?TAG,io_lib:format("~p: ~s ~p",[CPU#cpu.id,opcode:to_string(?CALL),CPU#cpu.p])),
    trace:trace(f18A,?CALL,CPU);
+
+trace(read,CPU,_) ->
+   log:debug  (?TAG,io_lib:format("~p: ~s",[CPU#cpu.id,"<READ>"]));
+
+trace(write,CPU,_) ->
+   log:debug  (?TAG,io_lib:format("~p: ~s",[CPU#cpu.id,"<WRITE>"]));
 
 trace(OpCode,CPU,_) ->
    log:debug  (?TAG,io_lib:format("~p: ~s",[CPU#cpu.id,opcode:to_string(OpCode)])),

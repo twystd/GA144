@@ -14,7 +14,7 @@
 % API
 
 debug(Tag,Msg) ->
-   ?debugFmt("DEBUG:  ~s  ~s",[Tag,Msg]),
+   ?debugFmt("DEBUG:  ~s  ~s",[Tag,Msg]).
 
 debug(Tag,Fmt,Values) ->
   Msg = io_lib:format(Fmt,Values),     

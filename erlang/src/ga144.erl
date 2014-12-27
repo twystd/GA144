@@ -2,7 +2,7 @@
 
 % EXPORTS
 
--export([init/1,reset/1,step/1,step/2]).
+-export([init/1,reset/1,go/1,step/1,step/2]).
 
 
 % INCLUDES
@@ -54,16 +54,25 @@ step(_GA144,0,_) ->
    ok;
 
 step(GA144,N,Step) ->
-%  ?debugFmt("--- STEP ~p",[Step]),
-   step_nodes(GA144,GA144#ga144.nodes),
-   step(GA144,N-1,Step+1).
+   ?debugFmt("--- STEP ~p",[Step]),
+   lists:foreach(fun(F18A) -> 
+                       f18A:step(F18A,self()) 
+                 end,GA144#ga144.nodes),
+   step_wait(GA144#ga144.nodes),
+   step     (GA144,N-1,Step+1).
 
-step_nodes(_GA144,[]) ->
+step_wait([]) ->
    ok;
 
-step_nodes(GA144,[F18A|T]) ->
-   f18A:step(F18A),
-   step_nodes(GA144,T).
+step_wait(L) ->
+   receive
+      {Node,step} ->
+         step_wait(lists:delete(Node,L))
+
+   after 1000 ->
+         ?debugFmt("TIMEOUT: ~p",[L]),
+         ok
+   end.
 
 go(GA144) ->
    F = fun(F18A) -> f18A:go  (F18A)      end,
@@ -99,7 +108,7 @@ hccforth_test() ->
                  {505,"../cucumber/505.bin"}
                 ]),
    reset(GA144),
-%  step (GA144,25),
-   go   (GA144),
+   step (GA144,20),
+%  go   (GA144),
    ok.
 
