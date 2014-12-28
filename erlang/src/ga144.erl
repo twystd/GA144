@@ -25,7 +25,8 @@ init(GA144,[]) ->
    GA144;
 
 init(GA144,[{ID,BinFile}|T]) ->
-   Node = f18A:create(nodeid(ID),
+   Node = f18A:create(self(),
+                      nodeid(ID),
                       {left(ID),right(ID),up(ID),down(ID)},
                       util:read_rom(BinFile),     
                       util:read_ram(BinFile)),
@@ -67,6 +68,12 @@ step_wait([]) ->
 step_wait(L) ->
    receive
       {Node,step} ->
+         step_wait(lists:delete(Node,L));
+
+      {Node,reading} ->
+         step_wait(lists:delete(Node,L));
+
+      {Node,writing} ->
          step_wait(lists:delete(Node,L))
 
    after 1000 ->

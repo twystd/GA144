@@ -1,6 +1,7 @@
 % RECORDS
 
--record(cpu,{ id,
+-record(cpu,{ ga144,
+              id,
               channel,
               rom = array:new(64),
               ram = array:new(64),

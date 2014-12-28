@@ -2,7 +2,7 @@
 
 % EXPORTS
 
--export([create/4,create/5]).
+-export([create/4,create/5,create/6]).
 -export([reset/1]).
 -export([go/1,go/2]).
 -export([stop/1,stop/2]).
@@ -32,14 +32,14 @@
 %% @doc Initialises an F18A node and starts the internal instruction 
 %%      execution process.
 create(ID,Channels,ROM,RAM) ->
-    create(ID,
-           Channels,
-           ROM,
-           RAM,
-           yes).
+    create(undefined, ID, Channels, ROM, RAM, yes).
 
-create(ID,{Left,Right,Up,Down},ROM,RAM,Log) ->
-   start(ID,#cpu{ id      = ID,
+create(GA144,ID,Channels,ROM,RAM) ->
+    create(GA144, ID, Channels, ROM, RAM, yes).
+
+create(GA144,ID,{Left,Right,Up,Down},ROM,RAM,Log) ->
+   start(ID,#cpu{ ga144   = GA144,
+                  id      = ID,
                   channel = #channels{left=Left, right=Right,up=Up,down=Down},
                   rom     = ROM,
                   ram     = RAM,
@@ -313,6 +313,7 @@ exec(CPU,[]) ->
    end;
 
 exec(CPU,[H|T]) ->
+   debug(H,CPU,CPU#cpu.log),
    case exec_impl(H,CPU#cpu{ i=T }) of
    	{ok,CPUX} ->
    	    trace(H,CPUX,CPU#cpu.log),
@@ -543,7 +544,12 @@ read_mem(_Mem,_Addr,_N) ->
    eof.
 
 read_channel(CPU,Ch) ->
+   notify   (CPU,reading),
+   read_wait(CPU,Ch). 
+
+read_wait(CPU,Ch) ->
    ID = CPU#cpu.id,   
+
    receive
       {Ch,write,Word} -> 
          Ch ! { ID,read,ok },
@@ -553,9 +559,9 @@ read_channel(CPU,Ch) ->
          read_channel(CPU,Ch);
 
       {step,PID} ->
-   	   trace(read,CPU,CPU#cpu.log),
+   	   debug(read,CPU,CPU#cpu.log),
          PID ! {ID,step},
-         read_channel(CPU,Ch);
+         read_wait(CPU,Ch);
 
       {stop,PID} ->
          {stop,PID}
@@ -611,6 +617,8 @@ write_channel(CPU,Ch,Word) ->
    write_channel(CPU,Ch,Word,util:is_registered(Ch)).
 
 write_channel(CPU,Ch,Word,_) ->
+   notify(CPU,writing),
+
    ID = CPU#cpu.id,
    try
       Ch ! { ID,write,Word },
@@ -639,7 +647,7 @@ write_wait(CPU,Channel) ->
          write_wait(CPU,Channel);
 
       {step,PID} ->
-   	   trace(write,CPU,CPU#cpu.log),
+   	   debug(write,CPU,CPU#cpu.log),
          PID ! {ID,step},
          write_wait(CPU,Channel);
 
@@ -684,25 +692,55 @@ pop(rs,CPU) ->
 
 % UTILITY FUNCTIONS
 % 
+notify(CPU,Msg) ->
+   ID    = CPU#cpu.id,
+   GA144 = CPU#cpu.ga144,
+
+   case GA144 of
+      undefined ->
+         ok;
+
+      PID ->
+         PID ! {ID,Msg},
+         ok
+   end.
+
+debug(_,_,no) ->
+   ok;
+
+debug({?JUMP,Addr,Mask},CPU,_) ->
+   P = CPU#cpu.p,
+   D = (P band Mask) bor Addr,
+   log:debug  (?TAG,io_lib:format("~p: ~s ~p",[CPU#cpu.id,opcode:to_string(?JUMP),D]));
+
+debug({?CALL,Addr,Mask},CPU,_) ->
+   P = CPU#cpu.p,
+   D = (P band Mask) bor Addr,
+   log:debug  (?TAG,io_lib:format("~p: ~s ~p",[CPU#cpu.id,opcode:to_string(?CALL),D]));
+
+debug(read,CPU,_) ->
+   log:debug  (?TAG,io_lib:format("~p: ~s",[CPU#cpu.id,"<READ>"]));
+
+debug(write,CPU,_) ->
+   log:debug  (?TAG,io_lib:format("~p: ~s",[CPU#cpu.id,"<WRITE>"]));
+
+debug(OpCode,CPU,_) ->
+   log:debug  (?TAG,io_lib:format("~p: ~s",[CPU#cpu.id,opcode:to_string(OpCode)])).
+   
+
 trace(_,_,no) ->
    ok;
 
 trace({?JUMP,_,_},CPU,_) ->
-   log:debug  (?TAG,io_lib:format("~p: ~s ~p",[CPU#cpu.id,opcode:to_string(?JUMP),CPU#cpu.p])),
+%  log:debug  (?TAG,io_lib:format("~p: ~s ~p",[CPU#cpu.id,opcode:to_string(?JUMP),CPU#cpu.p])),
    trace:trace(f18A,?JUMP,CPU);
 
 trace({?CALL,_,_},CPU,_) ->
-   log:debug  (?TAG,io_lib:format("~p: ~s ~p",[CPU#cpu.id,opcode:to_string(?CALL),CPU#cpu.p])),
+%  log:debug  (?TAG,io_lib:format("~p: ~s ~p",[CPU#cpu.id,opcode:to_string(?CALL),CPU#cpu.p])),
    trace:trace(f18A,?CALL,CPU);
 
-trace(read,CPU,_) ->
-   log:debug  (?TAG,io_lib:format("~p: ~s",[CPU#cpu.id,"<READ>"]));
-
-trace(write,CPU,_) ->
-   log:debug  (?TAG,io_lib:format("~p: ~s",[CPU#cpu.id,"<WRITE>"]));
-
 trace(OpCode,CPU,_) ->
-   log:debug  (?TAG,io_lib:format("~p: ~s",[CPU#cpu.id,opcode:to_string(OpCode)])),
+%  log:debug  (?TAG,io_lib:format("~p: ~s",[CPU#cpu.id,opcode:to_string(OpCode)])),
    trace:trace(f18A,OpCode,CPU).
    
 % EUNIT TESTS
