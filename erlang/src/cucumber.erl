@@ -133,7 +133,7 @@ parse_feature([Line|T],Scenarios,Tags) ->
             parse_feature(T,Scenarios,Tags)
         end.        
 
-parse_scenario([],Scenarios,Tags) ->
+parse_scenario([],Scenarios,_Tags) ->
     [ #scenario{ scenario = X#scenario.scenario,
                  steps = lists:reverse(X#scenario.steps),
                  tags = X#scenario.tags

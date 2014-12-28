@@ -80,19 +80,18 @@ step(F18A) ->
 
 step(F18A,wait) ->
    F18A ! { step,self() },
-   step_wait(F18A);
+   step_wait();
 
 step(F18A,PID) ->
    F18A ! { step,PID }.
 
-step_wait(F18A) ->
-   ID = F18A#cpu.id,
+step_wait() ->
    receive
-      {ID,step} ->
+      {_ID,step} ->
          ok;
 
       _ -> 
-         step_wait(F18A)
+         step_wait()
    end.
 
 

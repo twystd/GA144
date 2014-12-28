@@ -46,9 +46,6 @@ step(F18A,N) ->
    f18A:step(F18A,wait),
    step(F18A,N-1).
 
-read() ->
-   read(n000).
-
 read(Node) ->
    read(Node,[]).
 
@@ -71,6 +68,8 @@ cucumber_n404_test() ->
    RAM  = util:read_ram("../cucumber/404.bin"),     
    ROM  = util:read_rom("../cucumber/404.bin"),     
    F18A = f18A:create(n001,{nxxx,nxxx,nxxx,nxxx},ROM,RAM),
+
+   util:unregister(nxxx),
 
    register(nxxx,spawn(fun() ->
                           L = read(nxxx),
@@ -103,6 +102,8 @@ n404_test() ->
    ROM  = array:new(64,[{default,16#11407}]),
    F18A = f18A:create(n001,{nxxx,nxxx,nxxx,nxxx},ROM,RAM),
 
+   util:unregister(nxxx),
+
    register(nxxx,spawn(fun() ->
                           L = read(nxxx),
                           M ! {rx,L}
@@ -133,6 +134,8 @@ n406_test() ->
    RAM  = array:from_list([16#049F3,16#00005,16#36155,16#049F3,16#00001,16#13400,16#09703,16#04B12,16#00175,16#3FFFF,16#11403]),
    ROM  = array:new(64,[{default,16#11407}]),
    F18A = f18A:create(n001,{nxxx,nxxx,nxxx,nxxx},ROM,RAM),
+
+   util:unregister(nxxx),
 
    register(nxxx,spawn(fun() ->
                           L = read(nxxx),
