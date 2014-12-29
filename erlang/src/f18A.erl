@@ -818,60 +818,21 @@ pop_rs_test() ->
    assert([{r,7},{rs,{7,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={6,Stack}})),
    assert([{r,8},{rs,{0,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={7,Stack}})).
 
-jump_test() ->
-   P = 16#0a9,
-   {ok,CPU} = exec_impl({?JUMP,16#03,16#0000},#cpu{p=P}),
-   assert([{p,16#03}],CPU).
-
-call_test() ->
-   P   = 16#0a9,
-   R   = 16#000,
-   RS  = {0,array:from_list([1,2,3,4,5,6,7,8])},
-   RAM = array:from_list([16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2,16#2c9b2]),
-   I   = [ ?RET,?RET,?RET,?RET ],
-   {ok,CPU} = exec_impl({?CALL,16#03,16#0000},#cpu{p=P,r=R,rs=RS,i=I,ram=RAM}),
-   assert([{p,16#03},{r,16#0a9},{rs,{7,[1,2,3,4,5,6,7,0]}},{i,[]}],CPU).
-
-storeb_test() ->
-   S   = 9,
-   T   = 678,
-   B   = 16#004,
-   RAM = array:new(64,[{default,0}]),
-   DS  = {0,array:from_list([1,2,3,4,5,6,7,8])},
-   {ok,CPU} = exec_impl(?STOREB,#cpu{b=B,
-                                     t=T,
-                                     s=S,
-                                     ds=DS,
-                                     ram=RAM}),
-   assert([{ram,4,678},{t,S},{s,1},{ds,{1,[1,2,3,4,5,6,7,8]}}],CPU).
-
-plus_test() ->
-   plus_test_impl(16#0000,1,       2,       0,3),
-   plus_test_impl(16#0000,16#3ffff,16#3fffe,0,16#3fffd),
-   plus_test_impl(16#0000,16#3ffff,16#00001,0,0),
-
-   plus_test_impl(16#0200,1,       2,       0,3),
-   plus_test_impl(16#0200,16#3ffff,16#3fffe,0,16#3fffd),
-   plus_test_impl(16#0200,16#3ffff,16#00001,0,0),
-
-   plus_test_impl(16#0200,1,       2,       1,4),
-   plus_test_impl(16#0200,16#3ffff,16#3fffe,1,16#3fffe),
-   plus_test_impl(16#0200,16#3ffff,16#00001,1,1).
-
-plus_test_impl(P,T,S,C,R) ->
-   DS  = {0,array:from_list([3,4,5,6,7,8,9,10])},
-   {ok,CPU} = exec_impl(?PLUS,#cpu{ p=P,
-                                    t=T,
-                                    s=S,
-                                    ds=DS,
-                                    carry=C }),
-   assert([{t,R},{s,3},{ds,{1,[3,4,5,6,7,8,9,10]}}],CPU).
-
 -define(TEST_RET,[{?RET,
                    [{p,1},{r,2},{rs,0,[3,4,5,6,7,8,9,10]},{i,[?NOP,?NOP,?NOP,?NOP]}],
                    [{p,2},{r,3},{rs,1,[3,4,5,6,7,8,9,10]},{i,[]}] }
                  ]).
-                    
+
+-define(TEST_CALL,[{{?CALL,16#03,16#0000},
+                    [{p,16#0a9},{r,16#000},{rs,0,[1,2,3,4,5,6,7,8]},{i,[?RET,?RET,?RET,?RET]}],
+                    [{p,16#003},{r,16#0a9},{rs,7,[1,2,3,4,5,6,7,0]},{i,[]}] }
+                  ]). 
+
+-define(TEST_JUMP,[{{?JUMP,16#03,16#0000},
+                    [{p,16#0a9}],
+                    [{p,16#003}] } 
+                  ]).
+
 -define(TEST_FETCHP,[{?FETCHP,
                       [{ram,15,678},{p,15},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
                       [{ram,15,678},{p,16},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
@@ -881,6 +842,11 @@ plus_test_impl(P,T,S,C,R) ->
                      [{ram,15,678},{b,15},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
                      [{ram,15,678},{b,15},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
                    ]).
+
+-define(TEST_STOREB,[{?STOREB,
+                      [{ram,4,0},  {b,4},{t,678},{s,9},{ds,0,[1,2,3,4,5,6,7,8]}],
+                      [{ram,4,678},{b,4},{t,9},{s,1},{ds,1,[1,2,3,4,5,6,7,8]}]}
+                    ]).
 
 -define(TEST_STORE,[{?STORE,
                      [{ram,0,0},{a,0},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
@@ -894,6 +860,45 @@ plus_test_impl(P,T,S,C,R) ->
                    {?SHL,[{t,16#10000}],[{t,16#20000}]},
                    {?SHL,[{t,16#20000}],[{t,16#00000}]}
                  ]).
+
+% TODO check carry after plus
+-define(TEST_PLUS,[ {?PLUS,
+                     [{p,16#0000},{t,1},{s,2},{carry,0},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{p,16#0000},{t,3},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                    {?PLUS,
+                     [{p,16#0000},{t,16#3ffff},{s,16#3fffe},{carry,0},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{p,16#0000},{t,16#3fffd},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                    {?PLUS,
+                     [{p,16#0000},{t,16#3ffff},{s,16#00001},{carry,0},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{p,16#0000},{t,16#00000},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                    {?PLUS,
+                     [{p,16#0200},{t,1},{s,2},{carry,0},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{p,16#0200},{t,3},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                    {?PLUS,
+                     [{p,16#0200},{t,16#3ffff},{s,16#3fffe},{carry,0},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{p,16#0200},{t,16#3fffd},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                    {?PLUS,
+                     [{p,16#0200},{t,16#3ffff},{s,16#00001},{carry,0},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{p,16#0200},{t,16#00000},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                    {?PLUS,
+                     [{p,16#0200},{t,1},{s,2},{carry,1},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{p,16#0200},{t,4},{s,3},{carry,1},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                    {?PLUS,
+                     [{p,16#0200},{t,16#3ffff},{s,16#3fffe},{carry,1},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{p,16#0200},{t,16#3fffe},{s,3},       {carry,1},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                    {?PLUS,
+                     [{p,16#0200},{t,16#3ffff},{s,16#00001},{carry,1},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{p,16#0200},{t,1},       {s,3},       {carry,1},{ds,1,[3,4,5,6,7,8,9,10]}]}
+   
+                  ]).
 
 -define(TEST_DUP,[ {?DUP,
                     [{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
@@ -919,10 +924,14 @@ plus_test_impl(P,T,S,C,R) ->
 -define(RND(N),random:uniform(N+1) - 1).
 
 ret_test()    -> test_opcode(?TEST_RET).
+call_test()   -> test_opcode(?TEST_CALL).
+jump_test()   -> test_opcode(?TEST_JUMP).
 fetchp_test() -> test_opcode(?TEST_FETCHP).
 fetchb_test() -> test_opcode(?TEST_FETCHB).
+storeb_test() -> test_opcode(?TEST_STOREB).
 store_test()  -> test_opcode(?TEST_STORE).
 shl_test()    -> test_opcode(?TEST_SHL).
+plus_test()   -> test_opcode(?TEST_PLUS).
 dup_test()    -> test_opcode(?TEST_DUP).
 nop_test()    -> test_opcode(?TEST_NOP).
 bstore_test() -> test_opcode(?TEST_BSTORE).
@@ -952,16 +961,17 @@ test_cpu() ->
        }.
 
 test_init(CPU,[])            -> CPU;
-test_init(CPU,[{p,X}    |T]) -> test_init(CPU#cpu{p=X},T);
-test_init(CPU,[{r,X}    |T]) -> test_init(CPU#cpu{r=X},T);
-test_init(CPU,[{a,X}    |T]) -> test_init(CPU#cpu{a=X},T);
-test_init(CPU,[{b,X}    |T]) -> test_init(CPU#cpu{b=X},T);
-test_init(CPU,[{t,X}    |T]) -> test_init(CPU#cpu{t=X},T);
-test_init(CPU,[{s,X}    |T]) -> test_init(CPU#cpu{s=X},T);
-test_init(CPU,[{i,X}    |T]) -> test_init(CPU#cpu{i=X},T);
-test_init(CPU,[{ds,X,Y} |T]) -> test_init(CPU#cpu{ds={X,array:from_list(Y)}},T);
-test_init(CPU,[{rs,X,Y} |T]) -> test_init(CPU#cpu{rs={X,array:from_list(Y)}},T);
-test_init(CPU,[{ram,A,W}|T]) -> test_init(CPU#cpu{ram=array:set(A,W,CPU#cpu.ram)},T).
+test_init(CPU,[{p,X}     |T]) -> test_init(CPU#cpu{p=X},T);
+test_init(CPU,[{carry,X} |T]) -> test_init(CPU#cpu{carry=X},T);
+test_init(CPU,[{r,X}     |T]) -> test_init(CPU#cpu{r=X},T);
+test_init(CPU,[{a,X}     |T]) -> test_init(CPU#cpu{a=X},T);
+test_init(CPU,[{b,X}     |T]) -> test_init(CPU#cpu{b=X},T);
+test_init(CPU,[{t,X}     |T]) -> test_init(CPU#cpu{t=X},T);
+test_init(CPU,[{s,X}     |T]) -> test_init(CPU#cpu{s=X},T);
+test_init(CPU,[{i,X}     |T]) -> test_init(CPU#cpu{i=X},T);
+test_init(CPU,[{ds,X,Y}  |T]) -> test_init(CPU#cpu{ds={X,array:from_list(Y)}},T);
+test_init(CPU,[{rs,X,Y}  |T]) -> test_init(CPU#cpu{rs={X,array:from_list(Y)}},T);
+test_init(CPU,[{ram,A,W} |T]) -> test_init(CPU#cpu{ram=array:set(A,W,CPU#cpu.ram)},T).
 
 test_verify(Expected,Actual) ->
 %  ?debugFmt("EXPECTED: ~p",[Expected]),
