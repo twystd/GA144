@@ -18,6 +18,7 @@
               carry = 0,
 
               breakpoints = [],
+              probes      = [],
               log         = yes,
               trace       = yes
             }).

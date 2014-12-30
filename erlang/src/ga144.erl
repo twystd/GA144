@@ -88,6 +88,16 @@ go(GA144) ->
    timer:sleep(10),
    lists:foreach(G,GA144#ga144.nodes).
 
+probe(GA144,Node,Probe) ->
+   lists:foreach(fun(F18A) -> probe_impl(F18A,nodeid(Node),Probe) end,
+                 GA144#ga144.nodes).
+
+probe_impl(F18A,F18A,Probe) ->
+   f18A:probe(F18A,Probe);
+
+probe_impl(_,_,_) ->
+   ok.
+
 % UTILITY
 
 nodeid(ID) ->
@@ -109,13 +119,45 @@ down(ID) -> nodeid(ID-100).
 % EUNIT
 
 hccforth_test() ->
+    M = self(),
+    L = spawn(fun() -> peek(M,undefined) end),
+    P = fun(CPU) ->
+             T      = CPU#cpu.t,  
+             S      = CPU#cpu.s, 
+             {I,DS} = CPU#cpu.ds,
+             DSX    = rotate(array:to_list(DS),I),
+             L ! {peek,lists:append([T,S],DSX)}
+       end,
+
    GA144 = init([{404,"../cucumber/404.bin"},
                  {405,"../cucumber/405.bin"},
                  {406,"../cucumber/406.bin"},
                  {505,"../cucumber/505.bin"}
                 ]),
+
+   probe(GA144,505,P),
    reset(GA144),
-   step (GA144,20),
-%  go   (GA144),
+   step (GA144,97),
+
+   L ! stop,
+   R = receive 
+           {peek,X} -> X 
+       end, 
+   ?assertEqual([41,36,31,26,21,0,0,0,0,0],R),
    ok.
+
+peek(M,X) ->
+    receive 
+        {peek,DS} ->
+            peek(M,DS);
+
+        stop ->
+            M ! {peek,X}
+    end.
+
+
+
+rotate(L, 0) -> L;
+rotate([],_) -> [];
+rotate(L, N) -> {H,T} = lists:split(N,L), lists:append(T,H).
 

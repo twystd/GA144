@@ -9,6 +9,7 @@
 -export([step/1,step/2]).
 -export([breakpoint/2]).
 -export([peek/2]).
+-export([probe/2]).
 
 % FOR INTERNAL USE ONLY
 -export([run/1]).
@@ -140,6 +141,12 @@ breakpoint(F18A,Address) ->
    F18A ! {breakpoint,Address},
    ok.
 
+%% @doc Inserts a probe into the exec loop.
+%%
+probe(F18A,Probe) ->
+   F18A ! {probe,Probe},
+   ok.
+
 %% @doc Returns the internal state of a CPU register.
 %% 
 peek(F18A,Register) ->
@@ -208,6 +215,10 @@ loop({run,CPU}) ->
       {breakpoint,Address} ->
          Breakpoints = [ Address|CPU#cpu.breakpoints],          
          loop({run,CPU#cpu{ breakpoints = Breakpoints
+                          }});
+
+      {probe,Probe} ->
+         loop({run,CPU#cpu{ probes = [Probe|CPU#cpu.probes]          
                           }});
 
       {peek,Register,PID} ->
@@ -313,15 +324,19 @@ exec(CPU,[]) ->
    end;
 
 exec(CPU,[H|T]) ->
-   debug(H,CPU,CPU#cpu.log),
-   case exec_impl(H,CPU#cpu{ i=T }) of
-   	{ok,CPUX} ->
-   	    trace(H,CPUX,CPU#cpu.log),
-   	    {ok,CPUX};
+    debug(H,CPU,CPU#cpu.log),
+    case exec_impl(H,CPU#cpu{ i=T }) of
+     	   {ok,CPUX} ->
+   	       trace(H,CPUX,CPU#cpu.log),
+           lists:foreach(fun(Probe) -> 
+                                 Probe(CPUX)
+                         end,
+                         CPUX#cpu.probes),
+   	       {ok,CPUX};
 
-        Other ->
-	    Other
-	end.
+         Other ->
+	          Other
+	  end.
 
 % 16#00  ;   ret
 exec_impl(?RET,CPU) ->
