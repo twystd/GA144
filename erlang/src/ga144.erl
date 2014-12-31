@@ -2,7 +2,7 @@
 
 % EXPORTS
 
--export([init/1,reset/1,go/1,step/1,step/2]).
+-export([init/1,reset/1,go/1,stop/1,break/1,step/1,step/2]).
 
 
 % INCLUDES
@@ -83,10 +83,15 @@ step_wait(L) ->
 
 go(GA144) ->
    F = fun(F18A) -> f18A:go  (F18A)      end,
-   G = fun(F18A) -> f18A:stop(F18A,wait) end,
-   lists:foreach(F,GA144#ga144.nodes),
-   timer:sleep(10),
-   lists:foreach(G,GA144#ga144.nodes).
+   lists:foreach(F,GA144#ga144.nodes).
+
+stop(GA144) ->
+   F = fun(F18A) -> f18A:stop(F18A,wait) end,
+   lists:foreach(F,GA144#ga144.nodes).
+
+break(GA144) ->
+   lists:foreach(fun(F18A) -> f18A:break(F18A) end,
+                 GA144#ga144.nodes).
 
 probe(GA144,Node,Probe) ->
    lists:foreach(fun(F18A) -> probe_impl(F18A,nodeid(Node),Probe) end,
@@ -118,7 +123,7 @@ down(ID) -> nodeid(ID-100).
 
 % EUNIT
 
-hccforth_test() ->
+hccforth_step_test() ->
     M = self(),
     L = spawn(fun() -> peek(M,undefined) end),
     P = fun(CPU) ->
@@ -143,7 +148,63 @@ hccforth_test() ->
    R = receive 
            {peek,X} -> X 
        end, 
+   ?debugMsg("--OK"),
    ?assertEqual([41,36,31,26,21,0,0,0,0,0],R),
+   ok.
+
+hccforth_go_test() ->
+    M = self(),
+    L = spawn(fun() -> peek(M,undefined) end),
+    P = fun(CPU) ->
+             T      = CPU#cpu.t,  
+             S      = CPU#cpu.s, 
+             {I,DS} = CPU#cpu.ds,
+             DSX    = rotate(array:to_list(DS),I),
+             L ! {peek,lists:append([T,S],DSX)},
+             
+             case T of 
+                 41 ->
+                     M ! break;
+
+                 _else ->
+                     ok
+             end
+       end,
+
+   GA144 = init([{404,"../cucumber/404.bin"},
+                 {405,"../cucumber/405.bin"},
+                 {406,"../cucumber/406.bin"},
+                 {505,"../cucumber/505.bin"}
+                ]),
+
+   probe(GA144,505,P),
+   reset(GA144),
+   go   (GA144),
+
+   X = receive
+           break ->
+               break(GA144),
+               timer:sleep(100),
+               ok
+
+        after 500 ->
+             timeout
+        end,
+
+   stop(GA144),
+
+   L ! stop,
+   R = receive 
+           {peek,V} -> 
+               V
+
+       after 100 ->
+            none     
+       end, 
+
+   ?assertEqual(ok,X),
+   ?assertEqual([41,36,31,26,21,0,0,0,0,0],R),
+   ?debugMsg("--OK"),
    ok.
 
 peek(M,X) ->

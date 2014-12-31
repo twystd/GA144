@@ -5,6 +5,7 @@
 -export([create/4,create/5,create/6]).
 -export([reset/1]).
 -export([go/1,go/2]).
+-export([break/1]).
 -export([stop/1,stop/2]).
 -export([step/1,step/2]).
 -export([breakpoint/2]).
@@ -112,6 +113,11 @@ go_wait() ->
       _    -> go_wait()
    end.
 
+%% @doc Issues a BREAK command to the F18A node and returns immediately.
+%%
+break(F18A) ->
+   F18A ! break,
+   ok.
 
 %% @doc Issues a STOP command to the F18A node and returns immediately.
 %%
@@ -212,6 +218,9 @@ loop({run,CPU}) ->
          PID ! gone,
          loop(Next);
 
+      break ->
+         loop({run,CPU});
+
       {breakpoint,Address} ->
          Breakpoints = [ Address|CPU#cpu.breakpoints],          
          loop({run,CPU#cpu{ breakpoints = Breakpoints
@@ -278,25 +287,34 @@ step_impl(CPU) ->
 
 go_impl(CPU) ->
    case exec(CPU) of 
-      {ok,CPUX} ->
-         go_impl(CPUX);
+       {ok,CPUX} ->
+           receive
+               break ->
+                    {run,CPU}
 
-      {breakpoint,CPUX} ->
-         {breakpoint,CPUX};
+           after 0 ->
+                go_impl(CPUX)
+           end;
+ 
+       break ->
+           {run,CPU};
 
-      eof ->
-         trace:trace(f18A,{ CPU#cpu.id,eof}),     
-         {eof,CPU};
+       {breakpoint,CPUX} ->
+           {breakpoint,CPUX};
+
+       eof ->
+           trace:trace(f18A,{ CPU#cpu.id,eof}),     
+           {eof,CPU};
    
-      {stop,PID} ->
-         trace:trace(f18A,{ CPU#cpu.id,stop}),     
-         PID ! stopped,
-         {stop,CPU};
+       {stop,PID} ->
+           trace:trace(f18A,{ CPU#cpu.id,stop}),     
+           PID ! stopped,
+           {stop,CPU};
 
-      {error,Reason} ->
-         log:error(?TAG,"OOOOPS/ : ~p",[Reason]),
-         {error,CPU}
-   end.
+       {error,Reason} ->
+           log:error(?TAG,"OOOOPS/ : ~p",[Reason]),
+           {error,CPU}
+    end.
 
 
 exec(CPU) ->
@@ -563,24 +581,27 @@ read_channel(CPU,Ch) ->
    read_wait(CPU,Ch). 
 
 read_wait(CPU,Ch) ->
-   ID = CPU#cpu.id,   
+    ID = CPU#cpu.id,   
 
-   receive
-      {Ch,write,Word} -> 
-         Ch ! { ID,read,ok },
-         {ok,Word};
+    receive
+        {Ch,write,Word} -> 
+            Ch ! { ID,read,ok },
+            {ok,Word};
 
-      step ->
-         read_channel(CPU,Ch);
+        step ->
+            read_channel(CPU,Ch);
 
-      {step,PID} ->
-   	   debug(read,CPU,CPU#cpu.log),
-         PID ! {ID,step},
-         read_wait(CPU,Ch);
+        {step,PID} ->
+   	        debug(read,CPU,CPU#cpu.log),
+            PID ! {ID,step},
+            read_wait(CPU,Ch);
 
-      {stop,PID} ->
-         {stop,PID}
-   end.
+        break ->
+            break;
+
+        {stop,PID} ->
+            {stop,PID}
+    end.
 
 % WRITE
 
@@ -653,22 +674,26 @@ write_channel(CPU,Ch,Word,_) ->
 %    {ok,CPU#cpu.ram}.
 
 write_wait(CPU,Channel) ->
-   ID = CPU#cpu.id,
-   receive
-      { Channel,read,ok } -> 
-         {ok,CPU#cpu.ram};
+    ID = CPU#cpu.id,
+    receive
+        { Channel,read,ok } -> 
+            {ok,CPU#cpu.ram};
 
-      step ->
-         write_wait(CPU,Channel);
+        step ->
+            write_wait(CPU,Channel);
 
-      {step,PID} ->
-   	   debug(write,CPU,CPU#cpu.log),
-         PID ! {ID,step},
-         write_wait(CPU,Channel);
+        {step,PID} ->
+   	        debug(write,CPU,CPU#cpu.log),
+            PID ! {ID,step},
+            write_wait(CPU,Channel);
 
-      {stop,PID} ->
-         {stop,PID}
-   end.
+        break ->
+            ?debugFmt("********************************************************** DEBUG/BREAK:5 ~p",[CPU#cpu.id]),
+            break;
+
+       {stop,PID} ->
+           {stop,PID}
+    end.
 
 % PUSH
 
