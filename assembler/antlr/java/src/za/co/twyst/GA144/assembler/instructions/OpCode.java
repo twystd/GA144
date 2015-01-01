@@ -11,6 +11,7 @@ public class OpCode extends Instruction {
     	                 STOREB(0x0e,"!b",   "store-b"),
                          STORE (0x0f,"!",    "store"),
                          SHL   (0x11,"2*",   "left-shift"),
+                         NOT   (0x13,"-",    "not"),
     	                 PLUS  (0x14,"+",    "plus"),
     	                 DUP   (0x18,"dup",  "dup"),
     	                 NOP   (0x1c,".",    "nop"),

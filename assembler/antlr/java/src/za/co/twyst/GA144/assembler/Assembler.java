@@ -50,6 +50,7 @@ import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.FETCHP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.JUMP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.NOP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.SHL;
+import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.NOT;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.PLUS;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.RET;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.STOREB;
@@ -381,6 +382,10 @@ public class Assembler extends F18ABaseListener {
                     
                 case "2*":                  
                     instructions.add(new OpCode(SHL));
+                    break;
+                    
+                case "-":                  
+                    instructions.add(new OpCode(NOT));
                     break;
                     
                 case "+":                  

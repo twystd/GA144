@@ -437,6 +437,13 @@ exec_impl(?SHL,CPU) ->
               }};
 
 
+% 16#13  -    not
+exec_impl(?NOT,CPU) ->
+   T = CPU#cpu.t band 16#3ffff,   
+   {ok,CPU#cpu{t = ((bnot T) band 16#3ffff)
+              }};
+
+
 % 16#14  +   plus
 exec_impl(?PLUS,CPU) ->
    T  = CPU#cpu.t band 16#3ffff,   
@@ -688,7 +695,6 @@ write_wait(CPU,Channel) ->
             write_wait(CPU,Channel);
 
         break ->
-            ?debugFmt("********************************************************** DEBUG/BREAK:5 ~p",[CPU#cpu.id]),
             break;
 
        {stop,PID} ->
@@ -836,27 +842,46 @@ push_rs_test() ->
    assert([{rs,{5,[1,2,3,4,5,0,7,8]}}],push(rs,#cpu{s=0,rs={6,array:from_list([1,2,3,4,5,6,7,8])}})),
    assert([{rs,{6,[1,2,3,4,5,6,0,8]}}],push(rs,#cpu{s=0,rs={7,array:from_list([1,2,3,4,5,6,7,8])}})).
 
+-define(TEST_POPDS,[ { [{t,16#3ffff},{s,0},{ds,0,[1,2,3,4,5,6,7,8]}],[{t,0},{s,1},{ds,1,[1,2,3,4,5,6,7,8]}]},
+                     { [{t,16#3ffff},{s,0},{ds,1,[1,2,3,4,5,6,7,8]}],[{t,0},{s,2},{ds,2,[1,2,3,4,5,6,7,8]}]},
+                     { [{t,16#3ffff},{s,0},{ds,2,[1,2,3,4,5,6,7,8]}],[{t,0},{s,3},{ds,3,[1,2,3,4,5,6,7,8]}]},
+                     { [{t,16#3ffff},{s,0},{ds,3,[1,2,3,4,5,6,7,8]}],[{t,0},{s,4},{ds,4,[1,2,3,4,5,6,7,8]}]},
+                     { [{t,16#3ffff},{s,0},{ds,4,[1,2,3,4,5,6,7,8]}],[{t,0},{s,5},{ds,5,[1,2,3,4,5,6,7,8]}]},
+                     { [{t,16#3ffff},{s,0},{ds,5,[1,2,3,4,5,6,7,8]}],[{t,0},{s,6},{ds,6,[1,2,3,4,5,6,7,8]}]},
+                     { [{t,16#3ffff},{s,0},{ds,6,[1,2,3,4,5,6,7,8]}],[{t,0},{s,7},{ds,7,[1,2,3,4,5,6,7,8]}]},
+                     { [{t,16#3ffff},{s,0},{ds,7,[1,2,3,4,5,6,7,8]}],[{t,0},{s,8},{ds,0,[1,2,3,4,5,6,7,8]}]}
+                   ]).
+
+
+-define(TEST_POPRS,[ { [{r,0},{rs,0,[1,2,3,4,5,6,7,8]}],[{r,1},{rs,1,[1,2,3,4,5,6,7,8]}]},
+                     { [{r,0},{rs,1,[1,2,3,4,5,6,7,8]}],[{r,2},{rs,2,[1,2,3,4,5,6,7,8]}]},
+                     { [{r,0},{rs,2,[1,2,3,4,5,6,7,8]}],[{r,3},{rs,3,[1,2,3,4,5,6,7,8]}]},
+                     { [{r,0},{rs,3,[1,2,3,4,5,6,7,8]}],[{r,4},{rs,4,[1,2,3,4,5,6,7,8]}]},
+                     { [{r,0},{rs,4,[1,2,3,4,5,6,7,8]}],[{r,5},{rs,5,[1,2,3,4,5,6,7,8]}]},
+                     { [{r,0},{rs,5,[1,2,3,4,5,6,7,8]}],[{r,6},{rs,6,[1,2,3,4,5,6,7,8]}]},
+                     { [{r,0},{rs,6,[1,2,3,4,5,6,7,8]}],[{r,7},{rs,7,[1,2,3,4,5,6,7,8]}]},
+                     { [{r,0},{rs,7,[1,2,3,4,5,6,7,8]}],[{r,8},{rs,0,[1,2,3,4,5,6,7,8]}]}
+                   ]).
+
 pop_ds_test() ->
-   Stack = array:from_list([1,2,3,4,5,6,7,8]),
-   assert([{t,0},{s,1},{ds,{1,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={0,Stack}},0)),
-   assert([{t,0},{s,2},{ds,{2,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={1,Stack}},0)),
-   assert([{t,0},{s,3},{ds,{3,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={2,Stack}},0)),
-   assert([{t,0},{s,4},{ds,{4,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={3,Stack}},0)),
-   assert([{t,0},{s,5},{ds,{5,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={4,Stack}},0)),
-   assert([{t,0},{s,6},{ds,{6,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={5,Stack}},0)),
-   assert([{t,0},{s,7},{ds,{7,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={6,Stack}},0)),
-   assert([{t,0},{s,8},{ds,{0,[1,2,3,4,5,6,7,8]}}],pop(ds,#cpu{t=16#3ffff,s=0,ds={7,Stack}},0)).
+    lists:foreach(fun({Initial,Final}) -> 
+                          CPU = test_cpu(),
+                          I   = test_init(CPU,Initial),
+                          F   = test_init(CPU,Final),
+                          X   = pop(ds,I,0),
+                          test_verify(F,X)
+                  end,
+                  ?TEST_POPDS).
 
 pop_rs_test() ->
-   Stack = array:from_list([1,2,3,4,5,6,7,8]),
-   assert([{r,1},{rs,{1,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={0,Stack}})),
-   assert([{r,2},{rs,{2,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={1,Stack}})),
-   assert([{r,3},{rs,{3,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={2,Stack}})),
-   assert([{r,4},{rs,{4,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={3,Stack}})),
-   assert([{r,5},{rs,{5,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={4,Stack}})),
-   assert([{r,6},{rs,{6,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={5,Stack}})),
-   assert([{r,7},{rs,{7,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={6,Stack}})),
-   assert([{r,8},{rs,{0,[1,2,3,4,5,6,7,8]}}],pop(rs,#cpu{r=0,rs={7,Stack}})).
+    lists:foreach(fun({Initial,Final}) -> 
+                          CPU = test_cpu(),
+                          I   = test_init(CPU,Initial),
+                          F   = test_init(CPU,Final),
+                          X   = pop(rs,I),
+                          test_verify(F,X)
+                  end,
+                  ?TEST_POPRS).
 
 -define(TEST_RET,[{?RET,
                    [{p,1},{r,2},{rs,0,[3,4,5,6,7,8,9,10]},{i,[?NOP,?NOP,?NOP,?NOP]}],
@@ -899,6 +924,13 @@ pop_rs_test() ->
                    {?SHL,[{t,16#00008}],[{t,16#00010}]},
                    {?SHL,[{t,16#10000}],[{t,16#20000}]},
                    {?SHL,[{t,16#20000}],[{t,16#00000}]}
+                 ]).
+
+
+-define(TEST_NOT,[ {?NOT,[{t,16#00000}],[{t,16#3ffff}]},
+                   {?NOT,[{t,16#15555}],[{t,16#2aaaa}]},
+                   {?NOT,[{t,16#2aaaa}],[{t,16#15555}]},
+                   {?NOT,[{t,16#3ffff}],[{t,16#00000}]}
                  ]).
 
 % TODO check carry after plus
@@ -971,6 +1003,7 @@ fetchb_test() -> test_opcode(?TEST_FETCHB).
 storeb_test() -> test_opcode(?TEST_STOREB).
 store_test()  -> test_opcode(?TEST_STORE).
 shl_test()    -> test_opcode(?TEST_SHL).
+not_test()    -> test_opcode(?TEST_NOT).
 plus_test()   -> test_opcode(?TEST_PLUS).
 dup_test()    -> test_opcode(?TEST_DUP).
 nop_test()    -> test_opcode(?TEST_NOP).
@@ -997,10 +1030,11 @@ test_cpu() ->
          b  = ?RND,
          t  = ?RND,
          s  = ?RND,
-         ds = {?RND(8),[?RND,?RND,?RND,?RND,?RND,?RND,?RND,?RND]}
+         ds = {?RND(7),array:from_list([?RND,?RND,?RND,?RND,?RND,?RND,?RND,?RND])},
+         rs = {?RND(7),array:from_list([?RND,?RND,?RND,?RND,?RND,?RND,?RND,?RND])}
        }.
 
-test_init(CPU,[])            -> CPU;
+test_init(CPU,[])             -> CPU;
 test_init(CPU,[{p,X}     |T]) -> test_init(CPU#cpu{p=X},T);
 test_init(CPU,[{carry,X} |T]) -> test_init(CPU#cpu{carry=X},T);
 test_init(CPU,[{r,X}     |T]) -> test_init(CPU#cpu{r=X},T);
