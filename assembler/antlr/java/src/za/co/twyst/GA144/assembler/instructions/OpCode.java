@@ -13,6 +13,7 @@ public class OpCode extends Instruction {
                          SHL   (0x11,"2*",   "left-shift"),
                          NOT   (0x13,"-",    "not"),
     	                 PLUS  (0x14,"+",    "plus"),
+                         AND   (0x15,"and",  "and"),
     	                 DUP   (0x18,"dup",  "dup"),
     	                 NOP   (0x1c,".",    "nop"),
     	                 BSTORE(0x1e,"b!",   "b-store"),

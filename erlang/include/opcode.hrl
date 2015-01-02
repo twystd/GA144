@@ -10,6 +10,7 @@
 -define(SHL,   16#11).
 -define(NOT,   16#13).
 -define(PLUS,  16#14).
+-define(AND,   16#15).
 -define(DUP,   16#18).
 -define(NOP,   16#1c).
 -define(BSTORE,16#1e).

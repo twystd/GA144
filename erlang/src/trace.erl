@@ -110,10 +110,19 @@ trace(f18A,?SHL,CPU) ->
    T = CPU#cpu.t,   
    trace(f18A,{ CPU#cpu.id,{shl,{t,T}}});
 
+trace(f18A,?NOT,CPU) ->
+   T = CPU#cpu.t,   
+   trace(f18A,{ CPU#cpu.id,{'not',{t,T}}});
+
 trace(f18A,?PLUS,CPU) ->
    S = CPU#cpu.s,
    T = CPU#cpu.t,   
    trace(f18A,{ CPU#cpu.id,{plus,{s,S},{t,T}}});
+
+trace(f18A,?AND,CPU) ->
+   S = CPU#cpu.s,
+   T = CPU#cpu.t,   
+   trace(f18A,{ CPU#cpu.id,{plus,{t,T},{s,S},{ds,CPU#cpu.ds}}});
 
 trace(f18A,?DUP,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,dup});     
