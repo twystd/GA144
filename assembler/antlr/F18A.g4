@@ -60,6 +60,7 @@ OPCODE
     | '-'
     | '+'
     | 'and'
+    | 'or'  | 'xor'
     | 'dup'
     | 'nop' | '.'
     | '!b'

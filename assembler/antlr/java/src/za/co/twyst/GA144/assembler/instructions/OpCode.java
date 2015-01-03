@@ -14,6 +14,7 @@ public class OpCode extends Instruction {
                          NOT   (0x13,"-",    "not"),
     	                 PLUS  (0x14,"+",    "plus"),
                          AND   (0x15,"and",  "and"),
+                         OR    (0x16,"or",   "xor"),
     	                 DUP   (0x18,"dup",  "dup"),
     	                 NOP   (0x1c,".",    "nop"),
     	                 BSTORE(0x1e,"b!",   "b-store"),

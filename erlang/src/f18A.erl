@@ -459,6 +459,7 @@ exec_impl(?PLUS,CPU) ->
 
    {ok,pop(ds,CPU,R)};
 
+
 % 16#15  and
 exec_impl(?AND,CPU) ->
    T = CPU#cpu.t,
@@ -466,13 +467,22 @@ exec_impl(?AND,CPU) ->
    {ok,pop(ds,CPU,(T band S) band 16#3ffff)};
 
 
+% 16#16  or
+exec_impl(?OR,CPU) ->
+   T = CPU#cpu.t,
+   S = CPU#cpu.s,
+   {ok,pop(ds,CPU,(T bxor S) band 16#3ffff)};
+
+
 % 16#18  dup
 exec_impl(?DUP,CPU) ->
    {ok,push(ds,CPU)};
 
+
 % 16#1c  .   nop
 exec_impl(?NOP,CPU) ->
    {ok,CPU};
+
 
 % 16#1e  b!  b-store
 exec_impl(?BSTORE,CPU) ->
@@ -482,6 +492,7 @@ exec_impl(?BSTORE,CPU) ->
    {ok,X#cpu{ b = T
             }};
 
+
 % 16#1f  a!  a-store
 exec_impl(?ASTORE,CPU) ->
    S = CPU#cpu.s,
@@ -489,6 +500,7 @@ exec_impl(?ASTORE,CPU) ->
    X = pop(ds,CPU,S),
    {ok,X#cpu{ a = T
             }};
+
 
 exec_impl({error,Reason},_CPU) ->
    log:error(?TAG,"INVALID OPERATION ~p~n",[Reason]),
@@ -1005,6 +1017,31 @@ pop_rs_test() ->
                     [{t,16#15555},{s,1},       {ds,1,[1,2,3,4,5,6,7,8]}]}
                  ]).
 
+-define(TEST_OR,[ {?OR,
+                    [{t,16#00000},{s,16#00000},{ds,0,[1,2,3,4,5,6,7,8]}],
+                    [{t,16#00000},{s,1},       {ds,1,[1,2,3,4,5,6,7,8]}]},
+
+                   {?OR,
+                    [{t,16#3ffff},{s,16#00000},{ds,0,[1,2,3,4,5,6,7,8]}],
+                    [{t,16#3ffff},{s,1},       {ds,1,[1,2,3,4,5,6,7,8]}]},
+
+                   {?OR,
+                    [{t,16#00000},{s,16#3ffff},{ds,0,[1,2,3,4,5,6,7,8]}],
+                    [{t,16#3ffff},{s,1},       {ds,1,[1,2,3,4,5,6,7,8]}]},
+
+                   {?OR,
+                    [{t,16#3ffff},{s,16#3ffff},{ds,0,[1,2,3,4,5,6,7,8]}],
+                    [{t,16#00000},{s,1},       {ds,1,[1,2,3,4,5,6,7,8]}]},
+
+                   {?OR,
+                    [{t,16#3ffff},{s,16#15555},{ds,0,[1,2,3,4,5,6,7,8]}],
+                    [{t,16#2aaaa},{s,1},       {ds,1,[1,2,3,4,5,6,7,8]}]},
+
+                   {?OR,
+                    [{t,16#15555},{s,16#3ffff},{ds,0,[1,2,3,4,5,6,7,8]}],
+                    [{t,16#2aaaa},{s,1},       {ds,1,[1,2,3,4,5,6,7,8]}]}
+                 ]).
+
 -define(TEST_DUP,[ {?DUP,
                     [{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
                     [{t,1},{s,1},{ds,7,[3,4,5,6,7,8,9,2 ]}]
@@ -1039,6 +1076,7 @@ shl_test()    -> test_opcode(?TEST_SHL).
 not_test()    -> test_opcode(?TEST_NOT).
 plus_test()   -> test_opcode(?TEST_PLUS).
 and_test()    -> test_opcode(?TEST_AND).
+or_test()     -> test_opcode(?TEST_OR).
 dup_test()    -> test_opcode(?TEST_DUP).
 nop_test()    -> test_opcode(?TEST_NOP).
 bstore_test() -> test_opcode(?TEST_BSTORE).
