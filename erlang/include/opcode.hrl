@@ -8,6 +8,7 @@
 -define(STOREB,16#0e).
 -define(STORE, 16#0f).
 -define(SHL,   16#11).
+-define(SHR,   16#12).
 -define(NOT,   16#13).
 -define(PLUS,  16#14).
 -define(AND,   16#15).

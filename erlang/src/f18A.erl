@@ -430,11 +430,20 @@ exec_impl(?STORE,CPU) ->
             Other
        end;
 
+
 % 16#11  2*   shl
 exec_impl(?SHL,CPU) ->
    TS = CPU#cpu.t band 16#20000,   
    TV = CPU#cpu.t band 16#1ffff,   
    {ok,CPU#cpu{t = ((TV bsl 1) band 16#1ffff) bor TS
+              }};
+
+
+% 16#12  2/   shr
+exec_impl(?SHR,CPU) ->
+   TS = CPU#cpu.t band 16#20000,   
+   TV = CPU#cpu.t band 16#3ffff,   
+   {ok,CPU#cpu{t = ((TV bsr 1) band 16#1ffff) bor TS
               }};
 
 
@@ -938,6 +947,7 @@ pop_rs_test() ->
                      [{ram,0,1},{a,0},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]}
                    ]).
 
+
 -define(TEST_SHL,[ {?SHL,[{t,16#00001}],[{t,16#00002}]},
                    {?SHL,[{t,16#00002}],[{t,16#00004}]},
                    {?SHL,[{t,16#00004}],[{t,16#00008}]},
@@ -959,6 +969,30 @@ pop_rs_test() ->
                    {?SHL,[{t,16#20000}],[{t,16#20000}]},
                    {?SHL,[{t,16#3ffff}],[{t,16#3fffe}]},
                    {?SHL,[{t,16#30000}],[{t,16#20000}]}
+                 ]).
+
+
+-define(TEST_SHR,[ {?SHR,[{t,16#00001}],[{t,16#00000}]},
+                   {?SHR,[{t,16#00002}],[{t,16#00001}]},
+                   {?SHR,[{t,16#00004}],[{t,16#00002}]},
+                   {?SHR,[{t,16#00008}],[{t,16#00004}]},
+                   {?SHR,[{t,16#00010}],[{t,16#00008}]},
+                   {?SHR,[{t,16#00020}],[{t,16#00010}]},
+                   {?SHR,[{t,16#00040}],[{t,16#00020}]},
+                   {?SHR,[{t,16#00080}],[{t,16#00040}]},
+                   {?SHR,[{t,16#00100}],[{t,16#00080}]},
+                   {?SHR,[{t,16#00200}],[{t,16#00100}]},
+                   {?SHR,[{t,16#00400}],[{t,16#00200}]},
+                   {?SHR,[{t,16#00800}],[{t,16#00400}]},
+                   {?SHR,[{t,16#01000}],[{t,16#00800}]},
+                   {?SHR,[{t,16#02000}],[{t,16#01000}]},
+                   {?SHR,[{t,16#04000}],[{t,16#02000}]},
+                   {?SHR,[{t,16#08000}],[{t,16#04000}]},
+                   {?SHR,[{t,16#10000}],[{t,16#08000}]},
+
+                   {?SHR,[{t,16#20000}],[{t,16#30000}]},
+                   {?SHR,[{t,16#3fffe}],[{t,16#3ffff}]},
+                   {?SHR,[{t,16#30000}],[{t,16#38000}]}
                  ]).
 
 
@@ -1088,6 +1122,7 @@ fetchb_test() -> test_opcode(?TEST_FETCHB).
 storeb_test() -> test_opcode(?TEST_STOREB).
 store_test()  -> test_opcode(?TEST_STORE).
 shl_test()    -> test_opcode(?TEST_SHL).
+shr_test()    -> test_opcode(?TEST_SHR).
 not_test()    -> test_opcode(?TEST_NOT).
 plus_test()   -> test_opcode(?TEST_PLUS).
 and_test()    -> test_opcode(?TEST_AND).

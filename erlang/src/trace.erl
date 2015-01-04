@@ -110,6 +110,10 @@ trace(f18A,?SHL,CPU) ->
    T = CPU#cpu.t,   
    trace(f18A,{ CPU#cpu.id,{shl,{t,T}}});
 
+trace(f18A,?SHR,CPU) ->
+   T = CPU#cpu.t,   
+   trace(f18A,{ CPU#cpu.id,{shr,{t,T}}});
+
 trace(f18A,?NOT,CPU) ->
    T = CPU#cpu.t,   
    trace(f18A,{ CPU#cpu.id,{'not',{t,T}}});

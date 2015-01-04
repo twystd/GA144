@@ -11,6 +11,7 @@ import org.junit.runners.Suite.SuiteClasses;
                 TestFETCHB.class,
                 TestBSTORE.class,
                 TestSHL.class,
+                TestSHR.class,
                 TestNOT.class,
                 TestAND.class,
                 TestOR.class,
