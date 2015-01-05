@@ -484,6 +484,12 @@ exec_impl(?OR,CPU) ->
    {ok,pop(ds,CPU,(T bxor S) band 16#3ffff)};
 
 
+% 16#17  drop
+exec_impl(?DROP,CPU) ->
+   S = CPU#cpu.s,
+   {ok,pop(ds,CPU,S)};
+
+
 % 16#18  dup
 exec_impl(?DUP,CPU) ->
    {ok,push(ds,CPU)};
@@ -1091,6 +1097,11 @@ pop_rs_test() ->
                     [{t,16#2aaaa},{s,1},       {ds,1,[1,2,3,4,5,6,7,8]}]}
                  ]).
 
+-define(TEST_DROP,[ {?DROP,
+                    [{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                    [{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]
+                   } ]).
+
 -define(TEST_DUP,[ {?DUP,
                     [{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
                     [{t,1},{s,1},{ds,7,[3,4,5,6,7,8,9,2 ]}]
@@ -1127,6 +1138,7 @@ not_test()    -> test_opcode(?TEST_NOT).
 plus_test()   -> test_opcode(?TEST_PLUS).
 and_test()    -> test_opcode(?TEST_AND).
 or_test()     -> test_opcode(?TEST_OR).
+drop_test()   -> test_opcode(?TEST_DROP).
 dup_test()    -> test_opcode(?TEST_DUP).
 nop_test()    -> test_opcode(?TEST_NOP).
 bstore_test() -> test_opcode(?TEST_BSTORE).

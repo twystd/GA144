@@ -16,6 +16,8 @@ import org.junit.runners.Suite.SuiteClasses;
                 TestAND.class,
                 TestOR.class,
                 TestNOP.class, 
+                TestDROP.class, 
+                TestDUP.class, 
                 TestSTOREB.class,
 	            TestRIGHT.class,
 	            TestREAD.class,

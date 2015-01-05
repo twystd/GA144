@@ -133,6 +133,11 @@ trace(f18A,?OR,CPU) ->
    T = CPU#cpu.t,   
    trace(f18A,{ CPU#cpu.id,{'or',{t,T},{s,S},{ds,CPU#cpu.ds}}});
 
+trace(f18A,?DROP,CPU) ->
+   S = CPU#cpu.s,
+   T = CPU#cpu.t,   
+   trace(f18A,{ CPU#cpu.id,{drop,{t,T},{s,S},{ds,CPU#cpu.ds}}});
+
 trace(f18A,?DUP,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,dup});     
 

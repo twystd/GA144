@@ -44,6 +44,7 @@ import za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.ASTORE;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.BSTORE;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.CALL;
+import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.DROP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.DUP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.FETCHB;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.FETCHP;
@@ -408,6 +409,10 @@ public class Assembler extends F18ABaseListener {
                 case "or":                  
                 case "xor":                  
                     instructions.add(new OpCode(OR));
+                    break;
+                    
+                case "drop":                  
+                	instructions.add(new OpCode(DROP));
                     break;
                     
                 case "dup":                  

@@ -62,6 +62,7 @@ OPCODE
     | '+'
     | 'and'
     | 'or'  | 'xor'
+    | 'drop'
     | 'dup'
     | 'nop' | '.'
     | '!b'

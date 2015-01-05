@@ -13,6 +13,7 @@
 -define(PLUS,  16#14).
 -define(AND,   16#15).
 -define(OR,    16#16).
+-define(DROP,  16#17).
 -define(DUP,   16#18).
 -define(NOP,   16#1c).
 -define(BSTORE,16#1e).
