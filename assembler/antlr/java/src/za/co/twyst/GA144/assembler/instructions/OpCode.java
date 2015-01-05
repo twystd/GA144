@@ -8,28 +8,28 @@ public class OpCode extends Instruction {
     	                 CALL  (0x03,"call","call"),
     	                 FETCHP(0x08,"@p",  "fetch-p"),
     	                 FETCHB(0x0a,"@b",  "fetch-b"),
-    	                 STOREB(0x0e,"!b",   "store-b"),
-                         STORE (0x0f,"!",    "store"),
-                         SHL   (0x11,"2*",   "shl"),
-                         SHR   (0x12,"2/",   "shr"),
-                         NOT   (0x13,"-",    "not"),
-    	                 PLUS  (0x14,"+",    "plus"),
-                         AND   (0x15,"and",  "and"),
-                         OR    (0x16,"or",   "xor"),
-    	                 DROP  (0x17,"drop", "drop"),
-    	                 DUP   (0x18,"dup",  "dup"),
-    	                 POP   (0x19,"pop",  "pop"),
-    	                 NOP   (0x1c,".",    "nop"),
-    	                 BSTORE(0x1e,"b!",   "b-store"),
-                         ASTORE(0x1f,"a!",   "a-store");
+    	                 STOREB(0x0e,"!b",  "store-b"),
+                         STORE (0x0f,"!",   "store"),
+                         SHL   (0x11,"2*",  "shl"),
+                         SHR   (0x12,"2/",  "shr"),
+                         NOT   (0x13,"-",   "not"),
+    	                 PLUS  (0x14,"+",   "plus"),
+                         AND   (0x15,"and", "and"),
+                         OR    (0x16,"or",  "xor"),
+    	                 DROP  (0x17,"drop","drop"),
+    	                 DUP   (0x18,"dup", "dup"),
+    	                 POP   (0x19,"pop", "pop"),
+    	                 NOP   (0x1c,".",   "nop"),
+    	                 BSTORE(0x1e,"b!",  "b-store"),
+                         ASTORE(0x1f,"a!",  "a-store");
 	                    
-	                     public final int    code;
-	                     public final String mnemonic;
-	                     public final String string;
+	                     public final int      code;
+	                     public final String[] mnemonic;
+	                     public final String   string;
 	                     
 	                     private OPCODE(int code,String mnemonic,String string) {
 	                    	 this.code     = code;
-	                    	 this.mnemonic = mnemonic;
+	                    	 this.mnemonic = new String[] { mnemonic,string };
 	                    	 this.string   = string;
 	                     }
 	}

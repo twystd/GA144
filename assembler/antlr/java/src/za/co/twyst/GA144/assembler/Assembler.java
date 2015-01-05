@@ -4,32 +4,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
-import za.co.twyst.GA144.assembler.antlr.F18ABaseListener;
 import za.co.twyst.GA144.assembler.antlr.F18ALexer;
 import za.co.twyst.GA144.assembler.antlr.F18AParser;
-import za.co.twyst.GA144.assembler.antlr.F18AParser.CommentContext;
-import za.co.twyst.GA144.assembler.antlr.F18AParser.ConstantContext;
-import za.co.twyst.GA144.assembler.antlr.F18AParser.LabelContext;
-import za.co.twyst.GA144.assembler.antlr.F18AParser.CallContext;
-import za.co.twyst.GA144.assembler.antlr.F18AParser.OpcodeContext;
-import za.co.twyst.GA144.assembler.antlr.F18AParser.OriginContext;
-import za.co.twyst.GA144.assembler.antlr.F18AParser.ProgramContext;
-import za.co.twyst.GA144.assembler.antlr.F18AParser.WordContext;
 import za.co.twyst.GA144.assembler.instructions.Call;
 import za.co.twyst.GA144.assembler.instructions.Constant;
 import za.co.twyst.GA144.assembler.instructions.Down;
@@ -41,39 +28,22 @@ import za.co.twyst.GA144.assembler.instructions.Right;
 import za.co.twyst.GA144.assembler.instructions.OpCode;
 import za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE;
 
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.ASTORE;
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.BSTORE;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.CALL;
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.DROP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.DUP;
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.FETCHB;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.FETCHP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.JUMP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.NOP;
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.SHL;
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.SHR;
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.NOT;
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.AND;
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.OR;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.PLUS;
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.POP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.RET;
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.STOREB;
-import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.STORE;
 
-public class Assembler extends F18ABaseListener {
+public class Assembler {
 	// CONSTANTS
 	
-    private static final OPCODE  PAD      = RET; 
-    private static final Pattern CONSTANT = Pattern.compile("([\\-]?[0-9]+)"); 
-    private static final Pattern HEX      = Pattern.compile("([a-fA-F0-9]+)H"); 
-
-    private static final int[]   RSHIFT = { 0,5,10,15 };
-    private static final int     XOR    = 0x15555;
-    private static final int[]   MASK   = { 0x3e000,0x01f00,0x000f8,0x00007 };
-
+    private static final OPCODE   PAD    = RET; 
+    private static final int[]    RSHIFT = { 0,5,10,15 };
+    private static final int      XOR    = 0x15555;
+    private static final int[]    MASK   = { 0x3e000,0x01f00,0x000f8,0x00007 };
     private static final OPCODE[] SLOT3  = { RET,FETCHP,PLUS,DUP,NOP };
-    private static final int      MAXINT = 262144;
 
 	// INSTANCE VARIABLES
 	
@@ -82,9 +52,7 @@ public class Assembler extends F18ABaseListener {
     
     private int   location;
     private int   slot;
-    
-	private int               P;
-	private List<Instruction> instructions = new ArrayList<Instruction>();
+	private int   P;
 	
 	// ENTRY POINT
 	
@@ -214,8 +182,11 @@ public class Assembler extends F18ABaseListener {
 		F18AParser        parser    = new F18AParser(tokens);
 		ParseTree         tree      = parser.program(); 
 		ParseTreeWalker   walker    = new ParseTreeWalker();
+		F18AListener      listener  = new F18AListener(debug);
 
-		walker.walk(this,tree); 
+		walker.walk(listener,tree); 
+		
+		List<Instruction> instructions = listener.instructions();
 		
 		if (debug) {
 			System.out.println("---");
@@ -321,192 +292,7 @@ public class Assembler extends F18ABaseListener {
 		return f18A;
 	}
 	
-	// *** F18ABaseListener ***
-
-	@Override
-	public void enterProgram(ProgramContext ctx) {
-	}
-
-	@Override
-	public void exitProgram(ProgramContext ctx) {
-	}
-
-	@Override
-	public void enterOrigin(OriginContext ctx) {
-		String  address = ctx.address().NUMBER().getText();
-		Matcher matcher;
-		
-		if ((matcher = HEX.matcher(address)).matches()) {
-			instructions.add(new Origin(Integer.parseInt(matcher.group(1),16)));
-		} else {
-			instructions.add(new Origin(Integer.parseInt(address)));
-		}
-	}
-
-	@Override
-	public void enterComment(CommentContext ctx) {
-	}
-
-	@Override
-	public void enterLabel(LabelContext ctx) {
-    	instructions.add(new Label(ctx.getText()));
-	}
-
-	@Override
-	public void enterOpcode(OpcodeContext ctx) {
-        TerminalNode node;
-        
-        // ... opcode ?
-        
-	    if ((node = ctx.OPCODE()) != null) {
-	        if (debug) {
-	            System.out.println("OPCODE:   " + node.getText());
-	        }
-	        
-	        switch(node.getText()) {
-	            case "ret":
-                case ";":
-                	instructions.add(new OpCode(RET));
-                    break;
-                     
-			    case "@p":
-                	instructions.add(new OpCode(FETCHP));
-		        	break;
-			        
-			    case "@b":                  
-                	instructions.add(new OpCode(FETCHB));
-		        	break;
-			        
-			    case "!b":                  
-                	instructions.add(new OpCode(STOREB));
-		        	break;
-                    
-                case "!":                  
-                    instructions.add(new OpCode(STORE));
-                    break;
-                    
-                case "2*":                  
-                case "shl":                  
-                    instructions.add(new OpCode(SHL));
-                    break;
-                    
-                case "2/":                  
-                case "shr":                  
-                    instructions.add(new OpCode(SHR));
-                    break;
-                    
-                case "-":                  
-                    instructions.add(new OpCode(NOT));
-                    break;
-                    
-                case "+":                  
-                	instructions.add(new OpCode(PLUS));
-                    break;
-                    
-                case "and":                  
-                    instructions.add(new OpCode(AND));
-                    break;
-                    
-                case "or":                  
-                case "xor":                  
-                    instructions.add(new OpCode(OR));
-                    break;
-                    
-                case "drop":                  
-                	instructions.add(new OpCode(DROP));
-                    break;
-                    
-                case "dup":                  
-                	instructions.add(new OpCode(DUP));
-                    break;
-                    
-                case "pop":                  
-                	instructions.add(new OpCode(POP));
-                    break;
-
-			    case "nop":
-                case ".":
-            	    instructions.add(new OpCode(NOP));
-			        break;
-
-			    case "b!":
-                	instructions.add(new OpCode(BSTORE));
-		        	break;
-
-                case "a!":
-                    instructions.add(new OpCode(ASTORE));
-                    break;
-	        }
-	    }
-	}
-
-	@Override
-	public void enterWord(WordContext ctx) {
-        TerminalNode node;
-        
-        if ((node = ctx.WORD()) != null) {
-	        if (debug) {
-	            System.out.println("WORD:     " + node.getText());
-	        }
-
-	        switch(node.getText()) {
-                case "right":
-                	instructions.add(new Right());
-                    break;
-                    
-                case "left":
-                    instructions.add(new Left());
-                    break;
-                    
-                case "down":
-                    instructions.add(new Down());
-                    break;
-                    
-                default:
-                    System.err.println("WARNING: unrecognised word '" + node.getText() + "'");
-            }
-        }
-	}
-	
-	@Override
-	public void enterConstant(ConstantContext ctx) {
-        TerminalNode node;
-        
-        if ((node = ctx.NUMBER()) != null) {
-	        if (debug) {
-	            System.out.println("CONSTANT: " + node.getText());
-	        }
-
-	        String  text    = node.getText();
-        	Matcher matcher = CONSTANT.matcher(text);
-        	
-        	if (matcher.matches()) {
-            	int constant  = Integer.parseInt(matcher.group(1));
-            	
-            	if (constant > MAXINT) {
-            		System.err.println("WARNING: invalid constant '" + text + "' (will be truncated to 18 bits)");
-            	}
-            	
-            	instructions.add(new Constant(constant));
-        	}
-        }
-	}
-
-    @Override
-    public void enterCall(CallContext ctx) {
-        TerminalNode node;
-        
-        if ((node = ctx.NAME()) != null) {
-            if (debug) {
-                System.out.println("OPCODE:   call " + node.getText());
-            }
-
-            instructions.add(new Call(node.getText()));
-        }
-    }
-
 	// INTERNAL
-	
 	
 	private void encode(F18A f18A,OpCode opcode) {
 		// ... pad current instruction with NOP ?
