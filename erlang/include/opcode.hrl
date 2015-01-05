@@ -15,6 +15,7 @@
 -define(OR,    16#16).
 -define(DROP,  16#17).
 -define(DUP,   16#18).
+-define(POP,   16#19).
 -define(NOP,   16#1c).
 -define(BSTORE,16#1e).
 -define(ASTORE,16#1f).

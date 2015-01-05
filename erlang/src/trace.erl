@@ -141,6 +141,9 @@ trace(f18A,?DROP,CPU) ->
 trace(f18A,?DUP,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,dup});     
 
+trace(f18A,?POP,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,pop});     
+
 trace(f18A,?BSTORE,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{bstore,{b,CPU#cpu.b}}});     
 
