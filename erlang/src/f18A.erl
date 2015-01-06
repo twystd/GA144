@@ -483,17 +483,14 @@ exec_impl(?OR,CPU) ->
    S = CPU#cpu.s,
    {ok,pop(ds,CPU,(T bxor S) band 16#3ffff)};
 
-
 % 16#17  drop
 exec_impl(?DROP,CPU) ->
    S = CPU#cpu.s,
    {ok,pop(ds,CPU,S)};
 
-
 % 16#18  dup
 exec_impl(?DUP,CPU) ->
    {ok,push(ds,CPU)};
-
 
 % 16#19  pop
 exec_impl(?POP,CPU) ->
@@ -501,7 +498,6 @@ exec_impl(?POP,CPU) ->
    CPUX = push(ds,pop(rs,CPU)),
    {ok,CPUX#cpu{ t = R 
                }};
-
 
 % 16#1a  over
 exec_impl(?OVER,CPU) ->
@@ -512,10 +508,16 @@ exec_impl(?OVER,CPU) ->
                  s = T
                }};
 
+% 16#1b  a
+exec_impl(?A,CPU) ->
+   A    = CPU#cpu.a,
+   CPUX = push(ds,CPU),
+   {ok,CPUX#cpu{ t = A
+               }};
+
 % 16#1c  .   nop
 exec_impl(?NOP,CPU) ->
    {ok,CPU};
-
 
 % 16#1e  b!  b-store
 exec_impl(?BSTORE,CPU) ->
@@ -524,7 +526,6 @@ exec_impl(?BSTORE,CPU) ->
    X = pop(ds,CPU,S),
    {ok,X#cpu{ b = T
             }};
-
 
 % 16#1f  a!  a-store
 exec_impl(?ASTORE,CPU) ->
@@ -1135,6 +1136,11 @@ pop_rs_test() ->
                     [{t,2},{s,1},{ds,7,[3,4,5,6,7,8,9,2 ]}]
                    } ]).
 
+-define(TEST_A,[ {?A,
+                  [{a,1},{t,2},{s,3},{ds,0,[4,5,6,7,8,9,10,11]}],
+                  [{a,1},{t,1},{s,2},{ds,7,[4,5,6,7,8,9,10,3 ]}]
+                 } ]).
+
 -define(TEST_NOP,[ {?NOP,
                     [],
                     []
@@ -1170,6 +1176,7 @@ drop_test()   -> test_opcode(?TEST_DROP).
 dup_test()    -> test_opcode(?TEST_DUP).
 pop_test()    -> test_opcode(?TEST_POP).
 over_test()   -> test_opcode(?TEST_OVER).
+a_test()      -> test_opcode(?TEST_A).
 nop_test()    -> test_opcode(?TEST_NOP).
 bstore_test() -> test_opcode(?TEST_BSTORE).
 astore_test() -> test_opcode(?TEST_ASTORE).

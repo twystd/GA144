@@ -21,6 +21,7 @@ import org.junit.runners.Suite.SuiteClasses;
                 TestDUP.class, 
                 TestPOP.class, 
                 TestOVER.class, 
+                TestA.class, 
                 TestSTOREB.class,
 	            TestRIGHT.class,
 	            TestREAD.class,
