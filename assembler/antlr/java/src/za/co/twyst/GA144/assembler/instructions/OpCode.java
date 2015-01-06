@@ -19,6 +19,7 @@ public class OpCode extends Instruction {
     	                 DROP  (0x17,"drop","drop"),
     	                 DUP   (0x18,"dup", "dup"),
     	                 POP   (0x19,"pop", "pop"),
+    	                 OVER  (0x1a,"over","over"),
     	                 NOP   (0x1c,".",   "nop"),
     	                 BSTORE(0x1e,"b!",  "b-store"),
                          ASTORE(0x1f,"a!",  "a-store");

@@ -65,6 +65,7 @@ OPCODE
     | 'drop'
     | 'dup'
     | 'pop'
+    | 'over'
     | 'nop' | '.'
     | '!b'
     | '!'

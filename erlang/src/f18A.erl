@@ -502,6 +502,16 @@ exec_impl(?POP,CPU) ->
    {ok,CPUX#cpu{ t = R 
                }};
 
+
+% 16#1a  over
+exec_impl(?OVER,CPU) ->
+   T    = CPU#cpu.t,
+   S    = CPU#cpu.s,
+   CPUX = push(ds,CPU),
+   {ok,CPUX#cpu{ t = S,
+                 s = T
+               }};
+
 % 16#1c  .   nop
 exec_impl(?NOP,CPU) ->
    {ok,CPU};
@@ -1119,6 +1129,12 @@ pop_rs_test() ->
                     [{r,12},{t,1},{s,2},{ds,7,[4,5,6,7,8,9,10,3 ]},{rs,1,[12,13,14,15,16,17,18,19]}]
                    } ]).
 
+
+-define(TEST_OVER,[ {?OVER,
+                    [{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                    [{t,2},{s,1},{ds,7,[3,4,5,6,7,8,9,2 ]}]
+                   } ]).
+
 -define(TEST_NOP,[ {?NOP,
                     [],
                     []
@@ -1153,6 +1169,7 @@ or_test()     -> test_opcode(?TEST_OR).
 drop_test()   -> test_opcode(?TEST_DROP).
 dup_test()    -> test_opcode(?TEST_DUP).
 pop_test()    -> test_opcode(?TEST_POP).
+over_test()   -> test_opcode(?TEST_OVER).
 nop_test()    -> test_opcode(?TEST_NOP).
 bstore_test() -> test_opcode(?TEST_BSTORE).
 astore_test() -> test_opcode(?TEST_ASTORE).
@@ -1195,8 +1212,8 @@ test_init(CPU,[{rs,X,Y}  |T]) -> test_init(CPU#cpu{rs={X,array:from_list(Y)}},T)
 test_init(CPU,[{ram,A,W} |T]) -> test_init(CPU#cpu{ram=array:set(A,W,CPU#cpu.ram)},T).
 
 test_verify(Expected,Actual) ->
-%  ?debugFmt("EXPECTED: ~p",[Expected]),
-%  ?debugFmt("ACTUAL:   ~p",[Actual]),
+%  ?debugFmt("EXPECTED: ~p",[Expected#cpu.ds]),
+%  ?debugFmt("ACTUAL:   ~p",[Actual#cpu.ds]),
    ?assertEqual(Expected,Actual).
 
 assert ([],_CPU) ->
