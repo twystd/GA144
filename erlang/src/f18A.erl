@@ -430,6 +430,21 @@ exec_impl(?STORE,CPU) ->
             Other
        end;
 
+% 16#10  multiply
+exec_impl(?MULTIPLY,CPU) ->
+   A  = CPU#cpu.a,
+   A0 = CPU#cpu.a band 16#00001,
+   T  = case A0 of
+             0 -> CPU#cpu.t;
+             _ -> CPU#cpu.t + CPU#cpu.s
+             end,
+
+   T0  = T band 16#00001,   
+   T17 = T band 16#20000,   
+
+   {ok,CPU#cpu{ a = ((A bsr 1) bor (T0 bsl 17)) band 16#3ffff,
+                t = ((T bsr 1) bor T17) band 16#3ffff
+              }};
 
 % 16#11  2*   shl
 exec_impl(?SHL,CPU) ->
@@ -979,6 +994,24 @@ pop_rs_test() ->
                      [{ram,0,1},{a,0},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]}
                    ]).
 
+-define(TEST_MULTIPLY,[{?MULTIPLY,[{a,0},{t,1},       {s,2}],[{a,16#20000},{t,0},       {s,2}]},
+                       {?MULTIPLY,[{a,2},{t,1},       {s,2}],[{a,16#20001},{t,0},       {s,2}]},
+                       {?MULTIPLY,[{a,0},{t,16#20000},{s,2}],[{a,16#00000},{t,16#30000},{s,2}]},
+                       {?MULTIPLY,[{a,0},{t,16#20001},{s,2}],[{a,16#20000},{t,16#30000},{s,2}]},
+                       {?MULTIPLY,[{a,2},{t,16#20000},{s,2}],[{a,16#00001},{t,16#30000},{s,2}]},
+                       {?MULTIPLY,[{a,2},{t,16#20001},{s,2}],[{a,16#20001},{t,16#30000},{s,2}]},
+
+                       {?MULTIPLY,[{a,1},{t,1},       {s,1}],[{a,16#00000},{t,1},       {s,1}]},
+                       {?MULTIPLY,[{a,1},{t,1},       {s,2}],[{a,16#20000},{t,1},       {s,2}]},
+                       {?MULTIPLY,[{a,3},{t,1},       {s,2}],[{a,16#20001},{t,1},       {s,2}]},
+                       {?MULTIPLY,[{a,1},{t,16#20000},{s,1}],[{a,16#20000},{t,16#30000},{s,1}]},
+                       {?MULTIPLY,[{a,1},{t,16#20000},{s,2}],[{a,16#00000},{t,16#30001},{s,2}]},
+                       {?MULTIPLY,[{a,3},{t,16#20000},{s,1}],[{a,16#20001},{t,16#30000},{s,1}]},
+                       {?MULTIPLY,[{a,3},{t,16#20000},{s,2}],[{a,16#00001},{t,16#30001},{s,2}]}
+
+% TODO !!!!
+%                      {?MULTIPLY,[{a,1},{t,16#20000},{s,16#20000}],[{a,16#20000},{t,16#30000},{s,1}]}
+                      ]).
 
 -define(TEST_SHL,[ {?SHL,[{t,16#00001}],[{t,16#00002}]},
                    {?SHL,[{t,16#00002}],[{t,16#00004}]},
@@ -1171,28 +1204,29 @@ pop_rs_test() ->
 -define(RND,   random:uniform(16#40000) - 1).
 -define(RND(N),random:uniform(N+1) - 1).
 
-ret_test()    -> test_opcode(?TEST_RET).
-call_test()   -> test_opcode(?TEST_CALL).
-jump_test()   -> test_opcode(?TEST_JUMP).
-fetchp_test() -> test_opcode(?TEST_FETCHP).
-fetchb_test() -> test_opcode(?TEST_FETCHB).
-storeb_test() -> test_opcode(?TEST_STOREB).
-store_test()  -> test_opcode(?TEST_STORE).
-shl_test()    -> test_opcode(?TEST_SHL).
-shr_test()    -> test_opcode(?TEST_SHR).
-not_test()    -> test_opcode(?TEST_NOT).
-plus_test()   -> test_opcode(?TEST_PLUS).
-and_test()    -> test_opcode(?TEST_AND).
-or_test()     -> test_opcode(?TEST_OR).
-drop_test()   -> test_opcode(?TEST_DROP).
-dup_test()    -> test_opcode(?TEST_DUP).
-pop_test()    -> test_opcode(?TEST_POP).
-over_test()   -> test_opcode(?TEST_OVER).
-a_test()      -> test_opcode(?TEST_A).
-nop_test()    -> test_opcode(?TEST_NOP).
-push_test()   -> test_opcode(?TEST_PUSH).
-bstore_test() -> test_opcode(?TEST_BSTORE).
-astore_test() -> test_opcode(?TEST_ASTORE).
+ret_test()      -> test_opcode(?TEST_RET).
+call_test()     -> test_opcode(?TEST_CALL).
+jump_test()     -> test_opcode(?TEST_JUMP).
+fetchp_test()   -> test_opcode(?TEST_FETCHP).
+fetchb_test()   -> test_opcode(?TEST_FETCHB).
+storeb_test()   -> test_opcode(?TEST_STOREB).
+store_test()    -> test_opcode(?TEST_STORE).
+multiply_test() -> test_opcode(?TEST_MULTIPLY).
+shl_test()      -> test_opcode(?TEST_SHL).
+shr_test()      -> test_opcode(?TEST_SHR).
+not_test()      -> test_opcode(?TEST_NOT).
+plus_test()     -> test_opcode(?TEST_PLUS).
+and_test()      -> test_opcode(?TEST_AND).
+or_test()       -> test_opcode(?TEST_OR).
+drop_test()     -> test_opcode(?TEST_DROP).
+dup_test()      -> test_opcode(?TEST_DUP).
+pop_test()      -> test_opcode(?TEST_POP).
+over_test()     -> test_opcode(?TEST_OVER).
+a_test()        -> test_opcode(?TEST_A).
+nop_test()      -> test_opcode(?TEST_NOP).
+push_test()     -> test_opcode(?TEST_PUSH).
+bstore_test()   -> test_opcode(?TEST_BSTORE).
+astore_test()   -> test_opcode(?TEST_ASTORE).
 
 test_opcode([]) ->
    ok;
@@ -1232,8 +1266,8 @@ test_init(CPU,[{rs,X,Y}  |T]) -> test_init(CPU#cpu{rs={X,array:from_list(Y)}},T)
 test_init(CPU,[{ram,A,W} |T]) -> test_init(CPU#cpu{ram=array:set(A,W,CPU#cpu.ram)},T).
 
 test_verify(Expected,Actual) ->
-%  ?debugFmt("EXPECTED: ~p",[Expected#cpu.ds]),
-%  ?debugFmt("ACTUAL:   ~p",[Actual#cpu.ds]),
+   ?debugFmt("EXPECTED: ~p",[Expected#cpu.a]),
+   ?debugFmt("ACTUAL:   ~p",[Actual#cpu.a]),
    ?assertEqual(Expected,Actual).
 
 assert ([],_CPU) ->
