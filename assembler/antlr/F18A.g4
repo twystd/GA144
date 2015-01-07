@@ -68,6 +68,7 @@ OPCODE
     | 'over'
     | 'a'
     | 'nop' | '.'
+    | 'push'
     | '!b'
     | '!'
     | 'b!'

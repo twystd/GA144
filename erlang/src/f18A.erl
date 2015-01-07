@@ -519,6 +519,14 @@ exec_impl(?A,CPU) ->
 exec_impl(?NOP,CPU) ->
    {ok,CPU};
 
+% 16#1d  push
+exec_impl(?PUSH,CPU) ->
+   T    = CPU#cpu.t,
+   S    = CPU#cpu.s,
+   CPUX = push(rs,pop(ds,CPU,S)),
+   {ok,CPUX#cpu{ r = T 
+               }};
+
 % 16#1e  b!  b-store
 exec_impl(?BSTORE,CPU) ->
    S = CPU#cpu.s,
@@ -1130,7 +1138,6 @@ pop_rs_test() ->
                     [{r,12},{t,1},{s,2},{ds,7,[4,5,6,7,8,9,10,3 ]},{rs,1,[12,13,14,15,16,17,18,19]}]
                    } ]).
 
-
 -define(TEST_OVER,[ {?OVER,
                     [{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
                     [{t,2},{s,1},{ds,7,[3,4,5,6,7,8,9,2 ]}]
@@ -1144,6 +1151,11 @@ pop_rs_test() ->
 -define(TEST_NOP,[ {?NOP,
                     [],
                     []
+                   } ]).
+
+-define(TEST_PUSH,[ {?PUSH,
+                    [{r,1},{t,2},{s,3},{ds,0,[4,5,6,7,8,9,10,11]},{rs,0,[12,13,14,15,16,17,18,19]}],
+                    [{r,2},{t,3},{s,4},{ds,1,[4,5,6,7,8,9,10,11]},{rs,7,[12,13,14,15,16,17,18,1 ]}]
                    } ]).
 
 -define(TEST_BSTORE,[ {?BSTORE,
@@ -1178,6 +1190,7 @@ pop_test()    -> test_opcode(?TEST_POP).
 over_test()   -> test_opcode(?TEST_OVER).
 a_test()      -> test_opcode(?TEST_A).
 nop_test()    -> test_opcode(?TEST_NOP).
+push_test()   -> test_opcode(?TEST_PUSH).
 bstore_test() -> test_opcode(?TEST_BSTORE).
 astore_test() -> test_opcode(?TEST_ASTORE).
 

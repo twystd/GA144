@@ -4,6 +4,7 @@ archive/hccforth-tutorial
 erlang/ebin
 tla/F18A.toolbox
 tla/channel.toolbox
+assembler/antlr/java/.settings/org.eclipse.jdt.ui.prefs
 assembler/antlr/antlr-4.4-complete.jar
 assembler/antlr/java/bin
 assembler/antlr/java/gen

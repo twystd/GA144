@@ -35,6 +35,7 @@ opcode(16#19) -> ?POP;
 opcode(16#1a) -> ?OVER;
 opcode(16#1b) -> ?A;
 opcode(16#1c) -> ?NOP;
+opcode(16#1d) -> ?PUSH;
 opcode(16#1e) -> ?BSTORE;
 opcode(16#1f) -> ?ASTORE;
 opcode(X)     -> ?debugFmt("UNKNOWN CODE: ~p~n",[X]), unknown.     
@@ -60,6 +61,7 @@ to_string(?POP)    -> "POP";
 to_string(?OVER)   -> "OVER";
 to_string(?A)      -> "A";
 to_string(?NOP)    -> "NOP";
+to_string(?PUSH)   -> "PUSH";
 to_string(?BSTORE) -> "B-STORE";
 to_string(?ASTORE) -> "A-STORE";
-to_string(_X)      -> "???".     
+to_string(_)      -> "???".     

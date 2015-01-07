@@ -150,11 +150,17 @@ trace(f18A,?OVER,CPU) ->
 trace(f18A,?A,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,a});
 
+trace(f18A,?NOP,CPU) ->
+   trace(f18A,{ CPU#cpu.id,nop });
+
+trace(f18A,?PUSH,CPU) ->
+   trace(f18A,{ CPU#cpu.id,push });
+
 trace(f18A,?BSTORE,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{bstore,{b,CPU#cpu.b}}});     
 
-trace(f18A,?NOP,CPU) ->
-   trace(f18A,{ CPU#cpu.id,nop });
+trace(f18A,?ASTORE,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,{astore,{a,CPU#cpu.a}}});     
 
 trace(f18A,_,CPU) ->
    trace(f18A,{ CPU#cpu.id,unknown }).
