@@ -32,6 +32,7 @@ import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.CALL;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.DUP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.FETCHP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.JUMP;
+import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.MULTIPLY;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.NOP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.PLUS;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.RET;
@@ -43,7 +44,7 @@ public class Assembler {
     private static final int[]    RSHIFT = { 0,5,10,15 };
     private static final int      XOR    = 0x15555;
     private static final int[]    MASK   = { 0x3e000,0x01f00,0x000f8,0x00007 };
-    private static final OPCODE[] SLOT3  = { RET,FETCHP,PLUS,DUP,NOP };
+    private static final OPCODE[] SLOT3  = { RET,FETCHP,MULTIPLY,PLUS,DUP,NOP };
 
 	// INSTANCE VARIABLES
 	

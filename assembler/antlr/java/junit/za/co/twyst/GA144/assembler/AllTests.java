@@ -10,6 +10,7 @@ import org.junit.runners.Suite.SuiteClasses;
                 TestFETCHP.class,
                 TestFETCHB.class,
                 TestBSTORE.class,
+                TestMULTIPLY.class,
                 TestSHL.class,
                 TestSHR.class,
                 TestNOT.class,
