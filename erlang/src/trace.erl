@@ -103,8 +103,14 @@ trace(f18A,?FETCHP,CPU) ->
 trace(f18A,?FETCHB,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{fetchb,{t,CPU#cpu.t}}});     
 
+trace(f18A,?STORE_PLUS,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,{store_plus,{a,CPU#cpu.a},{t,CPU#cpu.t}}});     
+
 trace(f18A,?STOREB,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{storeb,{b,CPU#cpu.b},{t,CPU#cpu.t}}});     
+
+trace(f18A,?STORE,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,{store,{a,CPU#cpu.a},{t,CPU#cpu.t}}});     
 
 trace(f18A,?MULTIPLY,CPU) ->
    T = CPU#cpu.t,   

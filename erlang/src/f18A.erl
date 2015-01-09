@@ -405,6 +405,23 @@ exec_impl(?FETCHB,CPU) ->
             Other
 	end;
 
+% 16#0d  !  store_plus
+exec_impl(?STORE_PLUS,CPU) ->
+   A = CPU#cpu.a,     
+   T = CPU#cpu.t,
+   case write(CPU,A,T) of 
+        {ok,RAM} ->
+            {ok,pop(ds,
+                    CPU#cpu{ a=(A + 1) band 16#3ffff,
+                             ram=RAM 
+                           },
+                    CPU#cpu.s)};
+
+        Other ->
+            Other
+       end;
+
+
 % 16#0e  !b  store B
 exec_impl(?STOREB,CPU) ->
    B = CPU#cpu.b,     
@@ -416,7 +433,6 @@ exec_impl(?STOREB,CPU) ->
         Other ->
             Other
        end;
-
 
 % 16#0f  !  store
 exec_impl(?STORE,CPU) ->
@@ -984,6 +1000,11 @@ pop_rs_test() ->
                      [{ram,15,678},{b,15},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
                    ]).
 
+-define(TEST_STORE_PLUS,[{?STORE_PLUS,
+                         [{ram,0,0},{a,0},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                         [{ram,0,1},{a,1},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]}
+                        ]).
+
 -define(TEST_STOREB,[{?STOREB,
                       [{ram,4,0},  {b,4},{t,678},{s,9},{ds,0,[1,2,3,4,5,6,7,8]}],
                       [{ram,4,678},{b,4},{t,9},{s,1},{ds,1,[1,2,3,4,5,6,7,8]}]}
@@ -1272,29 +1293,30 @@ pop_rs_test() ->
 -define(RND,   random:uniform(16#40000) - 1).
 -define(RND(N),random:uniform(N+1) - 1).
 
-ret_test()      -> test_opcode(?TEST_RET).
-call_test()     -> test_opcode(?TEST_CALL).
-jump_test()     -> test_opcode(?TEST_JUMP).
-fetchp_test()   -> test_opcode(?TEST_FETCHP).
-fetchb_test()   -> test_opcode(?TEST_FETCHB).
-storeb_test()   -> test_opcode(?TEST_STOREB).
-store_test()    -> test_opcode(?TEST_STORE).
-multiply_test() -> test_opcode(?TEST_MULTIPLY).
-shl_test()      -> test_opcode(?TEST_SHL).
-shr_test()      -> test_opcode(?TEST_SHR).
-not_test()      -> test_opcode(?TEST_NOT).
-plus_test()     -> test_opcode(?TEST_PLUS).
-and_test()      -> test_opcode(?TEST_AND).
-or_test()       -> test_opcode(?TEST_OR).
-drop_test()     -> test_opcode(?TEST_DROP).
-dup_test()      -> test_opcode(?TEST_DUP).
-pop_test()      -> test_opcode(?TEST_POP).
-over_test()     -> test_opcode(?TEST_OVER).
-a_test()        -> test_opcode(?TEST_A).
-nop_test()      -> test_opcode(?TEST_NOP).
-push_test()     -> test_opcode(?TEST_PUSH).
-bstore_test()   -> test_opcode(?TEST_BSTORE).
-astore_test()   -> test_opcode(?TEST_ASTORE).
+ret_test()       -> test_opcode(?TEST_RET).
+call_test()      -> test_opcode(?TEST_CALL).
+jump_test()      -> test_opcode(?TEST_JUMP).
+fetchp_test()    -> test_opcode(?TEST_FETCHP).
+fetchb_test()    -> test_opcode(?TEST_FETCHB).
+storeplus_test() -> test_opcode(?TEST_STORE_PLUS).
+storeb_test()    -> test_opcode(?TEST_STOREB).
+store_test()     -> test_opcode(?TEST_STORE).
+multiply_test()  -> test_opcode(?TEST_MULTIPLY).
+shl_test()       -> test_opcode(?TEST_SHL).
+shr_test()       -> test_opcode(?TEST_SHR).
+not_test()       -> test_opcode(?TEST_NOT).
+plus_test()      -> test_opcode(?TEST_PLUS).
+and_test()       -> test_opcode(?TEST_AND).
+or_test()        -> test_opcode(?TEST_OR).
+drop_test()      -> test_opcode(?TEST_DROP).
+dup_test()       -> test_opcode(?TEST_DUP).
+pop_test()       -> test_opcode(?TEST_POP).
+over_test()      -> test_opcode(?TEST_OVER).
+a_test()         -> test_opcode(?TEST_A).
+nop_test()       -> test_opcode(?TEST_NOP).
+push_test()      -> test_opcode(?TEST_PUSH).
+bstore_test()    -> test_opcode(?TEST_BSTORE).
+astore_test()    -> test_opcode(?TEST_ASTORE).
 
 test_opcode([]) ->
    ok;
