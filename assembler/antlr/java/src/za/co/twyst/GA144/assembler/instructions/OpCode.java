@@ -2,12 +2,13 @@ package za.co.twyst.GA144.assembler.instructions;
 
 public class OpCode extends Instruction {
 	// CONSTANTS
-	
+
 	public enum OPCODE { RET       (0x00,"ret",       ";","ret"),
 	                     JUMP      (0x02,"jump",      "jump"),
 	                     CALL      (0x03,"call",      "call"),
 	                     FETCHP    (0x08,"fetch-p",   "@p"),
 	                     FETCHB    (0x0a,"fetch-b",   "@b"),
+                         STOREP    (0x0c,"store-p",   "!p"),
                          STORE_PLUS(0x0d,"store-plus","!+"),
 	                     STOREB    (0x0e,"store-b",   "!b"),
 	                     STORE     (0x0f,"store",     "!"),
@@ -31,9 +32,11 @@ public class OpCode extends Instruction {
 	                     public final int      code;
 	                     public final String[] mnemonic;
 	                     public final String   string;
+	                     public final boolean  slot3;
 	                     
 	                     private OPCODE(int code,String string,String...mnemonic) {
 	                    	 this.code     = code;
+	                    	 this.slot3    = (code & 0x03) == 0x00;
 	                    	 this.mnemonic = mnemonic;
 	                    	 this.string   = string;
 	                     }

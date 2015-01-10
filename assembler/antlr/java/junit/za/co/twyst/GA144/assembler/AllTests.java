@@ -6,9 +6,11 @@ import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
 
-@SuiteClasses({ TestCALL.class, 
+@SuiteClasses({ TestRET.class, 
+                TestCALL.class, 
                 TestFETCHP.class,
                 TestFETCHB.class,
+                TestSTOREP.class,
                 TestSTOREPLUS.class,
                 TestSTOREB.class,
                 TestSTORE.class,
@@ -27,6 +29,8 @@ import org.junit.runners.Suite.SuiteClasses;
                 TestNOP.class, 
                 TestPUSH.class, 
                 TestBSTORE.class,
+                TestASTORE.class,
+                
 	            TestRIGHT.class,
 	            TestREAD.class,
 	            TestWRITE.class,
