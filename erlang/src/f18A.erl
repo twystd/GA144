@@ -422,12 +422,20 @@ exec_impl(?STOREP,CPU) ->
    P = CPU#cpu.p,     
    T = CPU#cpu.t,
    case write(CPU,P,T) of 
-        {ok,RAM} ->
+        {ok,ram,Mem} ->
             {ok,pop(ds,
                     CPU#cpu{ p=inc(P),
-                             ram=RAM 
+                             ram=Mem 
                            },
                     CPU#cpu.s)};
+
+        {ok,rom,Mem} ->
+            {ok,pop(ds,
+                    CPU#cpu{ p=inc(P),
+                             rom=Mem 
+                           },
+                    CPU#cpu.s)};
+
 
         Other ->
             Other
@@ -438,10 +446,17 @@ exec_impl(?STORE_PLUS,CPU) ->
    A = CPU#cpu.a,     
    T = CPU#cpu.t,
    case write(CPU,A,T) of 
-        {ok,RAM} ->
+        {ok,ram,Mem} ->
             {ok,pop(ds,
                     CPU#cpu{ a=inc(A),
-                             ram=RAM 
+                             ram=Mem 
+                           },
+                    CPU#cpu.s)};
+
+        {ok,rom,Mem} ->
+            {ok,pop(ds,
+                    CPU#cpu{ a=inc(A),
+                             rom=Mem 
                            },
                     CPU#cpu.s)};
 
@@ -455,8 +470,11 @@ exec_impl(?STOREB,CPU) ->
    B = CPU#cpu.b,     
    T = CPU#cpu.t,
    case write(CPU,B,T) of 
-        {ok,RAM} ->
-            {ok,pop(ds,CPU#cpu{ ram = RAM },CPU#cpu.s)};
+        {ok,ram,Mem} ->
+            {ok,pop(ds,CPU#cpu{ ram = Mem },CPU#cpu.s)};
+
+        {ok,rom,Mem} ->
+            {ok,pop(ds,CPU#cpu{ rom = Mem },CPU#cpu.s)};
 
         Other ->
             Other
@@ -467,8 +485,11 @@ exec_impl(?STORE,CPU) ->
    A = CPU#cpu.a,     
    T = CPU#cpu.t,
    case write(CPU,A,T) of 
-        {ok,RAM} ->
-            {ok,pop(ds,CPU#cpu{ ram = RAM },CPU#cpu.s)};
+        {ok,ram,Mem} ->
+            {ok,pop(ds,CPU#cpu{ ram = Mem },CPU#cpu.s)};
+
+        {ok,rom,Mem} ->
+            {ok,pop(ds,CPU#cpu{ rom = Mem },CPU#cpu.s)};
 
         Other ->
             Other
@@ -733,18 +754,18 @@ read_wait(CPU,Ch) ->
 % WRITE
 
 write(CPU,Addr,Word) when Addr < 16#40 ->
-   write_mem(CPU#cpu.ram,Addr,Word);
+   write_mem(ram,CPU#cpu.ram,Addr,Word);
 
 write(CPU,Addr,Word) when Addr < 16#80 ->
-   write_mem(CPU#cpu.ram,Addr band 16#3f,Word);
+   write_mem(ram,CPU#cpu.ram,Addr band 16#3f,Word);
 
 % TODO - CHECK WHAT HAPPENS ON SIMULATOR/EMULATOR
-write(_CPU,Addr,_Word) when Addr < 16#C0 ->
-   ignore; 
+write(CPU,Addr,Word) when Addr < 16#C0 ->
+   write_mem(rom,CPU#cpu.rom,Addr band 16#3f,Word);
 
 % TODO - CHECK WHAT HAPPENS ON SIMULATOR/EMULATOR
-write(_CPU,Addr,_Word) when Addr < 16#100 ->
-   ignore; 
+write(CPU,Addr,Word) when Addr < 16#100 ->
+   write_mem(rom,CPU#cpu.rom,Addr band 16#3f,Word);
 
 write(CPU,?RIGHT,Word) ->
    write_channel(CPU,
@@ -766,14 +787,14 @@ write(CPU,?DOWN,Word) ->
                  CPU#cpu.channel#channels.down,
                  Word).
 
-write_mem(Mem,Addr,Word) ->
-   write_mem(Mem,Addr,Word,array:size(Mem)).
+write_mem(Region,Mem,Addr,Word) ->
+   write_mem(Region,Mem,Addr,Word,array:size(Mem)).
 
 % TODO - FIX ARRAY SIZE AT 64
-write_mem(Mem,Addr,Word,N) when Addr < N ->
-   { ok,array:set(Addr,Word,Mem) };
+write_mem(Region,Mem,Addr,Word,N) when Addr < N ->
+   { ok,Region,array:set(Addr,Word,Mem) };
 
-write_mem(_Mem,_Addr,_Word,_N) ->
+write_mem(_Region,_Mem,_Addr,_Word,_N) ->
    eof.
 
 write_channel(CPU,Ch,Word) ->
@@ -804,7 +825,7 @@ write_wait(CPU,Channel) ->
     ID = CPU#cpu.id,
     receive
         { Channel,read,ok } -> 
-            {ok,CPU#cpu.ram};
+            {ok,ram,CPU#cpu.ram};
 
         step ->
             write_wait(CPU,Channel);
@@ -1024,6 +1045,7 @@ pop_rs_test() ->
                     [{p,16#003}] } 
                   ]).
 
+% TODO: ADD TESTS FOR I/O
 -define(TEST_FETCHP,[{?FETCHP,
                       [{ram,15,678},{p,15},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
                       [{ram,15,678},{p,16},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
@@ -1067,11 +1089,34 @@ pop_rs_test() ->
                      [{ram,15,678},{a,15},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
                    ]).
 
-% TODO: ADD TESTS FOR INCREMENTING OVER RAM/ROM BOUNDARIES 
 % TODO: ADD TESTS FOR I/O
 -define(TEST_STOREP,[{?STOREP,
                       [{ram,0,0},{p,0},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
-                      [{ram,0,1},{p,1},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]}
+                      [{ram,0,1},{p,1},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                     {?STOREP,
+                      [{ram,16#3f,0},{p,16#3f},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{ram,16#3f,1},{p,16#40},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                     {?STOREP,
+                      [{ram,16#3f,0},{p,16#7f},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{ram,16#3f,1},{p,16#00},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                     {?STOREP,
+                      [{rom,15,0},{p,16#8f},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{rom,15,1},{p,16#90},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                     {?STOREP,
+                      [{rom,0,0},{p,16#80},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{rom,0,1},{p,16#81},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                     {?STOREP,
+                      [{rom,16#3f,0},{p,16#bf},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{rom,16#3f,1},{p,16#c0},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]},
+
+                     {?STOREP,
+                      [{rom,16#3f,0},{p,16#ff},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{rom,16#3f,1},{p,16#80},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]}
                     ]).
 
 % TODO: ADD TESTS FOR INCREMENTING OVER RAM/ROM BOUNDARIES 
@@ -1435,8 +1480,8 @@ test_init(CPU,[{ram,A,W} |T]) -> test_init(CPU#cpu{ram=array:set(A,W,CPU#cpu.ram
 test_init(CPU,[{rom,A,W} |T]) -> test_init(CPU#cpu{rom=array:set(A,W,CPU#cpu.rom)},T).
 
 test_verify(Expected,Actual) ->
-%  ?debugFmt("EXPECTED: ~p",[Expected#cpu.p]),
-%  ?debugFmt("ACTUAL:   ~p",[Actual#cpu.p]),
+%  ?debugFmt("EXPECTED: ~p",[Expected#cpu.rom]),
+%  ?debugFmt("ACTUAL:   ~p",[Actual#cpu.rom]),
    ?assertEqual(Expected,Actual).
 
 assert ([],_CPU) ->
