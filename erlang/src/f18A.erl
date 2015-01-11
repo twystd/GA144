@@ -386,8 +386,8 @@ exec_impl(?FETCHP,CPU) ->
    CPUX = push(ds,CPU),
    case read(CPUX,P) of
         {ok,T} ->
-   	    {ok,CPUX#cpu{ p = P + 1,
-                        t = T
+   	    {ok,CPUX#cpu{ p = inc(P),
+                      t = T
                       }};
         Other ->
             Other
@@ -424,7 +424,7 @@ exec_impl(?STOREP,CPU) ->
    case write(CPU,P,T) of 
         {ok,RAM} ->
             {ok,pop(ds,
-                    CPU#cpu{ p=(P + 1) band 16#3ffff,
+                    CPU#cpu{ p=inc(P),
                              ram=RAM 
                            },
                     CPU#cpu.s)};
@@ -440,7 +440,7 @@ exec_impl(?STORE_PLUS,CPU) ->
    case write(CPU,A,T) of 
         {ok,RAM} ->
             {ok,pop(ds,
-                    CPU#cpu{ a=(A + 1) band 16#3ffff,
+                    CPU#cpu{ a=inc(A),
                              ram=RAM 
                            },
                     CPU#cpu.s)};
@@ -821,6 +821,12 @@ write_wait(CPU,Channel) ->
            {stop,PID}
     end.
 
+% INCREMENT
+
+inc(N) when N < 16#80  ->  (N + 1) rem 16#80;
+inc(N) when N < 16#100 -> ((N + 1) rem 16#80) + 16#80;
+inc(N) -> N.
+
 % PUSH
 
 push(ds,CPU) ->
@@ -1020,7 +1026,35 @@ pop_rs_test() ->
 
 -define(TEST_FETCHP,[{?FETCHP,
                       [{ram,15,678},{p,15},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
-                      [{ram,15,678},{p,16},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
+                      [{ram,15,678},{p,16},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                     {?FETCHP,
+                      [{ram,0,678},{p,0},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{ram,0,678},{p,1},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                     {?FETCHP,
+                      [{ram,16#3f,678},{p,16#3f},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{ram,16#3f,678},{p,16#40},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                     {?FETCHP,
+                      [{ram,16#3f,678},{p,16#7f},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{ram,16#3f,678},{p,16#00},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                     {?FETCHP,
+                      [{rom,15,876},{p,16#8f},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{rom,15,876},{p,16#90},{t,876},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                     {?FETCHP,
+                      [{rom,0,678},{p,16#80},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{rom,0,678},{p,16#81},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                     {?FETCHP,
+                      [{rom,16#3f,678},{p,16#bf},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{rom,16#3f,678},{p,16#c0},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                     {?FETCHP,
+                      [{rom,16#3f,678},{p,16#ff},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                      [{rom,16#3f,678},{p,16#80},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
                     ]).
 
 -define(TEST_FETCHB,[{?FETCHB,
@@ -1033,11 +1067,15 @@ pop_rs_test() ->
                      [{ram,15,678},{a,15},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
                    ]).
 
+% TODO: ADD TESTS FOR INCREMENTING OVER RAM/ROM BOUNDARIES 
+% TODO: ADD TESTS FOR I/O
 -define(TEST_STOREP,[{?STOREP,
                       [{ram,0,0},{p,0},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
                       [{ram,0,1},{p,1},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]}
                     ]).
 
+% TODO: ADD TESTS FOR INCREMENTING OVER RAM/ROM BOUNDARIES 
+% TODO: ADD TESTS FOR I/O
 -define(TEST_STORE_PLUS,[{?STORE_PLUS,
                          [{ram,0,0},{a,0},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
                          [{ram,0,1},{a,1},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]}
@@ -1393,11 +1431,12 @@ test_init(CPU,[{s,X}     |T]) -> test_init(CPU#cpu{s=X},T);
 test_init(CPU,[{i,X}     |T]) -> test_init(CPU#cpu{i=X},T);
 test_init(CPU,[{ds,X,Y}  |T]) -> test_init(CPU#cpu{ds={X,array:from_list(Y)}},T);
 test_init(CPU,[{rs,X,Y}  |T]) -> test_init(CPU#cpu{rs={X,array:from_list(Y)}},T);
-test_init(CPU,[{ram,A,W} |T]) -> test_init(CPU#cpu{ram=array:set(A,W,CPU#cpu.ram)},T).
+test_init(CPU,[{ram,A,W} |T]) -> test_init(CPU#cpu{ram=array:set(A,W,CPU#cpu.ram)},T);
+test_init(CPU,[{rom,A,W} |T]) -> test_init(CPU#cpu{rom=array:set(A,W,CPU#cpu.rom)},T).
 
 test_verify(Expected,Actual) ->
-%  ?debugFmt("EXPECTED: ~p",[Expected#cpu.s]),
-%  ?debugFmt("ACTUAL:   ~p",[Actual#cpu.s]),
+%  ?debugFmt("EXPECTED: ~p",[Expected#cpu.p]),
+%  ?debugFmt("ACTUAL:   ~p",[Actual#cpu.p]),
    ?assertEqual(Expected,Actual).
 
 assert ([],_CPU) ->
@@ -1441,6 +1480,10 @@ assert([{ds,{SP,Stack}}|T],CPU) ->
 
 assert([{ram,Addr,Word}|T],CPU) ->
    ?assertEqual(Word,array:get(Addr,CPU#cpu.ram)),
+   assert(T,CPU);
+
+assert([{rom,Addr,Word}|T],CPU) ->
+   ?assertEqual(Word,array:get(Addr,CPU#cpu.rom)),
    assert(T,CPU);
 
 assert([X|T],CPU) ->
