@@ -8,6 +8,7 @@ public class OpCode extends Instruction {
 	                     CALL      (0x03,"call",      "call"),
 	                     FETCHP    (0x08,"fetch-p",   "@p"),
 	                     FETCHB    (0x0a,"fetch-b",   "@b"),
+                         FETCH     (0x0b,"fetch",     "@"),
                          STOREP    (0x0c,"store-p",   "!p"),
                          STORE_PLUS(0x0d,"store-plus","!+"),
 	                     STOREB    (0x0e,"store-b",   "!b"),

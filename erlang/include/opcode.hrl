@@ -5,6 +5,7 @@
 -define(CALL,      16#03).
 -define(FETCHP,    16#08).
 -define(FETCHB,    16#0a).
+-define(FETCH,     16#0b).
 -define(STOREP,    16#0c).
 -define(STORE_PLUS,16#0d).
 -define(STOREB,    16#0e).

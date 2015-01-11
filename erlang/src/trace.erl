@@ -103,6 +103,9 @@ trace(f18A,?FETCHP,CPU) ->
 trace(f18A,?FETCHB,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{fetchb,{t,CPU#cpu.t}}});     
 
+trace(f18A,?FETCH,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,{fetch,{t,CPU#cpu.t},{ds,CPU#cpu.ds}}});     
+
 trace(f18A,?STOREP,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{storep,{p,CPU#cpu.p},{t,CPU#cpu.t}}});     
 

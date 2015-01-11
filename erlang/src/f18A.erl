@@ -405,6 +405,18 @@ exec_impl(?FETCHB,CPU) ->
             Other
 	end;
 
+% 16#0b  @  fetch
+exec_impl(?FETCH,CPU) ->
+   A    = CPU#cpu.a,     
+   CPUX = push(ds,CPU),
+   case read(CPUX,A) of
+        {ok,T} ->
+   	      {ok,CPUX#cpu{ t = T
+                        }};
+        Other ->
+            Other
+	end;
+
 % 16#0c  !  store  P
 exec_impl(?STOREP,CPU) ->
    P = CPU#cpu.p,     
@@ -1016,6 +1028,11 @@ pop_rs_test() ->
                      [{ram,15,678},{b,15},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
                    ]).
 
+-define(TEST_FETCH,[{?FETCH,
+                     [{ram,15,678},{a,15},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                     [{ram,15,678},{a,15},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
+                   ]).
+
 -define(TEST_STOREP,[{?STOREP,
                       [{ram,0,0},{p,0},{t,1},{s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
                       [{ram,0,1},{p,1},{t,2},{s,3},{ds,1,[3,4,5,6,7,8,9,10]}]}
@@ -1319,6 +1336,7 @@ call_test()      -> test_opcode(?TEST_CALL).
 jump_test()      -> test_opcode(?TEST_JUMP).
 fetchp_test()    -> test_opcode(?TEST_FETCHP).
 fetchb_test()    -> test_opcode(?TEST_FETCHB).
+fetch_test()     -> test_opcode(?TEST_FETCH).
 storep_test()    -> test_opcode(?TEST_STOREP).
 storeplus_test() -> test_opcode(?TEST_STORE_PLUS).
 storeb_test()    -> test_opcode(?TEST_STOREB).
