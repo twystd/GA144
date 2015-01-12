@@ -393,6 +393,20 @@ exec_impl(?FETCHP,CPU) ->
             Other
 	end;
 
+
+% 16#09  @+  fetch-plus
+exec_impl(?FETCH_PLUS,CPU) ->
+   A    = CPU#cpu.a,     
+   CPUX = push(ds,CPU),
+   case read(CPUX,A) of
+        {ok,T} ->
+   	    {ok,CPUX#cpu{ a = inc(A),
+                          t = T
+                        }};
+        Other ->
+            Other
+	end;
+
 % 16#0a  @b  fetch B
 exec_impl(?FETCHB,CPU) ->
    B    = CPU#cpu.b,     
@@ -1079,6 +1093,40 @@ pop_rs_test() ->
                       [{rom,16#3f,678},{p,16#80},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
                     ]).
 
+% TODO: ADD TESTS FOR I/O
+-define(TEST_FETCH_PLUS,[{?FETCH_PLUS,
+                          [{ram,15,678},{a,15},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                          [{ram,15,678},{a,16},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                         {?FETCH_PLUS,
+                          [{ram,0,678},{a,0},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                          [{ram,0,678},{a,1},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                         {?FETCH_PLUS,
+                          [{ram,16#3f,678},{a,16#3f},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                          [{ram,16#3f,678},{a,16#40},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                         {?FETCH_PLUS,
+                          [{ram,16#3f,678},{a,16#7f},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                          [{ram,16#3f,678},{a,16#00},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                         {?FETCH_PLUS,
+                          [{rom,15,876},{a,16#8f},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                          [{rom,15,876},{a,16#90},{t,876},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                         {?FETCH_PLUS,
+                          [{rom,0,678},{a,16#80},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                          [{rom,0,678},{a,16#81},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                         {?FETCH_PLUS,
+                          [{rom,16#3f,678},{a,16#bf},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                          [{rom,16#3f,678},{a,16#c0},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]},
+
+                         {?FETCH_PLUS,
+                          [{rom,16#3f,678},{a,16#ff},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
+                          [{rom,16#3f,678},{a,16#80},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
+                        ]).
+
 -define(TEST_FETCHB,[{?FETCHB,
                      [{ram,15,678},{b,15},{t,1},  {s,2},{ds,0,[3,4,5,6,7,8,9,10]}],
                      [{ram,15,678},{b,15},{t,678},{s,1},{ds,7,[3,4,5,6,7,8,9,2]}]}
@@ -1442,6 +1490,7 @@ ret_test()       -> test_opcode(?TEST_RET).
 call_test()      -> test_opcode(?TEST_CALL).
 jump_test()      -> test_opcode(?TEST_JUMP).
 fetchp_test()    -> test_opcode(?TEST_FETCHP).
+fetchplus_test() -> test_opcode(?TEST_FETCH_PLUS).
 fetchb_test()    -> test_opcode(?TEST_FETCHB).
 fetch_test()     -> test_opcode(?TEST_FETCH).
 storep_test()    -> test_opcode(?TEST_STOREP).

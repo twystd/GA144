@@ -4,6 +4,7 @@
 -define(JUMP,      16#02).
 -define(CALL,      16#03).
 -define(FETCHP,    16#08).
+-define(FETCH_PLUS,16#09).
 -define(FETCHB,    16#0a).
 -define(FETCH,     16#0b).
 -define(STOREP,    16#0c).

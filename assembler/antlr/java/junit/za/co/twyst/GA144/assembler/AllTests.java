@@ -11,6 +11,7 @@ import org.junit.runners.Suite.SuiteClasses;
                 TestJUMP.class,       // 0x02 
                 TestCALL.class,       // 0x03
                 TestFETCHP.class,     // 0x08
+                TestFETCHPLUS.class,  // 0x09
                 
                 TestFETCHB.class,     // 0x0a
                 TestFETCH.class,      // 0x0b
