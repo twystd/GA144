@@ -4,6 +4,7 @@ public class OpCode extends Instruction {
 	// CONSTANTS
 
 	public enum OPCODE { RET       (0x00,"ret",       ";","ret"),
+                         EX        (0x01,"ex",        "ex"),
 	                     JUMP      (0x02,"jump",      "jump"),
 	                     CALL      (0x03,"call",      "call"),
 	                     FETCHP    (0x08,"fetch-p",   "@p"),

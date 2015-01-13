@@ -7,7 +7,7 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 
 @SuiteClasses({ TestRET.class,        // 0x00 
-    
+                TestEX.class,         // 0x01 
                 TestJUMP.class,       // 0x02 
                 TestCALL.class,       // 0x03
                 TestFETCHP.class,     // 0x08

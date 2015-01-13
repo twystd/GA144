@@ -1,6 +1,7 @@
 % OPCODE CONSTANTS
 %
 -define(RET,       16#00).
+-define(EX,        16#01).
 -define(JUMP,      16#02).
 -define(CALL,      16#03).
 -define(FETCHP,    16#08).

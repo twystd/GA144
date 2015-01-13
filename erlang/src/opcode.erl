@@ -17,6 +17,7 @@
 %% @doc Translates a 5 bit value into the equivalent internal op-code
 %%      representation.
 opcode(16#00) -> ?RET;
+opcode(16#01) -> ?EX;
 opcode(16#02) -> ?JUMP;
 opcode(16#03) -> ?CALL;
 opcode(16#08) -> ?FETCHP;
@@ -48,6 +49,7 @@ opcode(X)     -> ?debugFmt("UNKNOWN CODE: ~p~n",[X]), unknown.
 %% @doc Utility function to translate an op-code into a readable string.
 %%
 to_string(?RET)        -> "RET";
+to_string(?EX)         -> "EX";
 to_string(?JUMP)       -> "JUMP";
 to_string(?CALL)       -> "CALL";
 to_string(?FETCHP)     -> "FETCH-P";
