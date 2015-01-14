@@ -97,6 +97,9 @@ trace(f18A,?JUMP,CPU) ->
 trace(f18A,?CALL,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{call,{p,CPU#cpu.p}}});
 
+trace(f18A,?NEXT,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,{next,{p,CPU#cpu.p}}});
+
 trace(f18A,?FETCHP,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{fetchp,{t,CPU#cpu.t}}});
 

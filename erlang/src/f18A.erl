@@ -367,9 +367,9 @@ exec_impl(?RET,CPU) ->
 % 16#02  name; jump
 exec_impl({?JUMP,Addr,Mask},CPU) ->
    P = CPU#cpu.p,
-   {ok,CPU#cpu{ p = ((P band Mask) bor Addr)
+   {ok,CPU#cpu{ p = ((P band Mask) bor Addr),
+                i = []
               }}; 
-
 
 % 16#03  name  call
 exec_impl({?CALL,Addr,Mask},CPU) ->
@@ -379,6 +379,23 @@ exec_impl({?CALL,Addr,Mask},CPU) ->
                  r = P,
                  i = [] 
 	       }}; 
+
+% 16#05  next
+exec_impl({?NEXT,Addr,Mask},CPU) ->
+   P    = CPU#cpu.p,
+   R    = CPU#cpu.r,
+   case R of 
+       0 ->
+           CPUX = pop(rs,CPU),
+           {ok,CPUX#cpu{ p = P+1,
+                         i = []
+                       }};
+       _else ->
+           {ok,CPU#cpu{ p = ((P band Mask) bor Addr),
+                        r  = R-1,
+                        i = []
+                      }}
+   end; 
 
 % 16#08  @p  fetch P
 exec_impl(?FETCHP,CPU) ->
@@ -1054,9 +1071,18 @@ pop_rs_test() ->
                     [{p,16#003},{r,16#0a9},{rs,7,[1,2,3,4,5,6,7,0]},{i,[]}] }
                   ]). 
 
+-define(TEST_NEXT,[{{?NEXT,16#03,16#0000},
+                    [{p,16#0a9},{r,16#000},{rs,0,[1,2,3,4,5,6,7,8]},{i,[?RET,?RET,?RET,?RET]}],
+                    [{p,16#0aa},{r,1},     {rs,1,[1,2,3,4,5,6,7,8]},{i,[]}] },
+
+                   {{?NEXT,16#03,16#0000},
+                    [{p,16#0a9},{r,16#001},{rs,0,[1,2,3,4,5,6,7,8]},{i,[?RET,?RET,?RET,?RET]}],
+                    [{p,16#003},{r,0},     {rs,0,[1,2,3,4,5,6,7,8]},{i,[]}] }
+                  ]). 
+
 -define(TEST_JUMP,[{{?JUMP,16#03,16#0000},
-                    [{p,16#0a9}],
-                    [{p,16#003}] } 
+                    [{p,16#0a9},{i,[?RET,?RET,?RET,?RET]}],
+                    [{p,16#003},{i,[]}] } 
                   ]).
 
 % TODO: ADD TESTS FOR I/O
@@ -1488,6 +1514,7 @@ pop_rs_test() ->
 
 ret_test()       -> test_opcode(?TEST_RET).
 call_test()      -> test_opcode(?TEST_CALL).
+next_test()      -> test_opcode(?TEST_NEXT).
 jump_test()      -> test_opcode(?TEST_JUMP).
 fetchp_test()    -> test_opcode(?TEST_FETCHP).
 fetchplus_test() -> test_opcode(?TEST_FETCH_PLUS).
@@ -1553,8 +1580,8 @@ test_init(CPU,[{ram,A,W} |T]) -> test_init(CPU#cpu{ram=array:set(A,W,CPU#cpu.ram
 test_init(CPU,[{rom,A,W} |T]) -> test_init(CPU#cpu{rom=array:set(A,W,CPU#cpu.rom)},T).
 
 test_verify(Expected,Actual) ->
-%  ?debugFmt("EXPECTED: ~p",[Expected#cpu.rom]),
-%  ?debugFmt("ACTUAL:   ~p",[Actual#cpu.rom]),
+%  ?debugFmt("EXPECTED: ~p",[Expected#cpu.i]),
+%  ?debugFmt("ACTUAL:   ~p",[Actual#cpu.i]),
    ?assertEqual(Expected,Actual).
 
 assert ([],_CPU) ->
