@@ -364,7 +364,16 @@ exec_impl(?RET,CPU) ->
                  i = []
                }}; 
 
-% 16#02  name; jump
+% 16#01  ex 
+exec_impl(?EX,CPU) ->
+   P = CPU#cpu.p,
+   R = CPU#cpu.r,
+   {ok,CPU#cpu{ p = R,
+                r = P,
+                i = []
+              }}; 
+
+% 16#02  name ; jump
 exec_impl({?JUMP,Addr,Mask},CPU) ->
    P = CPU#cpu.p,
    {ok,CPU#cpu{ p = ((P band Mask) bor Addr),
@@ -1066,10 +1075,10 @@ pop_rs_test() ->
                    [{p,2},{r,3},{rs,1,[3,4,5,6,7,8,9,10]},{i,[]}] }
                  ]).
 
--define(TEST_CALL,[{{?CALL,16#03,16#0000},
-                    [{p,16#0a9},{r,16#000},{rs,0,[1,2,3,4,5,6,7,8]},{i,[?RET,?RET,?RET,?RET]}],
-                    [{p,16#003},{r,16#0a9},{rs,7,[1,2,3,4,5,6,7,0]},{i,[]}] }
-                  ]). 
+-define(TEST_EX,[{?EX,
+                   [{p,16#0a9},{r,16#03}],
+                   [{p,16#003},{r,16#0a9}]} 
+                 ]).
 
 -define(TEST_NEXT,[{{?NEXT,16#03,16#0000},
                     [{p,16#0a9},{r,16#000},{rs,0,[1,2,3,4,5,6,7,8]},{i,[?RET,?RET,?RET,?RET]}],
@@ -1084,6 +1093,11 @@ pop_rs_test() ->
                     [{p,16#0a9},{i,[?RET,?RET,?RET,?RET]}],
                     [{p,16#003},{i,[]}] } 
                   ]).
+
+-define(TEST_CALL,[{{?CALL,16#03,16#0000},
+                    [{p,16#0a9},{r,16#000},{rs,0,[1,2,3,4,5,6,7,8]},{i,[?RET,?RET,?RET,?RET]}],
+                    [{p,16#003},{r,16#0a9},{rs,7,[1,2,3,4,5,6,7,0]},{i,[]}] }
+                  ]). 
 
 % TODO: ADD TESTS FOR I/O
 -define(TEST_FETCHP,[{?FETCHP,
@@ -1513,9 +1527,10 @@ pop_rs_test() ->
 -define(RND(N),random:uniform(N+1) - 1).
 
 ret_test()       -> test_opcode(?TEST_RET).
+ex_test()        -> test_opcode(?TEST_EX).
+jump_test()      -> test_opcode(?TEST_JUMP).
 call_test()      -> test_opcode(?TEST_CALL).
 next_test()      -> test_opcode(?TEST_NEXT).
-jump_test()      -> test_opcode(?TEST_JUMP).
 fetchp_test()    -> test_opcode(?TEST_FETCHP).
 fetchplus_test() -> test_opcode(?TEST_FETCH_PLUS).
 fetchb_test()    -> test_opcode(?TEST_FETCHB).
