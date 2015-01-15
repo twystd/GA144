@@ -17,7 +17,7 @@ origin
     ;
 
 instruction
-    : label? (WS (origin|opcode|word|call|constant))+ (WS comment)?
+    : label? (WS (origin|opcode|word|call|next|constant))+ (WS comment)?
     ;
 
 label
@@ -42,6 +42,10 @@ constant
 
 call
     : NAME
+    ;
+
+next
+    : 'next' WS NAME
     ;
 
 comment

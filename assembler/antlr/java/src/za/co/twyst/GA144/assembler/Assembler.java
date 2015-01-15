@@ -23,6 +23,7 @@ import za.co.twyst.GA144.assembler.instructions.Down;
 import za.co.twyst.GA144.assembler.instructions.Instruction;
 import za.co.twyst.GA144.assembler.instructions.Label;
 import za.co.twyst.GA144.assembler.instructions.Left;
+import za.co.twyst.GA144.assembler.instructions.Next;
 import za.co.twyst.GA144.assembler.instructions.Origin;
 import za.co.twyst.GA144.assembler.instructions.Right;
 import za.co.twyst.GA144.assembler.instructions.OpCode;
@@ -31,6 +32,7 @@ import za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.CALL;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.FETCHP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.JUMP;
+import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.NEXT;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.NOP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.RET;
 
@@ -263,6 +265,16 @@ public class Assembler {
 					 } else {
 						 encodeJump(f18A,CALL,address);
 					 }
+				 } else if (instruction instanceof Next) {
+	                     String label = ((Next) instruction).label;
+	                     int    address;
+	                
+	                     if (!labels.containsKey(label)) {
+	                         throw new Exception("Unknown label '" + label + "'");
+	                     }
+
+	                     address = labels.get(label);
+	                     encodeJump(f18A,NEXT,address);
 				 } else { 
 					 if (instruction instanceof OpCode) {
 						 encode(f18A,(OpCode) instruction);

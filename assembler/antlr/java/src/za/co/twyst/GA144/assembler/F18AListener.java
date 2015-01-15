@@ -12,6 +12,7 @@ import za.co.twyst.GA144.assembler.antlr.F18AParser.CommentContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.ConstantContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.LabelContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.CallContext;
+import za.co.twyst.GA144.assembler.antlr.F18AParser.NextContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.OpcodeContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.OriginContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.ProgramContext;
@@ -22,6 +23,7 @@ import za.co.twyst.GA144.assembler.instructions.Down;
 import za.co.twyst.GA144.assembler.instructions.Instruction;
 import za.co.twyst.GA144.assembler.instructions.Label;
 import za.co.twyst.GA144.assembler.instructions.Left;
+import za.co.twyst.GA144.assembler.instructions.Next;
 import za.co.twyst.GA144.assembler.instructions.Origin;
 import za.co.twyst.GA144.assembler.instructions.Right;
 import za.co.twyst.GA144.assembler.instructions.OpCode;
@@ -167,6 +169,19 @@ public class F18AListener extends F18ABaseListener {
             }
 
             instructions.add(new Call(node.getText()));
+        }
+    }
+
+    @Override
+    public void enterNext(NextContext ctx) {
+        TerminalNode node;
+        
+        if ((node = ctx.NAME()) != null) {
+            if (debug) {
+                System.out.println("OPCODE:   next " + node.getText());
+            }
+
+            instructions.add(new Next(node.getText()));
         }
     }
 }

@@ -21,7 +21,7 @@ public class TestNEXT extends AssemblerTest {
 	
 	private static final String NEXTF = "antlr 0 org\n"
                                       + "start nop nop nop nop\n"
-                                      + "      end\n"
+                                      + "      next end\n"
                                       + "      nop nop nop nop\n"
                                       + "end   next start\n";
     
@@ -59,7 +59,7 @@ public class TestNEXT extends AssemblerTest {
     public void testNEXT0() throws Exception {
         test(new TestVector(NEXT0,
                             new int[] { 0x2c9b2,0x1f400 },
-                            new int[] { 0x3ffff,0x3ffff }));
+                            new int[] { 0x3ffff,0x3e3ff }));
     }
 
     @Test
@@ -80,21 +80,21 @@ public class TestNEXT extends AssemblerTest {
     public void testNEXT3() throws Exception {
         test(new TestVector(NEXT3,
                             new int[] { 0x2c9b2,0x2c9b2,0x1f400 },
-                            new int[] { 0x3ffff,0x3ffff,0x3ffff })); 
+                            new int[] { 0x3ffff,0x3ffff,0x3e3ff })); 
     }
 
     @Test
     public void testNEXTF() throws Exception {
         test(new TestVector(NEXTF,
                             new int[] { 0x2c9b2,0x1f403,0x2c9b2,0x1f400 },
-                            new int[] { 0x3ffff,0x3ffff,0x3ffff,0x3ffff })); 
+                            new int[] { 0x3ffff,0x3e3ff,0x3ffff,0x3e3ff })); 
     }
 
 	@Test
     public void testNEXTF0() throws Exception {
         test( new TestVector(NEXTF0,
                              new int[] { 0x1f404,0x1f405,0x1f406,0x1f407,0x2c9b2,0x2c9b2,0x2c9b2,0x2c9b2 },
-                             new int[] { 0x3ffff,0x3ffff,0x3ffff,0x3ffff,0x3ffff,0x3ffff,0x3ffff,0x3ffff }));
+                             new int[] { 0x3e3ff,0x3e3ff,0x3e3ff,0x3e3ff,0x3e3ff,0x3e3ff,0x3e3ff,0x3e3ff }));
     }
 
     @Test
