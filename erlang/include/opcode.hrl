@@ -7,6 +7,7 @@
 
 -define(NEXT,      16#05).
 -define(IF,        16#06).
+-define(MINUSIF,   16#07).
 -define(FETCHP,    16#08).
 -define(FETCH_PLUS,16#09).
 -define(FETCHB,    16#0a).

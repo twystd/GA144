@@ -421,6 +421,21 @@ exec_impl({?IF,Addr,Mask},CPU) ->
                       }}
    end; 
 
+% 16#07  minus-if
+exec_impl({?MINUSIF,Addr,Mask},CPU) ->
+   P  = CPU#cpu.p,
+   TS = CPU#cpu.t band 16#20000,
+   case TS of 
+       0 ->
+           {ok,CPU#cpu{ p = ((P band Mask) bor Addr),
+                        i = []
+                      }};
+       _else ->
+           {ok,CPU#cpu{ p = P+1,
+                        i = []
+                      }}
+   end; 
+
 % 16#08  @p  fetch P
 exec_impl(?FETCHP,CPU) ->
    P    = CPU#cpu.p,     
@@ -720,6 +735,9 @@ decode(?NEXT,Word) ->
 decode(?IF,Word) ->
    [{?IF,Word band 16#03ff,16#0000}];
 
+decode(?MINUSIF,Word) ->
+   [{?MINUSIF,Word band 16#03ff,16#0000}];
+
 decode(I0,Word) ->
    W            = Word bxor 16#15555,
    <<S1:5,_:8>> = <<W:13>>,
@@ -737,6 +755,9 @@ decode(I0,?NEXT,Word) ->
 decode(I0,?IF,Word) ->
    [I0,{?IF,Word band 16#0ff,16#300}];
 
+decode(I0,?MINUSIF,Word) ->
+   [I0,{?MINUSIF,Word band 16#0ff,16#300}];
+
 decode(I0,I1,Word) ->
    W            = Word bxor 16#15555,
    <<S2:5,_:3>> = <<W:8>>,
@@ -753,6 +774,9 @@ decode(I0,I1,?NEXT,Word) ->
 
 decode(I0,I1,?IF,Word) ->
    [I0,I1,{?IF,Word band 16#007,16#3f8}];
+
+decode(I0,I1,?MINUSIF,Word) ->
+   [I0,I1,{?MINUSIF,Word band 16#007,16#3f8}];
 
 decode(I0,I1,I2,Word) ->
    W        = Word bxor 16#15555,
@@ -1044,6 +1068,10 @@ decode_test() ->
    ?assertEqual([{?IF,16#000,16#000}],decode(16#18400)),
    ?assertEqual([{?IF,16#3ff,16#000}],decode(16#187ff)),
 
+   ?assertEqual([{?MINUSIF,16#003,16#000}],decode(16#1a003)),
+   ?assertEqual([{?MINUSIF,16#000,16#000}],decode(16#1a000)),
+   ?assertEqual([{?MINUSIF,16#3ff,16#000}],decode(16#1a7ff)),
+
    ?assertEqual([?NOP,?NOP,?NOP,?NOP],decode(16#2c9b2)),
    ?assertEqual([?NOP,?NOP,?NOP,?DUP],decode(16#2c9b3)),
    ?assertEqual([?NOP,?NOP,?DUP,?NOP],decode(16#2c992)),
@@ -1138,6 +1166,19 @@ pop_rs_test() ->
                   [{p,16#0a9},{t,0},{i,[?RET,?RET,?RET,?RET]}],
                   [{p,16#003},{t,0},{i,[]}] }
                 ]). 
+
+-define(TEST_MINUSIF,[{{?MINUSIF,16#03,16#0000},
+                       [{p,16#0a9},{t,1},{i,[?RET,?RET,?RET,?RET]}],
+                       [{p,16#003},{t,1},{i,[]}] },
+
+                      {{?MINUSIF,16#03,16#0000},
+                       [{p,16#0a9},{t,0},{i,[?RET,?RET,?RET,?RET]}],
+                       [{p,16#003},{t,0},{i,[]}] },
+
+                      {{?MINUSIF,16#03,16#0000},
+                       [{p,16#0a9},{t,16#20000},{i,[?RET,?RET,?RET,?RET]}],
+                       [{p,16#0aa},{t,16#20000},{i,[]}] }
+                     ]). 
 
 -define(TEST_JUMP,[{{?JUMP,16#03,16#0000},
                     [{p,16#0a9},{i,[?RET,?RET,?RET,?RET]}],
@@ -1582,6 +1623,7 @@ jump_test()      -> test_opcode(?TEST_JUMP).
 call_test()      -> test_opcode(?TEST_CALL).
 next_test()      -> test_opcode(?TEST_NEXT).
 if_test()        -> test_opcode(?TEST_IF).
+minusif_test()   -> test_opcode(?TEST_MINUSIF).
 fetchp_test()    -> test_opcode(?TEST_FETCHP).
 fetchplus_test() -> test_opcode(?TEST_FETCH_PLUS).
 fetchb_test()    -> test_opcode(?TEST_FETCHB).

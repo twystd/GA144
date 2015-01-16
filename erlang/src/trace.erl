@@ -106,6 +106,9 @@ trace(f18A,?NEXT,CPU) ->
 trace(f18A,?IF,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{'if',{t,CPU#cpu.t},{p,CPU#cpu.p}}});
 
+trace(f18A,?MINUSIF,CPU) ->
+   trace:trace(f18A,{ CPU#cpu.id,{minus_if,{t,CPU#cpu.t},{p,CPU#cpu.p}}});
+
 trace(f18A,?FETCHP,CPU) ->
    trace:trace(f18A,{ CPU#cpu.id,{fetchp,{t,CPU#cpu.t}}});
 

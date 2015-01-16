@@ -24,6 +24,7 @@ import za.co.twyst.GA144.assembler.instructions.If;
 import za.co.twyst.GA144.assembler.instructions.Instruction;
 import za.co.twyst.GA144.assembler.instructions.Label;
 import za.co.twyst.GA144.assembler.instructions.Left;
+import za.co.twyst.GA144.assembler.instructions.MinusIf;
 import za.co.twyst.GA144.assembler.instructions.Next;
 import za.co.twyst.GA144.assembler.instructions.Origin;
 import za.co.twyst.GA144.assembler.instructions.Right;
@@ -33,6 +34,7 @@ import za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.CALL;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.FETCHP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.IF;
+import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.MINUSIF;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.JUMP;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.NEXT;
 import static za.co.twyst.GA144.assembler.instructions.OpCode.OPCODE.NOP;
@@ -287,6 +289,16 @@ public class Assembler {
 
                      address = labels.get(label);
                      encodeJump(f18A,IF,address);
+                 } else if (instruction instanceof MinusIf) {
+                     String label = ((MinusIf) instruction).label;
+                     int    address;
+                
+                     if (!labels.containsKey(label)) {
+                         throw new Exception("Unknown label '" + label + "'");
+                     }
+
+                     address = labels.get(label);
+                     encodeJump(f18A,MINUSIF,address);
 				 } else { 
 					 if (instruction instanceof OpCode) {
 						 encode(f18A,(OpCode) instruction);

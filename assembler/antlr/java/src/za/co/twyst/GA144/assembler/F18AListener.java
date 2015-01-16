@@ -10,6 +10,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import za.co.twyst.GA144.assembler.antlr.F18ABaseListener;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.CommentContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.ConstantContext;
+import za.co.twyst.GA144.assembler.antlr.F18AParser.JpContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.JzContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.LabelContext;
 import za.co.twyst.GA144.assembler.antlr.F18AParser.CallContext;
@@ -25,6 +26,7 @@ import za.co.twyst.GA144.assembler.instructions.If;
 import za.co.twyst.GA144.assembler.instructions.Instruction;
 import za.co.twyst.GA144.assembler.instructions.Label;
 import za.co.twyst.GA144.assembler.instructions.Left;
+import za.co.twyst.GA144.assembler.instructions.MinusIf;
 import za.co.twyst.GA144.assembler.instructions.Next;
 import za.co.twyst.GA144.assembler.instructions.Origin;
 import za.co.twyst.GA144.assembler.instructions.Right;
@@ -197,6 +199,19 @@ public class F18AListener extends F18ABaseListener {
             }
 
             instructions.add(new If(node.getText()));
+        }
+    }
+
+    @Override
+    public void enterJp(JpContext ctx) {
+        TerminalNode node;
+        
+        if ((node = ctx.NAME()) != null) {
+            if (debug) {
+                System.out.println("OPCODE:   -if " + node.getText());
+            }
+
+            instructions.add(new MinusIf(node.getText()));
         }
     }
 }
