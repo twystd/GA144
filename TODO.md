@@ -26,3 +26,8 @@ TLA+
 Haskell
 -------
 1. Yampa ? (http://keera.co.uk)
+
+Excel (?)
+---------
+1. A la http://hackaday.io/project/3680-exembler
+
