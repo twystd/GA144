@@ -4,7 +4,9 @@
 -define(EX,        16#01).
 -define(JUMP,      16#02).
 -define(CALL,      16#03).
+
 -define(NEXT,      16#05).
+-define(IF,        16#06).
 -define(FETCHP,    16#08).
 -define(FETCH_PLUS,16#09).
 -define(FETCHB,    16#0a).

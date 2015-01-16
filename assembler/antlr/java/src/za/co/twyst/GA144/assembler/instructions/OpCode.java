@@ -8,6 +8,7 @@ public class OpCode extends Instruction {
 	                     JUMP      (0x02,"jump",      "jump"),
 	                     CALL      (0x03,"call",      "call"),
                          NEXT      (0x05,"next",      "next"),
+                         IF        (0x06,"if",        "if"),
 	                     FETCHP    (0x08,"fetch-p",   "@p"),
                          FETCH_PLUS(0x09,"fetch-plus","@+"),
 	                     FETCHB    (0x0a,"fetch-b",   "@b"),

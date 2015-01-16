@@ -406,6 +406,21 @@ exec_impl({?NEXT,Addr,Mask},CPU) ->
                       }}
    end; 
 
+% 16#06  if
+exec_impl({?IF,Addr,Mask},CPU) ->
+   P = CPU#cpu.p,
+   T = CPU#cpu.t,
+   case T of 
+       0 ->
+           {ok,CPU#cpu{ p = ((P band Mask) bor Addr),
+                        i = []
+                      }};
+       _else ->
+           {ok,CPU#cpu{ p = P+1,
+                        i = []
+                      }}
+   end; 
+
 % 16#08  @p  fetch P
 exec_impl(?FETCHP,CPU) ->
    P    = CPU#cpu.p,     
@@ -699,6 +714,12 @@ decode(?JUMP,Word) ->
 decode(?CALL,Word) ->
    [{?CALL,Word band 16#03ff,16#0000}];
 
+decode(?NEXT,Word) ->
+   [{?NEXT,Word band 16#03ff,16#0000}];
+
+decode(?IF,Word) ->
+   [{?IF,Word band 16#03ff,16#0000}];
+
 decode(I0,Word) ->
    W            = Word bxor 16#15555,
    <<S1:5,_:8>> = <<W:13>>,
@@ -710,6 +731,12 @@ decode(I0,?JUMP,Word) ->
 decode(I0,?CALL,Word) ->
    [I0,{?CALL,Word band 16#0ff,16#300}];
 
+decode(I0,?NEXT,Word) ->
+   [I0,{?NEXT,Word band 16#0ff,16#300}];
+
+decode(I0,?IF,Word) ->
+   [I0,{?IF,Word band 16#0ff,16#300}];
+
 decode(I0,I1,Word) ->
    W            = Word bxor 16#15555,
    <<S2:5,_:3>> = <<W:8>>,
@@ -720,6 +747,12 @@ decode(I0,I1,?JUMP,Word) ->
 
 decode(I0,I1,?CALL,Word) ->
    [I0,I1,{?CALL,Word band 16#007,16#3f8}];
+
+decode(I0,I1,?NEXT,Word) ->
+   [I0,I1,{?NEXT,Word band 16#007,16#3f8}];
+
+decode(I0,I1,?IF,Word) ->
+   [I0,I1,{?IF,Word band 16#007,16#3f8}];
 
 decode(I0,I1,I2,Word) ->
    W        = Word bxor 16#15555,
@@ -1003,6 +1036,14 @@ decode_test() ->
    ?assertEqual([?NOP,?NOP,{?CALL,16#00,16#3f8}],decode(16#2c948)),
    ?assertEqual([?NOP,?NOP,{?CALL,16#07,16#3f8}],decode(16#2c94f)),
 
+   ?assertEqual([{?NEXT,16#003,16#000}],decode(16#1f403)),
+   ?assertEqual([{?NEXT,16#000,16#000}],decode(16#1f400)),
+   ?assertEqual([{?NEXT,16#3ff,16#000}],decode(16#1f7ff)),
+
+   ?assertEqual([{?IF,16#003,16#000}],decode(16#18403)),
+   ?assertEqual([{?IF,16#000,16#000}],decode(16#18400)),
+   ?assertEqual([{?IF,16#3ff,16#000}],decode(16#187ff)),
+
    ?assertEqual([?NOP,?NOP,?NOP,?NOP],decode(16#2c9b2)),
    ?assertEqual([?NOP,?NOP,?NOP,?DUP],decode(16#2c9b3)),
    ?assertEqual([?NOP,?NOP,?DUP,?NOP],decode(16#2c992)),
@@ -1088,6 +1129,15 @@ pop_rs_test() ->
                     [{p,16#0a9},{r,16#001},{rs,0,[1,2,3,4,5,6,7,8]},{i,[?RET,?RET,?RET,?RET]}],
                     [{p,16#003},{r,0},     {rs,0,[1,2,3,4,5,6,7,8]},{i,[]}] }
                   ]). 
+
+-define(TEST_IF,[{{?IF,16#03,16#0000},
+                  [{p,16#0a9},{t,1},{i,[?RET,?RET,?RET,?RET]}],
+                  [{p,16#0aa},{t,1},{i,[]}] },
+
+                 {{?IF,16#03,16#0000},
+                  [{p,16#0a9},{t,0},{i,[?RET,?RET,?RET,?RET]}],
+                  [{p,16#003},{t,0},{i,[]}] }
+                ]). 
 
 -define(TEST_JUMP,[{{?JUMP,16#03,16#0000},
                     [{p,16#0a9},{i,[?RET,?RET,?RET,?RET]}],
@@ -1531,6 +1581,7 @@ ex_test()        -> test_opcode(?TEST_EX).
 jump_test()      -> test_opcode(?TEST_JUMP).
 call_test()      -> test_opcode(?TEST_CALL).
 next_test()      -> test_opcode(?TEST_NEXT).
+if_test()        -> test_opcode(?TEST_IF).
 fetchp_test()    -> test_opcode(?TEST_FETCHP).
 fetchplus_test() -> test_opcode(?TEST_FETCH_PLUS).
 fetchb_test()    -> test_opcode(?TEST_FETCHB).
@@ -1595,8 +1646,8 @@ test_init(CPU,[{ram,A,W} |T]) -> test_init(CPU#cpu{ram=array:set(A,W,CPU#cpu.ram
 test_init(CPU,[{rom,A,W} |T]) -> test_init(CPU#cpu{rom=array:set(A,W,CPU#cpu.rom)},T).
 
 test_verify(Expected,Actual) ->
-%  ?debugFmt("EXPECTED: ~p",[Expected#cpu.i]),
-%  ?debugFmt("ACTUAL:   ~p",[Actual#cpu.i]),
+%  ?debugFmt("EXPECTED: ~p",[Expected#cpu.p]),
+%  ?debugFmt("ACTUAL:   ~p",[Actual#cpu.p]),
    ?assertEqual(Expected,Actual).
 
 assert ([],_CPU) ->

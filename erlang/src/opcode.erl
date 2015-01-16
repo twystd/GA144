@@ -20,7 +20,9 @@ opcode(16#00) -> ?RET;
 opcode(16#01) -> ?EX;
 opcode(16#02) -> ?JUMP;
 opcode(16#03) -> ?CALL;
+
 opcode(16#05) -> ?NEXT;
+opcode(16#06) -> ?IF;
 opcode(16#08) -> ?FETCHP;
 opcode(16#09) -> ?FETCH_PLUS;
 opcode(16#0a) -> ?FETCHB;
@@ -53,7 +55,9 @@ to_string(?RET)        -> "RET";
 to_string(?EX)         -> "EX";
 to_string(?JUMP)       -> "JUMP";
 to_string(?CALL)       -> "CALL";
+
 to_string(?NEXT)       -> "NEXT";
+to_string(?IF)         -> "IF";
 to_string(?FETCHP)     -> "FETCH-P";
 to_string(?FETCH_PLUS) -> "FETCH-PLUS";
 to_string(?FETCH)      -> "FETCH";
