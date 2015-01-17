@@ -7,6 +7,7 @@ public class OpCode extends Instruction {
                          EX        (0x01,"ex",        "ex"),
 	                     JUMP      (0x02,"jump",      "jump"),
 	                     CALL      (0x03,"call",      "call"),
+                         UNEXT     (0x04,"unext",     "unext"),
                          NEXT      (0x05,"next",      "next"),
                          IF        (0x06,"if",        "if"),
                          MINUSIF   (0x07,"-if",       "-if"),

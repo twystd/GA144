@@ -20,7 +20,7 @@ opcode(16#00) -> ?RET;
 opcode(16#01) -> ?EX;
 opcode(16#02) -> ?JUMP;
 opcode(16#03) -> ?CALL;
-
+opcode(16#04) -> ?UNEXT;
 opcode(16#05) -> ?NEXT;
 opcode(16#06) -> ?IF;
 opcode(16#07) -> ?MINUSIF;
@@ -56,7 +56,7 @@ to_string(?RET)        -> "RET";
 to_string(?EX)         -> "EX";
 to_string(?JUMP)       -> "JUMP";
 to_string(?CALL)       -> "CALL";
-
+to_string(?UNEXT)      -> "UNEXT";
 to_string(?NEXT)       -> "NEXT";
 to_string(?IF)         -> "IF";
 to_string(?MINUSIF)    -> "MINUS-IF";

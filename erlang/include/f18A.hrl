@@ -12,6 +12,7 @@
               a,
               b,
               i  = [],
+              im = [],
               t  = 0,
               s  = 0,
               ds = {0,array:new(8,[{default,0}])},

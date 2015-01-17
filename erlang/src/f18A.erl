@@ -50,6 +50,7 @@ create(GA144,ID,{Left,Right,Up,Down},ROM,RAM,Log) ->
                   a       = 0,
                   b       = 16#100,
                   i       = [],
+                  im      = [],
                   t       = 0,
 
                   log = Log
@@ -329,13 +330,15 @@ exec(CPU,[]) ->
 
    case {load(CPU,P),Break} of
         {{ok,I},true} ->
-           { breakpoint,CPU#cpu{ p = P + 1,
-                                 i = I
+           { breakpoint,CPU#cpu{ p  = P + 1,
+                                 i  = I,
+                                 im = I
                                }};
 
         {{ok,I},_} ->
-           exec(CPU#cpu{ p = P + 1,
-                         i = I
+           exec(CPU#cpu{ p  = P + 1,
+                         i  = I,
+                         im = I
                        });
         {eof,_} ->
             eof
@@ -386,8 +389,24 @@ exec_impl({?CALL,Addr,Mask},CPU) ->
    CPUX = push(rs,CPU),
    {ok,CPUX#cpu{ p = ((P band Mask) bor Addr),
                  r = P,
-                 i = [] 
+                 i = []
 	       }}; 
+
+% 16#04  unext
+exec_impl(?UNEXT,CPU) ->
+   IM = CPU#cpu.im,
+   R  = CPU#cpu.r,
+   case R of 
+       0 ->
+           CPUX = pop(rs,CPU),
+           {ok,CPUX#cpu{ i = []
+                       }};
+       _else ->
+           {ok,CPU#cpu{ r = R-1,
+                        i = IM
+                      }}
+   end; 
+
 
 % 16#05  next
 exec_impl({?NEXT,Addr,Mask},CPU) ->
@@ -1149,6 +1168,15 @@ pop_rs_test() ->
                    [{p,16#003},{r,16#0a9}]} 
                  ]).
 
+-define(TEST_UNEXT,[{?UNEXT,
+                     [{r,16#000},{rs,0,[1,2,3,4,5,6,7,8]},{i,[?NOP,?NOP,?NOP,?NOP]},{im,[?RET,?RET,?RET,?RET]}],
+                     [{r,1},     {rs,1,[1,2,3,4,5,6,7,8]},{i,[]},                   {im,[?RET,?RET,?RET,?RET]}]},
+
+                    {?UNEXT,
+                     [{r,3},{rs,0,[1,2,3,4,5,6,7,8]},{i,[?UNEXT]},               {im,[?NOP,?NOP,?NOP,?UNEXT]}],
+                     [{r,2},{rs,0,[1,2,3,4,5,6,7,8]},{i,[?NOP,?NOP,?NOP,?UNEXT]},{im,[?NOP,?NOP,?NOP,?UNEXT]}]}
+                  ]). 
+
 -define(TEST_NEXT,[{{?NEXT,16#03,16#0000},
                     [{p,16#0a9},{r,16#000},{rs,0,[1,2,3,4,5,6,7,8]},{i,[?RET,?RET,?RET,?RET]}],
                     [{p,16#0aa},{r,1},     {rs,1,[1,2,3,4,5,6,7,8]},{i,[]}] },
@@ -1621,6 +1649,7 @@ ret_test()       -> test_opcode(?TEST_RET).
 ex_test()        -> test_opcode(?TEST_EX).
 jump_test()      -> test_opcode(?TEST_JUMP).
 call_test()      -> test_opcode(?TEST_CALL).
+unext_test()     -> test_opcode(?TEST_UNEXT).
 next_test()      -> test_opcode(?TEST_NEXT).
 if_test()        -> test_opcode(?TEST_IF).
 minusif_test()   -> test_opcode(?TEST_MINUSIF).
@@ -1682,14 +1711,15 @@ test_init(CPU,[{b,X}     |T]) -> test_init(CPU#cpu{b=X},T);
 test_init(CPU,[{t,X}     |T]) -> test_init(CPU#cpu{t=X},T);
 test_init(CPU,[{s,X}     |T]) -> test_init(CPU#cpu{s=X},T);
 test_init(CPU,[{i,X}     |T]) -> test_init(CPU#cpu{i=X},T);
+test_init(CPU,[{im,X}    |T]) -> test_init(CPU#cpu{im=X},T);
 test_init(CPU,[{ds,X,Y}  |T]) -> test_init(CPU#cpu{ds={X,array:from_list(Y)}},T);
 test_init(CPU,[{rs,X,Y}  |T]) -> test_init(CPU#cpu{rs={X,array:from_list(Y)}},T);
 test_init(CPU,[{ram,A,W} |T]) -> test_init(CPU#cpu{ram=array:set(A,W,CPU#cpu.ram)},T);
 test_init(CPU,[{rom,A,W} |T]) -> test_init(CPU#cpu{rom=array:set(A,W,CPU#cpu.rom)},T).
 
 test_verify(Expected,Actual) ->
-%  ?debugFmt("EXPECTED: ~p",[Expected#cpu.p]),
-%  ?debugFmt("ACTUAL:   ~p",[Actual#cpu.p]),
+%  ?debugFmt("EXPECTED: ~p",[Expected]),
+%  ?debugFmt("ACTUAL:   ~p",[Actual]),
    ?assertEqual(Expected,Actual).
 
 assert ([],_CPU) ->

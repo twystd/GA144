@@ -67,6 +67,7 @@ ORG
 OPCODE
     : 'ret' | ';'
     | 'ex'
+    | 'unext'
     | '@p'
     | '@+'
     | '@b'

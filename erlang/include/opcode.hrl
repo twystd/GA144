@@ -4,7 +4,7 @@
 -define(EX,        16#01).
 -define(JUMP,      16#02).
 -define(CALL,      16#03).
-
+-define(UNEXT,     16#04).
 -define(NEXT,      16#05).
 -define(IF,        16#06).
 -define(MINUSIF,   16#07).
