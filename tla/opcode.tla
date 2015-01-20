@@ -4,7 +4,9 @@ EXTENDS Integers
 VARIABLES opcode,T
 
 CPU     == << T >>
-OPCODES == { "nop","shl" }
+OPCODES == { "nop",
+             "shl" 
+           }
 
 TIsValid == (T \in -8..7)
 OpCodeIsValid == (opcode \in OPCODES) \/ (opcode = "?") 
@@ -29,5 +31,5 @@ Next == \/ nop
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Jan 20 08:35:26 SAST 2015 by tonyseebregts
+\* Last modified Tue Jan 20 15:26:45 SAST 2015 by tonyseebregts
 \* Created Tue Jan 06 12:42:48 SAST 2015 by tonyseebregts

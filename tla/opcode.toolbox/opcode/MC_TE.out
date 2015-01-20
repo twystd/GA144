@@ -23,7 +23,7 @@ Semantic processing of module MC
 SANY finished.
 @!@!@ENDMSG 2219 @!@!@
 @!@!@STARTMSG 2185:0 @!@!@
-Starting... (2015-01-20 08:35:29)
+Starting... (2015-01-20 15:26:50)
 @!@!@ENDMSG 2185 @!@!@
 @!@!@STARTMSG 2189:0 @!@!@
 Computing initial states...
@@ -39,22 +39,22 @@ Model checking completed. No error has been found.
   based on the actual fingerprints:  val = 9.1E-15
 @!@!@ENDMSG 2193 @!@!@
 @!@!@STARTMSG 2201:0 @!@!@
-The coverage statistics at 2015-01-20 08:35:30
+The coverage statistics at 2015-01-20 15:26:50
 @!@!@ENDMSG 2201 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 13, col 11 to line 13, col 23 of module opcode: 16
+  line 15, col 11 to line 15, col 23 of module opcode: 16
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 14, col 24 to line 14, col 24 of module opcode: 16
+  line 16, col 24 to line 16, col 24 of module opcode: 16
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 17, col 11 to line 17, col 23 of module opcode: 16
+  line 19, col 11 to line 19, col 23 of module opcode: 16
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 18, col 11 to line 18, col 31 of module opcode: 16
+  line 20, col 11 to line 20, col 31 of module opcode: 16
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 28, col 28 to line 28, col 33 of module opcode: 16
+  line 30, col 28 to line 30, col 33 of module opcode: 16
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
   line 6, col 15 to line 6, col 15 of module opcode: 16
@@ -63,7 +63,7 @@ The coverage statistics at 2015-01-20 08:35:30
 End of statistics.
 @!@!@ENDMSG 2202 @!@!@
 @!@!@STARTMSG 2200:0 @!@!@
-Progress(2) at 2015-01-20 08:35:30: 80 states generated (51,612 s/min), 48 distinct states found (30,967 ds/min), 0 states left on queue.
+Progress(2) at 2015-01-20 15:26:50: 80 states generated (70,588 s/min), 48 distinct states found (42,352 ds/min), 0 states left on queue.
 @!@!@ENDMSG 2200 @!@!@
 @!@!@STARTMSG 2199:0 @!@!@
 80 states generated, 48 distinct states found, 0 states left on queue.
@@ -72,5 +72,5 @@ Progress(2) at 2015-01-20 08:35:30: 80 states generated (51,612 s/min), 48 disti
 The depth of the complete state graph search is 2.
 @!@!@ENDMSG 2194 @!@!@
 @!@!@STARTMSG 2186:0 @!@!@
-Finished. (2015-01-20 08:35:30)
+Finished. (2015-01-20 15:26:50)
 @!@!@ENDMSG 2186 @!@!@
