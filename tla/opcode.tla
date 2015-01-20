@@ -3,25 +3,31 @@ EXTENDS Integers
 
 VARIABLES opcode,T
 
-TIsValid == (T \in -8..7) 
+CPU     == << T >>
+OPCODES == { "nop","shl" }
 
+TIsValid == (T \in -8..7)
+OpCodeIsValid == (opcode \in OPCODES) \/ (opcode = "?") 
+
+nop == /\ opcode = "nop"
+       /\ opcode' = "?"
+       /\ UNCHANGED << T >>
+
+shl == /\ opcode  = "shl"
+       /\ opcode' = "?"
+       /\ T'      = (T * 2) % 8
+       
 Init == \/ /\ opcode = "nop"
            /\ T \in -8..7
         \/ /\ opcode = "shl"
            /\ T\in -8..7
 
-Next == \/ /\ opcode  = "nop"
-           /\ opcode' = "?"
-           /\ UNCHANGED << T >>
-           
-        \/ /\ opcode  = "shl"
-           /\ opcode' = "?"
-           /\ T'      = (T * 2) % 8
-           
+Next == \/ nop
+        \/ shl
         \/ /\ opcode  = "?"
-           /\ UNCHANGED << opcode,T >>
+           /\ UNCHANGED << opcode,CPU >>
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Jan 06 13:59:14 SAST 2015 by tonyseebregts
+\* Last modified Tue Jan 20 08:35:26 SAST 2015 by tonyseebregts
 \* Created Tue Jan 06 12:42:48 SAST 2015 by tonyseebregts
