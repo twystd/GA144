@@ -1,43 +1,48 @@
 #!/usr/bin/ruby -w
 
+
 # Code generator to generate unit tests for opcode implementations from
 # a TLA+ spec file
 #
-# Makes LOTS of assumptions about the structure of the TLA+ spec !! (because this
-# is highly experimental, if you have to have a reason :-))
+# Makes LOTS of assumptions about the structure of the TLA+ spec (and uses regex instead
+# of an AST). Because this is a quick and dirty highly experimental version, if you have
+# to have a reason :-))
 
-# ... parse command line
 
-tla_file = nil
-gen_type = nil
-previous = ""
+# Utility method to extract the value of a 'named' command line argument
+def arg(name,defval)
+  previous = ""
 
-ARGV.each do|a| 
-  if previous == "--tla"
-     tla_file = a
-  elsif previous == "--type"
-     gen_type = a
+  ARGV.each do|a| 
+    if previous == name
+      return a
+    end
+    previous = a
   end
 
-  previous = a
-end 
+  return defval
+end
 
-# ... validate
-
-unless tla_file != nil
-  puts "Error: missing TLA+ file"
+# Utility method to display a command line argument error and exit
+def help(message)
+  puts message
   puts ""
   puts "Usage: opcode.rb --tla <TLA file> --type [erlang]"
   puts ""
   exit
 end
 
+# ... parse command line
+
+tla_file = arg("--tla",nil)
+gen_type = arg("--type",nil)
+
+unless tla_file != nil
+  help("Error: missing TLA+ file")
+end
+
 unless gen_type != nil
-  puts "Error: missing code generation type"
-  puts ""
-  puts "Usage: opcode.rb --tla <TLA file> --type [erlang]"
-  puts ""
-  exit
+  help("Error: missing code generation type")
 end
 
 puts "Generating " + gen_type + " opcode test vectors from " + tla_file
@@ -73,5 +78,17 @@ if opcodes.length < 2
   exit
 end
 
-puts "OPCODES:"
-puts  opcodes
+# ... get opcode definitions
+
+opcodes.each do |opcode|
+  regex = Regexp.compile("#{opcode}\s*==(.*?)(^\s*[a-zA-Z0-9_]+\s*==)",Regexp::MULTILINE)
+  match = regex.match(tla.join)
+
+  if (match) 
+    puts opcode
+    puts match[1]
+  else
+    puts "Warning: TLA+ file: missing definition for OPCODE #{opcode}"
+  end
+end
+

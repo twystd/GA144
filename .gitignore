@@ -12,3 +12,4 @@ assembler/antlr/java/runtime/ANTLR.asm
 assembler/antlr/java/runtime/ANTLR.bin
 assembler/antlr/java/runtime/bin
 assembler/antlr/java/ANTLR.bin
+codegen/x
