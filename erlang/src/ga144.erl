@@ -3,6 +3,7 @@
 % EXPORTS
 
 -export([init/1,reset/1,go/1,stop/1,break/1,step/1,step/2]).
+-export([probe/3]).
 
 
 % INCLUDES
