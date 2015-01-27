@@ -1,0 +1,9 @@
+program = origin (blank / instruction)*;
+
+origin = label ws+ digits:[0-9]+ ws+ "org" eol?;
+blank = ws* eol;
+instruction = origin;
+
+label = chars:[a-z0-9]+;
+ws    = [ \t];
+eol   = "\n";
