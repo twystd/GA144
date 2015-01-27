@@ -442,8 +442,9 @@ exec_impl({?IF,Addr,Mask},CPU) ->
 
 % 16#07  minus-if
 exec_impl({?MINUSIF,Addr,Mask},CPU) ->
-   P  = CPU#cpu.p,
-   TS = CPU#cpu.t band 16#20000,
+   P = CPU#cpu.p,
+   T = CPU#cpu.t,
+   <<TS:1,_/bitstring>> = <<T:18>>,
    case TS of 
        0 ->
            {ok,CPU#cpu{ p = ((P band Mask) bor Addr),
@@ -586,9 +587,11 @@ exec_impl(?STORE,CPU) ->
 
 % 16#10  multiply
 exec_impl(?MULTIPLY,CPU) ->
-   A  = CPU#cpu.a,
-   A0 = CPU#cpu.a band 16#00001,
-   P9 = CPU#cpu.p band 16#00200,
+   A = CPU#cpu.a,
+   P = CPU#cpu.p,
+   <<_:17,A0:1>>        = <<A:18>>,
+   <<P9:1,_/bitstring>> = <<P:10>>,
+
    case {A0,P9} of
 	{0,_} -> 
 	    T = CPU#cpu.t,

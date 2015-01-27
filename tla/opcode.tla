@@ -4,32 +4,62 @@ EXTENDS Integers
 VARIABLES opcode,T
 
 CPU     == << T >>
-OPCODES == { "nop",
-             "shl" 
+
+SHL     == "2*"
+SHR     == "2/"
+NOT     == "-"
+NOP     == "."
+UNKNOWN == "?"
+
+OPCODES == { SHL,
+             SHR,
+             NOT,
+             NOP
            }
 
 TIsValid == (T \in -8..7)
 OpCodeIsValid == (opcode \in OPCODES) \/ (opcode = "?") 
 
-nop == /\ opcode = "nop"
-       /\ opcode' = "?"
+shl == /\ opcode  = SHL
+       /\ opcode' = UNKNOWN
+       /\ T'      = (T * 2) % 8
+
+shr == /\ opcode  = SHR
+       /\ opcode' = UNKNOWN
+       /\ T'      = T \div 2
+
+not == /\ opcode = NOT    
+       /\ opcode' = UNKNOWN
+       /\ \/ /\ T < 0
+             /\ T'= -T - 1
+          \/ /\ T = 0
+             /\ T'= -1
+          \/ /\ T > 0
+             /\ T'= -T + 1
+
+nop == /\ opcode = NOP    
+       /\ opcode' = UNKNOWN
        /\ UNCHANGED << T >>
 
-shl == /\ opcode  = "shl"
-       /\ opcode' = "?"
-       /\ T'      = (T * 2) % 8
        
-Init == \/ /\ opcode = "nop"
-           /\ T \in -8..7
-        \/ /\ opcode = "shl"
+Init == \/ /\ opcode = SHL
            /\ T\in -8..7
+        \/ /\ opcode = SHR
+           /\ T\in -8..7
+        \/ /\ opcode = NOT
+           /\ T\in -8..7
+        \/ /\ opcode = NOP
+           /\ T \in -8..7
+        
 
-Next == \/ nop
-        \/ shl
-        \/ /\ opcode  = "?"
+Next == \/ shl
+        \/ shr
+        \/ not
+        \/ nop
+        \/ /\ opcode  = UNKNOWN
            /\ UNCHANGED << opcode,CPU >>
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Jan 20 15:26:45 SAST 2015 by tonyseebregts
+\* Last modified Tue Jan 27 12:29:34 SAST 2015 by tonyseebregts
 \* Created Tue Jan 06 12:42:48 SAST 2015 by tonyseebregts

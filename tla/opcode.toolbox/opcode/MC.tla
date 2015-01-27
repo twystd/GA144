@@ -2,21 +2,21 @@
 EXTENDS opcode, TLC
 
 \* INIT definition @modelBehaviorInit:0
-init_14217604098252000 ==
+init_142235457755026000 ==
 Init
 ----
 \* NEXT definition @modelBehaviorNext:0
-next_14217604098363000 ==
+next_142235457756127000 ==
 Next
 ----
 \* INVARIANT definition @modelCorrectnessInvariants:0
-inv_14217604098484000 ==
+inv_142235457757228000 ==
 TIsValid
 ----
 \* INVARIANT definition @modelCorrectnessInvariants:1
-inv_14217604098595000 ==
+inv_142235457758329000 ==
 OpCodeIsValid
 ----
 =============================================================================
 \* Modification History
-\* Created Tue Jan 20 15:26:49 SAST 2015 by tonyseebregts
+\* Created Tue Jan 27 12:29:37 SAST 2015 by tonyseebregts
