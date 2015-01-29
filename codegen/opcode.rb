@@ -1,15 +1,27 @@
 class OpCode
 
-  def initialize(opcode,spec)
+  def initialize(opcode,*spec)
     @opcode = opcode
     @spec   = parse(spec)
   end
 
+  def opcode
+    @opcode
+  end
+
+  def spec
+    @spec
+  end
+
   def to_s
-    @opcode.to_s + ": " + @spec
+    @opcode.to_s
   end
 
   def parse(spec)
+    spec 
+  end
+
+  def parsex(spec)
     tokens = tokenize(spec)
     puts "TOKENS"
     puts tokens

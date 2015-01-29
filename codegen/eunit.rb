@@ -1,6 +1,7 @@
 #!/usr/bin/ruby -w
 
 load "opcode.rb"
+load "operation.rb"
 
 # Code generator to generate unit tests for opcode implementations from
 # a TLA+ spec file
@@ -67,7 +68,7 @@ tokens = match[1].split(",")
 opcodes = []
 
 tokens.each do |token|
-  match = /"(.*?)"/m.match(token)
+  match = /(\w+)/m.match(token)
   if match != nil 
      opcodes << match[1].to_sym
   end
@@ -80,21 +81,42 @@ if opcodes.length < 2
 end
 
 # ... get opcode definitions
+#
+# spec = Hash.new
+# 
+# opcodes.each do |opcode|
+#   regex = Regexp.compile("#{opcode}\s*==(.*?)(^\s*[a-zA-Z0-9_]+\s*==)",Regexp::MULTILINE)
+#   match = regex.match(tla.join)
+# 
+#   if (match) 
+#     puts match[1]
+#     spec[opcode] = OpCode.new(opcode,match[1])
+#   else
+#     puts "Warning: TLA+ file: missing definition for OPCODE #{opcode}"
+#   end
+# end
+# 
+# puts "---- SPEC"
+# spec.each do | opcode,definition |
+#   puts opcode.to_s + " [" + definition.to_s + "]"
+#   end
+# puts "----"
 
-spec = Hash.new
+# --- NOP
 
-opcodes.each do |opcode|
-  regex = Regexp.compile("#{opcode}\s*==(.*?)(^\s*[a-zA-Z0-9_]+\s*==)",Regexp::MULTILINE)
-  match = regex.match(tla.join)
+unchanged = Operation.new("t","t")
+nop = OpCode.new("nop",unchanged)
 
-  if (match) 
-    spec[opcode] = OpCode.new(opcode,match[1])
-  else
-    puts "Warning: TLA+ file: missing definition for OPCODE #{opcode}"
+puts "---- NOP"
+puts nop.to_s
+
+nop.spec.each do | operation |
+  puts "  " + operation.to_s
   end
-end
 
 puts "----"
-puts spec[:nop]
-puts spec[:shl]
-puts "----"
+
+
+
+
+

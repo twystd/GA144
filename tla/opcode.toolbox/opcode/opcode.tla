@@ -20,16 +20,13 @@ OPCODES == { SHL,
 TIsValid == (T \in -8..7)
 OpCodeIsValid == (opcode \in OPCODES) \/ (opcode = "?") 
 
-shl == /\ opcode  = SHL
-       /\ opcode' = UNKNOWN
+shl == /\ opcode' = UNKNOWN
        /\ T'      = (T * 2) % 8
 
-shr == /\ opcode  = SHR
-       /\ opcode' = UNKNOWN
+shr == /\ opcode' = UNKNOWN
        /\ T'      = T \div 2
 
-not == /\ opcode = NOT    
-       /\ opcode' = UNKNOWN
+not == /\ opcode' = UNKNOWN
        /\ \/ /\ T < 0
              /\ T'= -T - 1
           \/ /\ T = 0
@@ -37,8 +34,7 @@ not == /\ opcode = NOT
           \/ /\ T > 0
              /\ T'= -T + 1
 
-nop == /\ opcode = NOP    
-       /\ opcode' = UNKNOWN
+nop == /\ opcode' = UNKNOWN
        /\ UNCHANGED << T >>
 
        
@@ -52,14 +48,14 @@ Init == \/ /\ opcode = SHL
            /\ T \in -8..7
         
 
-Next == \/ shl
-        \/ shr
-        \/ not
-        \/ nop
+Next == \/ /\ opcode = SHL /\ shl
+        \/ /\ opcode = SHR /\ shr
+        \/ /\ opcode = NOT /\ not
+        \/ /\ opcode = NOP /\ nop
         \/ /\ opcode  = UNKNOWN
            /\ UNCHANGED << opcode,CPU >>
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Jan 27 12:29:34 SAST 2015 by tonyseebregts
+\* Last modified Thu Jan 29 12:30:09 SAST 2015 by tonyseebregts
 \* Created Tue Jan 06 12:42:48 SAST 2015 by tonyseebregts
