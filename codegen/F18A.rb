@@ -2,6 +2,7 @@
 
 load "opcode.rb"
 load "operation.rb"
+load "erlang.rb"
 
 # Code generator to generate unit tests for opcode implementations from
 # a TLA+ spec file
@@ -104,18 +105,21 @@ end
 
 # --- NOP
 
+erlang = Erlang.new
 unchanged = Operation.new("t","t")
 nop = OpCode.new("nop",unchanged)
 
-puts "---- NOP"
+puts "** NOP **"
 puts nop.to_s
 
 nop.spec.each do | operation |
   puts "  " + operation.to_s
   end
 
-puts "----"
+puts
+puts "** ERLANG **"
 
+erlang.codegen(nop)
 
 
 
