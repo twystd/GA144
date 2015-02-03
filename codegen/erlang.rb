@@ -8,17 +8,26 @@ class Erlang
   end
 
   def codegen(opcode)
-    function = opcode.opcode().to_s + "_test"
-    vector = "?TEST_" + opcode.opcode().to_s.upcase
     puts "Generating erlang eunit test: " + function
-    puts
  
+    function = opcode.opcode().to_s + "_test"
+    vector   = "TEST_" + opcode.opcode().to_s.upcase
+    before   = []
+    after    = []
+    padding  = "         " + " " * vector.length
+
+	opcode.spec().each do | operation |
+  	  puts "  " + operation.to_s
+    end
+
+    puts
     puts "--- CODE ---"
-# -define(TEST_NOP,[ {?NOP,
-#                     [],
-#                     []
-#                    } ]).
-    puts function + "() -> test_opcode(" + vector + ")."
+    puts "-define(" + vector + ",[{?" + opcode.opcode().to_s.upcase + ","
+    puts padding + "  [],"
+    puts padding + "  []},"
+    puts padding + "])."
+    puts
+    puts function + "() -> test_opcode(?" + vector + ")."
     puts
   end
 
