@@ -119,7 +119,7 @@ nop.spec.each do | operation |
 puts
 puts "** ERLANG **"
 
-erlang.codegen(nop)
+erlang.codegen(nop,[-1,0,+1])
 
 
 

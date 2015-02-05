@@ -1,5 +1,7 @@
 class Erlang
 
+  MAXLENGTH = 24
+
   def initialize()
   end
 
@@ -7,39 +9,74 @@ class Erlang
     "erlang"
   end
 
-  def codegen(opcode)
+  # Code generation function for eunit tests
+
+  def codegen(opcode,edge_cases)
     function = opcode.opcode().to_s + "_test"
-    vector   = "TEST_" + opcode.opcode().to_s.upcase
-    before   = []
-    after    = []
-    padding  = "         " + " " * vector.length
 
     puts "Generating erlang eunit test: " + function
 
-	opcode.spec().each do |operation|
-  	  #puts "**     " + operation.to_s
-  	  #puts "**:LHS " + operation.register
-  	  #puts "**:RHS " + operation.expression
-      case operation.register
-        when 't'
-          p = 123
-          q = evaluate(p,operation.expression)
-          x = "{t," + p.to_s + "}" 
-          y = "{t," + q.to_s + "}" 
-          before.push(x) 
-          after.push (y) 
+    # ... build test vectors
+
+    vectors = []
+
+    edge_cases.each do |edge_case|
+      before = []
+      after = []
+
+	  opcode.spec().each do |operation|
+        case operation.register
+          when 't'
+            p = edge_case
+            q = evaluate(p,operation.expression)
+            x = "{t," + p.to_s + "}" 
+            y = "{t," + q.to_s + "}" 
+            before.push(x) 
+            after.push (y) 
+        end
       end
 
+      vectors.push(TestVector.new(opcode.opcode().to_s.upcase,before,after))
     end
+
+    # ... generate eunit test
+
+    string  = ""
+    test    = "TEST_" + opcode.opcode().to_s.upcase
+    prefix  = "-define(" + test + ",["
+    suffix  = ""
+    padding = "         " + " " * test.length
+
+    vectors.each do |vector|
+      before = as_string(vector.before())
+      after  = as_string(vector.after())
+
+      if before.length < MAXLENGTH && after.length < MAXLENGTH 
+        string += suffix
+        string += prefix  + "{?" + vector.opcode() + ","
+        string += "[" + before + "],"
+        string += "[" + after  + "]}"
+      else 
+        string += suffix
+        string += prefix  + "{?" + vector.opcode() + ",\n"
+        string += padding + "  [" + before + "],\n"
+        string += padding + "  [" + after  + "]}"
+      end 
+
+      prefix = padding + " "
+      suffix = ",\n"
+    end
+
+    string += "\n" + padding + "])."
+
+    # ... write to f18A.hrl
 
     puts
     puts "--- CODE ---"
-    puts "-define(" + vector + ",[{?" + opcode.opcode().to_s.upcase + ","
-    puts padding + "  [" + as_string(before) + "],"
-    puts padding + "  [" + as_string(after)  + "]},"
-    puts padding + "])."
     puts
-    puts function + "() -> test_opcode(?" + vector + ")."
+    puts string
+    puts
+    puts function + "() -> test_opcode(?" + test + ")."
     puts
   end
 
@@ -58,4 +95,26 @@ class Erlang
     v
   end
  
+  # Nested class to store generated test vectors
+
+  class TestVector
+    def initialize(opcode,before,after)
+      @opcode = opcode
+      @before = before
+      @after = after
+    end
+
+    def opcode
+      return @opcode
+    end
+
+    def before
+      return @before
+    end
+
+    def after
+      return @after
+    end
+  end
+
 end
