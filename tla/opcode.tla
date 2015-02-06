@@ -3,7 +3,9 @@ EXTENDS Integers
 
 VARIABLES opcode,T
 
-CPU     == << T >>
+RANGE      == -8..7
+EDGE_CASES == {-8,-1,0,1,7}
+CPU        == << T >>
 
 SHL     == "2*"
 SHR     == "2/"
@@ -17,7 +19,7 @@ OPCODES == { SHL,
              NOP
            }
 
-TIsValid == (T \in -8..7)
+TIsValid == (T \in RANGE)
 OpCodeIsValid == (opcode \in OPCODES) \/ (opcode = "?") 
 
 shl == /\ opcode' = UNKNOWN
@@ -39,13 +41,13 @@ nop == /\ opcode' = UNKNOWN
 
        
 Init == \/ /\ opcode = SHL
-           /\ T\in -8..7
+           /\ T \in EDGE_CASES
         \/ /\ opcode = SHR
-           /\ T\in -8..7
+           /\ T \in EDGE_CASES
         \/ /\ opcode = NOT
-           /\ T\in -8..7
+           /\ T \in EDGE_CASES
         \/ /\ opcode = NOP
-           /\ T \in -8..7
+           /\ T \in EDGE_CASES
         
 
 Next == \/ /\ opcode = SHL /\ shl
@@ -57,5 +59,5 @@ Next == \/ /\ opcode = SHL /\ shl
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Jan 29 12:30:09 SAST 2015 by tonyseebregts
+\* Last modified Fri Feb 06 12:49:42 SAST 2015 by tonyseebregts
 \* Created Tue Jan 06 12:42:48 SAST 2015 by tonyseebregts

@@ -29,8 +29,8 @@ class Erlang
           when 't'
             p = edge_case
             q = evaluate(p,operation.expression)
-            x = "{t," + p.to_s + "}" 
-            y = "{t," + q.to_s + "}" 
+            x = "{t," + to_hex(p) + "}" 
+            y = "{t," + to_hex(q) + "}" 
             before.push(x) 
             after.push (y) 
         end
@@ -48,8 +48,8 @@ class Erlang
     padding = "         " + " " * test.length
 
     vectors.each do |vector|
-      before = as_string(vector.before())
-      after  = as_string(vector.after())
+      before = to_string(vector.before())
+      after  = to_string(vector.after())
 
       if before.length < MAXLENGTH && after.length < MAXLENGTH 
         string += suffix
@@ -69,7 +69,7 @@ class Erlang
 
     string += "\n" + padding + "])."
 
-    # ... write to f18A.hrl
+    # ... write to f18A_test.hrl
 
     puts
     puts "--- CODE ---"
@@ -80,7 +80,7 @@ class Erlang
     puts
   end
 
-  def as_string(array) 
+  def to_string(array) 
     s = ""
     separator = ""
     array.each do |item|
@@ -89,6 +89,14 @@ class Erlang
       separator = ","
     end
     s
+  end
+
+  def to_hex(value) 
+    if value < 0
+      "16#%05x" % (0x40000 + value)
+    else
+      "16#%05x" % value
+    end
   end
 
   def evaluate(v,expression) 

@@ -81,6 +81,32 @@ if opcodes.length < 2
   exit
 end
 
+# ... get EDGE CASES
+
+match = /^\s*EDGE_CASES\s*==\s*{(.*?)}/m.match(tla.join)
+
+unless match != nil
+  puts "Error: TLA+ file does not include definition EDGE_CASES"
+  puts ""
+  exit
+end
+
+tokens = match[1].split(",")
+edge_cases = []
+
+tokens.each do |token|
+  match = /([+-]?[0-9]+)/m.match(token)
+  if match != nil 
+     edge_cases << match[1].to_i
+  end
+end
+
+if edge_cases.length == 0
+  puts "Warning: TLA+ file EDGE_CASES definition is empty"
+  puts ""
+  exit
+end
+
 # ... get opcode definitions
 #
 # spec = Hash.new
@@ -119,7 +145,7 @@ nop.spec.each do | operation |
 puts
 puts "** ERLANG **"
 
-erlang.codegen(nop,[-1,0,+1])
+erlang.codegen(nop,edge_cases)
 
 
 
