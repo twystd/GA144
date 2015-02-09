@@ -3,8 +3,8 @@ EXTENDS Integers
 
 VARIABLES opcode,T
 
-RANGE      == -8..7
-EDGE_CASES == {-8,-1,0,1,7}
+RANGE      == -131072..131071
+EDGE_CASES == {-131072,-1,0,1,131071}
 CPU        == << T >>
 
 SHL     == "2*"
@@ -22,8 +22,10 @@ OPCODES == { SHL,
 TIsValid == (T \in RANGE)
 OpCodeIsValid == (opcode \in OPCODES) \/ (opcode = "?") 
 
+band(a,b) == 1 
+
 shl == /\ opcode' = UNKNOWN
-       /\ T'      = (T * 2) % 8
+       /\ T'      = band((T * 2),131071)
 
 shr == /\ opcode' = UNKNOWN
        /\ T'      = T \div 2
@@ -59,5 +61,5 @@ Next == \/ /\ opcode = SHL /\ shl
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Feb 06 12:49:42 SAST 2015 by tonyseebregts
+\* Last modified Mon Feb 09 13:08:51 SAST 2015 by tonyseebregts
 \* Created Tue Jan 06 12:42:48 SAST 2015 by tonyseebregts

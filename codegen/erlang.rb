@@ -100,7 +100,7 @@ class Erlang
   end
 
   def evaluate(v,expression) 
-    v
+    eval(expression.gsub("t",v.to_s))
   end
  
   # Nested class to store generated test vectors

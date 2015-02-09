@@ -132,8 +132,8 @@ end
 # --- NOP
 
 erlang = Erlang.new
-unchanged = Operation.new("t","t")
-nop = OpCode.new("nop",unchanged)
+expression = Operation.new("t","t")
+nop = OpCode.new("nop",expression)
 
 puts "** NOP **"
 puts nop.to_s
@@ -147,6 +147,22 @@ puts "** ERLANG **"
 
 erlang.codegen(nop,edge_cases)
 
+# --- SHL
 
+erlang = Erlang.new
+expression = Operation.new("t","(t * 2) & 131071")
+shl = OpCode.new("shl",expression)
+
+puts "** SHL **"
+puts shl.to_s
+
+shl.spec.each do | operation |
+  puts "  " + operation.to_s
+  end
+
+puts
+puts "** ERLANG **"
+
+erlang.codegen(shl,edge_cases)
 
 
