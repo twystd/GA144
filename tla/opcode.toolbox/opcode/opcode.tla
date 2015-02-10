@@ -1,5 +1,5 @@
 ------------------------------- MODULE opcode -------------------------------
-EXTENDS Integers
+EXTENDS Integers,TLC
 
 VARIABLES opcode,T
 
@@ -22,10 +22,12 @@ OPCODES == { SHL,
 TIsValid == (T \in RANGE)
 OpCodeIsValid == (opcode \in OPCODES) \/ (opcode = "?") 
 
-limit(X) == 1
+band(a,b) == a % b 
 
 shl == /\ opcode' = UNKNOWN
-       /\ T'      = limit(T * 2)
+       /\ T'      = band((T * 2),131071)
+       /\ PrintT(T) 
+       /\ PrintT(T')
 
 shr == /\ opcode' = UNKNOWN
        /\ T'      = T \div 2
@@ -61,5 +63,5 @@ Next == \/ /\ opcode = SHL /\ shl
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Feb 09 13:03:01 SAST 2015 by tonyseebregts
+\* Last modified Mon Feb 09 20:30:36 SAST 2015 by tonyseebregts
 \* Created Tue Jan 06 12:42:48 SAST 2015 by tonyseebregts

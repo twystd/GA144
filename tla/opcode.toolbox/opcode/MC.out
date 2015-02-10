@@ -15,15 +15,15 @@ Parsing file /Users/tonyseebregts/Development/tools/tla/toolbox/plugins/org.lamp
 Parsing file /Users/tonyseebregts/Development/tools/tla/toolbox/plugins/org.lamport.tlatools_1.0.0.201403132202/tla2sany/StandardModules/Sequences.tla
 Semantic processing of module Naturals
 Semantic processing of module Integers
-Semantic processing of module opcode
 Semantic processing of module Sequences
 Semantic processing of module TLC
+Semantic processing of module opcode
 Semantic processing of module MC
 @!@!@STARTMSG 2219:0 @!@!@
 SANY finished.
 @!@!@ENDMSG 2219 @!@!@
 @!@!@STARTMSG 2185:0 @!@!@
-Starting... (2015-02-09 13:03:06)
+Starting... (2015-02-09 20:30:39)
 @!@!@ENDMSG 2185 @!@!@
 @!@!@STARTMSG 2189:0 @!@!@
 Computing initial states...
@@ -31,64 +31,74 @@ Computing initial states...
 @!@!@STARTMSG 2190:0 @!@!@
 Finished computing initial states: 20 distinct states generated.
 @!@!@ENDMSG 2190 @!@!@
+-1
+-131072
+131069
+1
+131069
+0
+2
+0
+131071
+0
 @!@!@STARTMSG 2193:0 @!@!@
 Model checking completed. No error has been found.
   Estimates of the probability that TLC did not check all reachable states
   because two distinct states had the same fingerprint:
-  calculated (optimistic):  val = 3.0E-17
+  calculated (optimistic):  val = 3.3E-17
   based on the actual fingerprints:  val = 8.4E-17
 @!@!@ENDMSG 2193 @!@!@
 @!@!@STARTMSG 2201:0 @!@!@
-The coverage statistics at 2015-02-09 13:03:06
+The coverage statistics at 2015-02-09 20:30:39
 @!@!@ENDMSG 2201 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
   line 27, col 11 to line 27, col 27 of module opcode: 5
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 28, col 11 to line 28, col 32 of module opcode: 5
+  line 28, col 11 to line 28, col 40 of module opcode: 5
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 30, col 11 to line 30, col 27 of module opcode: 5
+  line 32, col 11 to line 32, col 27 of module opcode: 5
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 31, col 11 to line 31, col 28 of module opcode: 5
+  line 33, col 11 to line 33, col 28 of module opcode: 5
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 33, col 11 to line 33, col 27 of module opcode: 5
+  line 35, col 11 to line 35, col 27 of module opcode: 5
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 35, col 17 to line 35, col 26 of module opcode: 2
+  line 37, col 17 to line 37, col 26 of module opcode: 2
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 37, col 17 to line 37, col 22 of module opcode: 1
+  line 39, col 17 to line 39, col 22 of module opcode: 1
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 39, col 17 to line 39, col 26 of module opcode: 2
+  line 41, col 17 to line 41, col 26 of module opcode: 2
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 41, col 11 to line 41, col 27 of module opcode: 5
+  line 43, col 11 to line 43, col 27 of module opcode: 5
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 42, col 24 to line 42, col 24 of module opcode: 5
+  line 44, col 24 to line 44, col 24 of module opcode: 5
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 60, col 28 to line 60, col 33 of module opcode: 8
+  line 62, col 28 to line 62, col 33 of module opcode: 10
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 8, col 18 to line 8, col 18 of module opcode: 8
+  line 8, col 18 to line 8, col 18 of module opcode: 10
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2202:0 @!@!@
 End of statistics.
 @!@!@ENDMSG 2202 @!@!@
 @!@!@STARTMSG 2200:0 @!@!@
-Progress(2) at 2015-02-09 13:03:06: 48 states generated (42,985 s/min), 28 distinct states found (25,074 ds/min), 0 states left on queue.
+Progress(2) at 2015-02-09 20:30:39: 50 states generated (42,857 s/min), 30 distinct states found (25,714 ds/min), 0 states left on queue.
 @!@!@ENDMSG 2200 @!@!@
 @!@!@STARTMSG 2199:0 @!@!@
-48 states generated, 28 distinct states found, 0 states left on queue.
+50 states generated, 30 distinct states found, 0 states left on queue.
 @!@!@ENDMSG 2199 @!@!@
 @!@!@STARTMSG 2194:0 @!@!@
 The depth of the complete state graph search is 2.
 @!@!@ENDMSG 2194 @!@!@
 @!@!@STARTMSG 2186:0 @!@!@
-Finished. (2015-02-09 13:03:06)
+Finished. (2015-02-09 20:30:39)
 @!@!@ENDMSG 2186 @!@!@
