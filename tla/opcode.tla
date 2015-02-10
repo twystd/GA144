@@ -22,6 +22,7 @@ OPCODES == { SHL,
 TIsValid == (T \in RANGE)
 OpCodeIsValid == (opcode \in OPCODES) \/ (opcode = "?") 
 
+\% "%05X" % ((-(-0x20001 * 2) & 0x1ffff) + 0x20000)
 band(a,b) == a % b 
 
 shl == /\ opcode' = UNKNOWN
