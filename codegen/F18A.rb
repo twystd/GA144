@@ -150,7 +150,7 @@ erlang.codegen(nop,edge_cases)
 # --- SHL
 
 erlang = Erlang.new
-expression = Operation.new("t","(t * 2) & 131071")
+expression = Operation.new("t","band(2*t,131071)")
 shl = OpCode.new("shl",expression)
 
 puts "** SHL **"

@@ -23,8 +23,8 @@ TIsValid == (T \in RANGE)
 OpCodeIsValid == (opcode \in OPCODES) \/ (opcode = "?") 
 
 \* Bitwise AND with sign bit retention 
-bandx(a,b) == IF (a > b) THEN a-(b+1) ELSE a
 band (a,b) == IF (a < 0) THEN -bandx(-a,b)  ELSE bandx(a,b)
+bandx(a,b) == IF (a > b) THEN a-(b+1) ELSE a
 
 shl == /\ opcode' = UNKNOWN
        /\ T' = band(2*T,131071)

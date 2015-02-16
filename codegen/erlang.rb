@@ -102,6 +102,22 @@ class Erlang
   def evaluate(v,expression) 
     eval(expression.gsub("t",v.to_s))
   end
+
+  def band(a,b)
+    if (a < 0)
+      -bandx(-a,b)
+    else
+      bandx(a,b)
+    end 
+  end
+
+  def bandx(a,b)
+     if (a > b)
+       a-(b+1)
+     else
+       a
+     end
+  end
  
   # Nested class to store generated test vectors
 
