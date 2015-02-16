@@ -131,38 +131,23 @@ end
 
 # --- NOP
 
-erlang = Erlang.new
-expression = Operation.new("t","t")
+expression = Operation.new("T","T")
 nop = OpCode.new("nop",expression)
-
-puts "** NOP **"
-puts nop.to_s
-
-nop.spec.each do | operation |
-  puts "  " + operation.to_s
-  end
-
-puts
-puts "** ERLANG **"
-
-erlang.codegen(nop,edge_cases)
 
 # --- SHL
 
-erlang = Erlang.new
-expression = Operation.new("t","band(2*t,131071)")
+expression = Operation.new("T","band(2*T,131071)")
 shl = OpCode.new("shl",expression)
 
-puts "** SHL **"
-puts shl.to_s
 
-shl.spec.each do | operation |
-  puts "  " + operation.to_s
-  end
+# --- SHR
 
-puts
-puts "** ERLANG **"
+expression = Operation.new("T","T \\div 2")
+shr = OpCode.new("shr",expression)
 
+
+erlang = Erlang.new
 erlang.codegen(shl,edge_cases)
-
-
+erlang.codegen(shr,edge_cases)
+erlang.codegen(nop,edge_cases)
+erlang.print()

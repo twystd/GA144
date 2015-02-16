@@ -3,10 +3,30 @@ class Erlang
   MAXLENGTH = 24
 
   def initialize()
+    @defines = []
+    @tests   = []
   end
 
   def to_s
     "erlang"
+  end
+  
+  # Prints the eunit tests to the console
+
+  def print 
+    puts
+    puts "** ERLANG **"
+    puts
+
+    @defines.each do |define|
+      puts define
+      puts
+    end
+   
+   @tests.each do |test|
+     puts test
+   end
+ 
   end
 
   # Code generation function for eunit tests
@@ -26,7 +46,7 @@ class Erlang
 
 	  opcode.spec().each do |operation|
         case operation.register
-          when 't'
+          when 'T'
             p = edge_case
             q = evaluate(p,operation.expression)
             x = "{t," + to_hex(p) + "}" 
@@ -41,7 +61,7 @@ class Erlang
 
     # ... generate eunit test
 
-    string  = ""
+    define  = ""
     test    = "TEST_" + opcode.opcode().to_s.upcase
     prefix  = "-define(" + test + ",["
     suffix  = ""
@@ -52,32 +72,37 @@ class Erlang
       after  = to_string(vector.after())
 
       if before.length < MAXLENGTH && after.length < MAXLENGTH 
-        string += suffix
-        string += prefix  + "{?" + vector.opcode() + ","
-        string += "[" + before + "],"
-        string += "[" + after  + "]}"
+        define += suffix
+        define += prefix  + "{?" + vector.opcode() + ","
+        define += "[" + before + "],"
+        define += "[" + after  + "]}"
       else 
-        string += suffix
-        string += prefix  + "{?" + vector.opcode() + ",\n"
-        string += padding + "  [" + before + "],\n"
-        string += padding + "  [" + after  + "]}"
+        define += suffix
+        define += prefix  + "{?" + vector.opcode() + ",\n"
+        define += padding + "  [" + before + "],\n"
+        define += padding + "  [" + after  + "]}"
       end 
 
       prefix = padding + " "
       suffix = ",\n"
     end
 
-    string += "\n" + padding + "])."
+    define += "\n" + padding + "])."
+
+    # ... add to definitions
+
+    @defines.push(define)
+    @tests.push(function + "() -> test_opcode(?" + test + ").")
 
     # ... write to f18A_test.hrl
 
-    puts
-    puts "--- CODE ---"
-    puts
-    puts string
-    puts
-    puts function + "() -> test_opcode(?" + test + ")."
-    puts
+    # puts
+    # puts "--- CODE ---"
+    # puts
+    # puts string
+    # puts
+    # puts function + "() -> test_opcode(?" + test + ")."
+    # puts
   end
 
   def to_string(array) 
@@ -100,7 +125,8 @@ class Erlang
   end
 
   def evaluate(v,expression) 
-    eval(expression.gsub("t",v.to_s))
+    eval(expression.gsub("T",v.to_s)
+                   .gsub("\\div","/"))
   end
 
   def band(a,b)
