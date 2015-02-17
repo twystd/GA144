@@ -130,24 +130,24 @@ end
 # puts "----"
 
 # --- NOP
-
 expression = Operation.new("T","T")
 nop = OpCode.new("nop",expression)
 
 # --- SHL
-
 expression = Operation.new("T","band(2*T,131071)")
 shl = OpCode.new("shl",expression)
 
-
 # --- SHR
-
 expression = Operation.new("T","T \\div 2")
 shr = OpCode.new("shr",expression)
 
+# --- NOT
+expression = Operation.new("T","-T - 1")
+inv = OpCode.new("not",expression)
 
 erlang = Erlang.new
 erlang.codegen(shl,edge_cases)
 erlang.codegen(shr,edge_cases)
 erlang.codegen(nop,edge_cases)
+erlang.codegen(inv,edge_cases)
 erlang.print()

@@ -31,7 +31,7 @@
 <listAttribute key="modelParameterDefinitions"/>
 <stringAttribute key="modelParameterModelValues" value="{}"/>
 <stringAttribute key="modelParameterNewDefinitions" value=""/>
-<intAttribute key="numberOfWorkers" value="4"/>
+<intAttribute key="numberOfWorkers" value="1"/>
 <booleanAttribute key="recover" value="false"/>
 <intAttribute key="simuAril" value="-1"/>
 <intAttribute key="simuDepth" value="100"/>

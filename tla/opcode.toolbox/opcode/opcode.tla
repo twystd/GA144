@@ -33,12 +33,7 @@ shr == /\ opcode' = UNKNOWN
        /\ T'      = T \div 2
 
 not == /\ opcode' = UNKNOWN
-       /\ \/ /\ T < 0
-             /\ T'= -T - 1
-          \/ /\ T = 0
-             /\ T'= -1
-          \/ /\ T > 0
-             /\ T'= -T + 1
+       /\ T'= -T - 1
       /\ PrintT(T)
       /\ PrintT(T')
 
@@ -64,5 +59,5 @@ Next == \/ /\ opcode = SHL /\ shl
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Feb 11 12:57:23 SAST 2015 by tonyseebregts
+\* Last modified Tue Feb 17 12:45:29 SAST 2015 by tonyseebregts
 \* Created Tue Jan 06 12:42:48 SAST 2015 by tonyseebregts

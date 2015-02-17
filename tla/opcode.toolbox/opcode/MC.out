@@ -23,7 +23,7 @@ Semantic processing of module MC
 SANY finished.
 @!@!@ENDMSG 2219 @!@!@
 @!@!@STARTMSG 2185:0 @!@!@
-Starting... (2015-02-11 12:57:27)
+Starting... (2015-02-17 12:45:35)
 @!@!@ENDMSG 2185 @!@!@
 @!@!@STARTMSG 2189:0 @!@!@
 Computing initial states...
@@ -31,18 +31,18 @@ Computing initial states...
 @!@!@STARTMSG 2190:0 @!@!@
 Finished computing initial states: 24 distinct states generated.
 @!@!@ENDMSG 2190 @!@!@
--1
-0
--131071
--1
 -131072
+131071
+-131071
 131070
-131071
+-1
 0
+0
+-1
 1
-0
+-2
 131071
--131070
+-131072
 @!@!@STARTMSG 2193:0 @!@!@
 Model checking completed. No error has been found.
   Estimates of the probability that TLC did not check all reachable states
@@ -51,7 +51,7 @@ Model checking completed. No error has been found.
   based on the actual fingerprints:  val = 8.4E-17
 @!@!@ENDMSG 2193 @!@!@
 @!@!@STARTMSG 2201:0 @!@!@
-The coverage statistics at 2015-02-11 12:57:27
+The coverage statistics at 2015-02-17 12:45:36
 @!@!@ENDMSG 2201 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
   line 29, col 11 to line 29, col 27 of module opcode: 6
@@ -69,22 +69,16 @@ The coverage statistics at 2015-02-11 12:57:27
   line 35, col 11 to line 35, col 27 of module opcode: 6
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 37, col 17 to line 37, col 26 of module opcode: 3
+  line 36, col 11 to line 36, col 20 of module opcode: 6
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 39, col 17 to line 39, col 22 of module opcode: 1
+  line 40, col 11 to line 40, col 27 of module opcode: 6
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 41, col 17 to line 41, col 26 of module opcode: 2
+  line 41, col 24 to line 41, col 24 of module opcode: 6
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 45, col 11 to line 45, col 27 of module opcode: 6
-@!@!@ENDMSG 2221 @!@!@
-@!@!@STARTMSG 2221:0 @!@!@
-  line 46, col 24 to line 46, col 24 of module opcode: 6
-@!@!@ENDMSG 2221 @!@!@
-@!@!@STARTMSG 2221:0 @!@!@
-  line 63, col 28 to line 63, col 33 of module opcode: 12
+  line 58, col 28 to line 58, col 33 of module opcode: 12
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
   line 8, col 18 to line 8, col 18 of module opcode: 12
@@ -93,7 +87,7 @@ The coverage statistics at 2015-02-11 12:57:27
 End of statistics.
 @!@!@ENDMSG 2202 @!@!@
 @!@!@STARTMSG 2200:0 @!@!@
-Progress(2) at 2015-02-11 12:57:27: 60 states generated (51,428 s/min), 36 distinct states found (30,857 ds/min), 0 states left on queue.
+Progress(2) at 2015-02-17 12:45:36: 60 states generated (94,736 s/min), 36 distinct states found (56,842 ds/min), 0 states left on queue.
 @!@!@ENDMSG 2200 @!@!@
 @!@!@STARTMSG 2199:0 @!@!@
 60 states generated, 36 distinct states found, 0 states left on queue.
@@ -102,5 +96,5 @@ Progress(2) at 2015-02-11 12:57:27: 60 states generated (51,428 s/min), 36 disti
 The depth of the complete state graph search is 2.
 @!@!@ENDMSG 2194 @!@!@
 @!@!@STARTMSG 2186:0 @!@!@
-Finished. (2015-02-11 12:57:27)
+Finished. (2015-02-17 12:45:36)
 @!@!@ENDMSG 2186 @!@!@
