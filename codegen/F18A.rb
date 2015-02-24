@@ -3,6 +3,7 @@
 load "opcode.rb"
 load "operation.rb"
 load "erlang.rb"
+load "tla.rb"
 
 # CONSTANTS
 
@@ -170,8 +171,18 @@ def help(message)
 end
 
 # Parses the TLA 'NEXT' definition
+#r = TLA.new.parse("132432")  
 def parseNext(script)
   puts script
+
+  clause = "opcode = SHL /\\ shl"
+  tla = TLA.new
+
+  tla.parse(clause)
+
+  rescue Parslet::ParseFailed => failure
+    puts failure.cause.ascii_tree
 end
 
+# APPLICATION ENTRY POINT
 main

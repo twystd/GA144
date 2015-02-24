@@ -1,0 +1,9 @@
+expression = clause
+clause = AND WS "opcode" WS EQUALS WS OPCODE WS AND WS IMPL
+
+OPCODE = "SHL" / "SHR" / "NOT" / "NOP"
+IMPL   = "shl" / "shr" / "not" / "nop"
+AND    = "/\\"
+EQUALS = "="
+WS     = " "*
+
