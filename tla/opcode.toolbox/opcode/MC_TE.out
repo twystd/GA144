@@ -23,7 +23,7 @@ Semantic processing of module MC
 SANY finished.
 @!@!@ENDMSG 2219 @!@!@
 @!@!@STARTMSG 2185:0 @!@!@
-Starting... (2015-02-17 12:45:35)
+Starting... (2015-02-25 13:49:22)
 @!@!@ENDMSG 2185 @!@!@
 @!@!@STARTMSG 2189:0 @!@!@
 Computing initial states...
@@ -31,18 +31,6 @@ Computing initial states...
 @!@!@STARTMSG 2190:0 @!@!@
 Finished computing initial states: 24 distinct states generated.
 @!@!@ENDMSG 2190 @!@!@
--131072
-131071
--131071
-131070
--1
-0
-0
--1
-1
--2
-131071
--131072
 @!@!@STARTMSG 2193:0 @!@!@
 Model checking completed. No error has been found.
   Estimates of the probability that TLC did not check all reachable states
@@ -51,7 +39,7 @@ Model checking completed. No error has been found.
   based on the actual fingerprints:  val = 8.4E-17
 @!@!@ENDMSG 2193 @!@!@
 @!@!@STARTMSG 2201:0 @!@!@
-The coverage statistics at 2015-02-17 12:45:36
+The coverage statistics at 2015-02-25 13:49:23
 @!@!@ENDMSG 2201 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
   line 29, col 11 to line 29, col 27 of module opcode: 6
@@ -72,13 +60,13 @@ The coverage statistics at 2015-02-17 12:45:36
   line 36, col 11 to line 36, col 20 of module opcode: 6
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 40, col 11 to line 40, col 27 of module opcode: 6
+  line 38, col 11 to line 38, col 27 of module opcode: 6
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 41, col 24 to line 41, col 24 of module opcode: 6
+  line 39, col 24 to line 39, col 24 of module opcode: 6
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 58, col 28 to line 58, col 33 of module opcode: 12
+  line 56, col 28 to line 56, col 33 of module opcode: 12
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
   line 8, col 18 to line 8, col 18 of module opcode: 12
@@ -87,7 +75,7 @@ The coverage statistics at 2015-02-17 12:45:36
 End of statistics.
 @!@!@ENDMSG 2202 @!@!@
 @!@!@STARTMSG 2200:0 @!@!@
-Progress(2) at 2015-02-17 12:45:36: 60 states generated (94,736 s/min), 36 distinct states found (56,842 ds/min), 0 states left on queue.
+Progress(2) at 2015-02-25 13:49:23: 60 states generated (100,000 s/min), 36 distinct states found (60,000 ds/min), 0 states left on queue.
 @!@!@ENDMSG 2200 @!@!@
 @!@!@STARTMSG 2199:0 @!@!@
 60 states generated, 36 distinct states found, 0 states left on queue.
@@ -96,5 +84,5 @@ Progress(2) at 2015-02-17 12:45:36: 60 states generated (94,736 s/min), 36 disti
 The depth of the complete state graph search is 2.
 @!@!@ENDMSG 2194 @!@!@
 @!@!@STARTMSG 2186:0 @!@!@
-Finished. (2015-02-17 12:45:36)
+Finished. (2015-02-25 13:49:23)
 @!@!@ENDMSG 2186 @!@!@

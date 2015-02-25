@@ -7,12 +7,12 @@ load "tla.rb"
 
 # CONSTANTS
 
-NEXT = "Next == \\/ /\\ opcode = SHL /\\ shl
-                \\/ /\\ opcode = SHR /\\ shr
-                \\/ /\\ opcode = NOT /\\ not
-                \\/ /\\ opcode = NOP /\\ nop
-                \\/ /\\ opcode  = UNKNOWN
-                \/\\ UNCHANGED << opcode,CPU >>"
+NEXT = "Next == \\/ opcode = SHL /\\ shl
+        \\/ opcode = SHR /\\ shr
+        \\/ opcode = NOT /\\ not
+        \\/ opcode = NOP /\\ nop
+        \\/ /\\ opcode = UNKNOWN
+           /\\ UNCHANGED << opcode,CPU >>"
 
 # MAIN
 
@@ -171,14 +171,22 @@ def help(message)
 end
 
 # Parses the TLA 'NEXT' definition
-#r = TLA.new.parse("132432")  
 def parseNext(script)
   puts script
 
-  clause = "opcode = SHL /\\ shl"
+  shl = "opcode = SHL /\\ shl"
+  shr = "opcode = SHR /\\ shr"
+  inv = "opcode = NOT /\\ not"
+  nop = "opcode = NOP /\\ nop"
+  expression = "\\/ " + shl + " \\/ " + shr + " \\/ " + inv + " \\/ " + nop
+
   tla = TLA.new
 
-  tla.parse(clause)
+  tla.parse(shl)
+  tla.parse(shr)
+  tla.parse(inv)
+  tla.parse(nop)
+  tla.parse(expression)
 
   rescue Parslet::ParseFailed => failure
     puts failure.cause.ascii_tree

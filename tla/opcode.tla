@@ -48,14 +48,14 @@ Init == \/ /\ opcode = SHL
            /\ T \in EDGE_CASES
         
 
-Next == \/ /\ opcode = SHL /\ shl
-        \/ /\ opcode = SHR /\ shr
-        \/ /\ opcode = NOT /\ not
-        \/ /\ opcode = NOP /\ nop
+Next == \/ opcode = SHL /\ shl
+        \/ opcode = SHR /\ shr
+        \/ opcode = NOT /\ not
+        \/ opcode = NOP /\ nop
         \/ /\ opcode  = UNKNOWN
            /\ UNCHANGED << opcode,CPU >>
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Feb 17 12:45:51 SAST 2015 by tonyseebregts
+\* Last modified Wed Feb 25 13:49:17 SAST 2015 by tonyseebregts
 \* Created Tue Jan 06 12:42:48 SAST 2015 by tonyseebregts
